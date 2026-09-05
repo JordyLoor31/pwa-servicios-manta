@@ -27,10 +27,10 @@ function logout() {
 <template>
   <div class="min-h-screen flex flex-col items-center justify-center gap-6 p-4">
     <div class="text-center">
-      <h1 class="text-2xl font-semibold text-gray-900">
+      <h1 class="text-2xl font-semibold text-ink">
         Hola, {{ user?.nombres }} {{ user?.apellidos }}
       </h1>
-      <p class="text-gray-500 mt-1">You are logged in as {{ user?.email }}</p>
+      <p class="text-muted mt-1">You are logged in as {{ user?.email }}</p>
     </div>
     <Button label="Cerrar sesión" severity="secondary" variant="outlined" @click="logout" />
   </div>

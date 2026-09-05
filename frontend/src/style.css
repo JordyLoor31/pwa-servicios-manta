@@ -1,1 +1,53 @@
 @import "tailwindcss";
+
+@theme {
+  --color-pacific: #006d8f;
+  --color-pacific-50: #e8f4f8;
+  --color-pacific-100: #c5e5ee;
+  --color-pacific-200: #96d0e0;
+  --color-pacific-300: #5fb3cb;
+  --color-pacific-400: #2e94b2;
+  --color-pacific-500: #0f7da0;
+  --color-pacific-600: #006d8f;
+  --color-pacific-700: #005c78;
+  --color-pacific-800: #07495f;
+  --color-pacific-900: #0a3a4b;
+  --color-pacific-950: #052733;
+
+  --color-turquoise: #00a6a6;
+  --color-turquoise-50: #e4fafa;
+  --color-turquoise-100: #bef1f1;
+  --color-turquoise-200: #8ee5e5;
+  --color-turquoise-300: #52d4d4;
+  --color-turquoise-400: #1fc2c2;
+  --color-turquoise-500: #00a6a6;
+  --color-turquoise-600: #008c8c;
+  --color-turquoise-700: #067070;
+  --color-turquoise-800: #0a5858;
+  --color-turquoise-900: #0b4848;
+  --color-turquoise-950: #032c2c;
+
+  --color-coral: #f28c28;
+  --color-coral-50: #fef4ea;
+  --color-coral-100: #fde6cd;
+  --color-coral-200: #fbca9b;
+  --color-coral-300: #f9ac63;
+  --color-coral-400: #f49038;
+  --color-coral-500: #f28c28;
+  --color-coral-600: #d96f14;
+  --color-coral-700: #b45311;
+  --color-coral-800: #8f4012;
+  --color-coral-900: #743612;
+  --color-coral-950: #401c07;
+
+  --color-sand: #e8d5b5;
+  --color-cloud: #f7f9fa;
+  --color-ink: #172a35;
+  --color-muted: #667781;
+}
+
+body {
+  background-color: var(--color-cloud);
+  color: var(--color-ink);
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}

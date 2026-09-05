@@ -76,9 +76,9 @@ function goToRegister() {
       </template>
       <template #footer>
         <div class="flex flex-col gap-4">
-          <Button class="w-full" :loading="cargando" @click="onLogin">Login</Button>
+          <Button severity="warn" class="w-full" :loading="cargando" @click="onLogin">Login</Button>
           <Button severity="secondary" variant="outlined" class="w-full">Login with Google</Button>
-          <div class="mt-2 text-center text-gray-500 text-sm">
+          <div class="mt-2 text-center text-muted text-sm">
             Don't have an account?
             <Button variant="link" class="p-0" @click="goToRegister">Sign up</Button>
           </div>

@@ -97,8 +97,8 @@ function goToLogin() {
       </template>
       <template #footer>
         <div class="flex flex-col gap-4">
-          <Button class="w-full" :loading="cargando" @click="onRegister">Create account</Button>
-          <div class="mt-2 text-center text-gray-500 text-sm">
+          <Button severity="warn" class="w-full" :loading="cargando" @click="onRegister">Create account</Button>
+          <div class="mt-2 text-center text-muted text-sm">
             Already have an account?
             <Button variant="link" class="p-0" @click="goToLogin">Sign in</Button>
           </div>
