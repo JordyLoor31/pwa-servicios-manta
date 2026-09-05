@@ -11,6 +11,31 @@ services:
       - /usr/src/app/node_modules
     environment:
       - PORT=3000
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=servicios_manta
+      - DB_PASS=servicios_manta_2024
+      - DB_NAME=servicios_manta
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: servicios_manta_db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: servicios_manta
+      POSTGRES_PASSWORD: servicios_manta_2024
+      POSTGRES_DB: servicios_manta
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U servicios_manta -d servicios_manta"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
   frontend:
     build:
@@ -24,3 +49,6 @@ services:
       - /usr/src/app/node_modules
     environment:
       - VITE_API_URL=http://localhost:3000
+
+volumes:
+  pgdata:

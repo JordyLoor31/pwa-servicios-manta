@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -20,7 +20,16 @@ export class UsuariosService {
       ...createUsuarioDto,
       password_hash,
     });
-    return this.usuariosRepository.save(usuario);
+
+    try {
+      const saved = await this.usuariosRepository.save(usuario);
+      return this.sanitize(saved);
+    } catch (error) {
+      if ((error as { code?: string })?.code === '23505') {
+        throw new ConflictException('El email ya está registrado');
+      }
+      throw error;
+    }
   }
 
   async findOne(id: string) {
@@ -28,6 +37,15 @@ export class UsuariosService {
     if (!usuario) {
       throw new NotFoundException(`Usuario con id ${id} no encontrado`);
     }
-    return usuario;
+    return this.sanitize(usuario);
+  }
+
+  async findByEmail(email: string) {
+    return this.usuariosRepository.findOneBy({ email });
+  }
+
+  private sanitize(usuario: Usuario) {
+    const { password_hash, ...publicUser } = usuario;
+    return publicUser;
   }
 }

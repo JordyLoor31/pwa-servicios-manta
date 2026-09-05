@@ -6,4 +6,5 @@ backend/dist/
 frontend/dist/
 .env
 *.env
+.pnpm-store/
 .vscode/
