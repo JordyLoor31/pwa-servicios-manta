@@ -44,6 +44,20 @@ const surface = {
   '950': '#0d1b23',
 }
 
+const turquoise = {
+  '50': '#e4fafa',
+  '100': '#bef1f1',
+  '200': '#8ee5e5',
+  '300': '#52d4d4',
+  '400': '#1fc2c2',
+  '500': '#00a6a6',
+  '600': '#008c8c',
+  '700': '#067070',
+  '800': '#0a5858',
+  '900': '#0b4848',
+  '950': '#032c2c',
+}
+
 const warnButton = {
   background: '{orange.500}',
   hoverBackground: '{orange.600}',
@@ -56,9 +70,29 @@ const warnButton = {
   activeColor: '#ffffff',
 }
 
+const secondaryButton = {
+  background: '{teal.500}',
+  hoverBackground: '{teal.600}',
+  activeBackground: '{teal.700}',
+  borderColor: '{teal.500}',
+  hoverBorderColor: '{teal.600}',
+  activeBorderColor: '{teal.700}',
+  color: '#ffffff',
+  hoverColor: '#ffffff',
+  activeColor: '#ffffff',
+}
+
+const outlinedSecondaryButton = {
+  hoverBackground: '{teal.50}',
+  activeBackground: '{teal.100}',
+  borderColor: '{teal.500}',
+  color: '{teal.600}',
+}
+
 export const MantaPreset = definePreset(Aura, {
   primitive: {
     orange: ctaOrange,
+    teal: turquoise,
   },
   semantic: {
     primary: {
@@ -69,11 +103,22 @@ export const MantaPreset = definePreset(Aura, {
       activeColor: '{primary.800}',
     },
     surface,
+    formField: {
+      focusBorderColor: '{teal.500}',
+      floatLabelFocusColor: '{teal.600}',
+      focusRing: {
+        color: '{teal.300}',
+      },
+    },
   },
   components: {
     button: {
       root: {
         warn: warnButton,
+        secondary: secondaryButton,
+      },
+      outlined: {
+        secondary: outlinedSecondaryButton,
       },
     },
   },
