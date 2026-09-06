@@ -1,10 +1,10 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { PerfilTecnico } from './entities/perfil-tecnico.entity';
-import { CreatePerfilTecnicoDto } from './dto/create-perfil-tecnico.dto';
-import { UpdatePerfilTecnicoDto } from './dto/update-perfil-tecnico.dto';
-import { CalificarPerfilTecnicoDto } from './dto/calificar-perfil-tecnico.dto';
+import { PerfilTecnico } from '../entities/perfil-tecnico.entity';
+import { CreatePerfilTecnicoDto } from '../dtos/create-perfil-tecnico.dto';
+import { UpdatePerfilTecnicoDto } from '../dtos/update-perfil-tecnico.dto';
+import { CalificarPerfilTecnicoDto } from '../dtos/calificar-perfil-tecnico.dto';
 
 @Injectable()
 export class PerfilesTecnicoService {

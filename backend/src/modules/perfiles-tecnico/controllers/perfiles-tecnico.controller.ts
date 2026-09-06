@@ -1,8 +1,8 @@
 import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post, Put } from '@nestjs/common';
-import { PerfilesTecnicoService } from './perfiles-tecnico.service';
-import { CreatePerfilTecnicoDto } from './dto/create-perfil-tecnico.dto';
-import { UpdatePerfilTecnicoDto } from './dto/update-perfil-tecnico.dto';
-import { CalificarPerfilTecnicoDto } from './dto/calificar-perfil-tecnico.dto';
+import { PerfilesTecnicoService } from '../services/perfiles-tecnico.service';
+import { CreatePerfilTecnicoDto } from '../dtos/create-perfil-tecnico.dto';
+import { UpdatePerfilTecnicoDto } from '../dtos/update-perfil-tecnico.dto';
+import { CalificarPerfilTecnicoDto } from '../dtos/calificar-perfil-tecnico.dto';
 
 @Controller('perfiles-tecnico')
 export class PerfilesTecnicoController {

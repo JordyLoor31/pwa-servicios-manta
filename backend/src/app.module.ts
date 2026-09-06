@@ -14,6 +14,9 @@ import { NotificacionesModule } from './modules/notificaciones/notificaciones.mo
 import { AuthModule } from './modules/auth/auth.module';
 import { Usuario } from './modules/usuarios/entities/usuario.entity';
 import { PerfilTecnico } from './modules/perfiles-tecnico/entities/perfil-tecnico.entity';
+import { DisponibilidadTecnico } from './modules/perfiles-tecnico/entities/disponibilidad-tecnico.entity';
+import { CertificacionTecnico } from './modules/perfiles-tecnico/entities/certificacion-tecnico.entity';
+import { Categoria } from './modules/categorias/entities/categoria.entity';
 
 @Module({
   imports: [
@@ -27,7 +30,7 @@ import { PerfilTecnico } from './modules/perfiles-tecnico/entities/perfil-tecnic
         username: config.get<string>('DB_USER'),
         password: config.get<string>('DB_PASS'),
         database: config.get<string>('DB_NAME'),
-        entities: [Usuario, PerfilTecnico],
+        entities: [Usuario, PerfilTecnico, DisponibilidadTecnico, CertificacionTecnico, Categoria],
         synchronize: false,
       }),
     }),
