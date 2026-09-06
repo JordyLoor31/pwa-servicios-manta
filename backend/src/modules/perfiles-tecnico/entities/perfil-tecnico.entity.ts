@@ -11,22 +11,40 @@ export class PerfilTecnico {
   usuario: Usuario;
 
   @Column({ type: 'text', nullable: true })
-  biografia: string;
+  biografia: string | null;
 
   @Column({ type: 'smallint', nullable: true })
-  anios_experiencia: number;
+  anios_experiencia: number | null;
 
-  @Column({ type: 'numeric', precision: 5, scale: 2, nullable: true })
-  radio_cobertura_km: string;
+  @Column({
+    type: 'numeric',
+    precision: 5,
+    scale: 2,
+    nullable: true,
+    transformer: {
+      to: (value) => value,
+      from: (value) => (value === null ? null : Number(value)),
+    },
+  })
+  radio_cobertura_km: number | null;
 
   @Column({ type: 'boolean', default: false })
   verificado: boolean;
 
   @Column({ type: 'timestamptz', nullable: true })
-  fecha_verificacion: Date;
+  fecha_verificacion: Date | null;
 
-  @Column({ type: 'numeric', precision: 3, scale: 2, default: 0 })
-  calificacion_promedio: string;
+  @Column({
+    type: 'numeric',
+    precision: 3,
+    scale: 2,
+    default: 0,
+    transformer: {
+      to: (value) => value,
+      from: (value) => Number(value),
+    },
+  })
+  calificacion_promedio: number;
 
   @Column({ type: 'int', default: 0 })
   total_servicios_completados: number;
