@@ -7,6 +7,10 @@ import { MantaPreset } from './theme/preset'
 import './style.css'
 import App from './App.vue'
 
+if (localStorage.getItem('theme') === 'dark') {
+  document.documentElement.classList.add('dark')
+}
+
 const app = createApp(App)
 
 app.use(router)

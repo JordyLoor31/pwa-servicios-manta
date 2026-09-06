@@ -44,10 +44,115 @@
   --color-cloud: #f7f9fa;
   --color-ink: #172a35;
   --color-muted: #667781;
+  --color-card: #ffffff;
+}
+
+html {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+  --color-sand: #463a24;
+  --color-cloud: #0d1c26;
+  --color-ink: #f7f9fa;
+  --color-muted: #a9b6bf;
+  --color-card: #172a35;
+}
+
+html.dark body {
+  background-color: var(--color-cloud);
+  color: var(--color-ink);
+}
+
+/* --- Modo oscuro: overrides explícitos de PrimeVue --- */
+
+html.dark .p-drawer,
+html.dark .p-drawer-header,
+html.dark .p-drawer-content {
+  background-color: #172a35 !important;
+  color: #f7f9fa !important;
+  border-color: #2d4657 !important;
+}
+
+html.dark .p-drawer .p-drawer-title {
+  color: #f7f9fa;
+}
+
+html.dark .p-drawer .p-drawer-close-button {
+  color: #a9b6bf;
+}
+
+html.dark .p-toggleswitch {
+  background: #2d4657 !important;
+}
+
+html.dark .p-toggleswitch-checked {
+  background: #006d8f !important;
+}
+
+html.dark .p-toggleswitch .p-toggleswitch-handle {
+  background: #f7f9fa !important;
+}
+
+html.dark .p-toggleswitch-checked .p-toggleswitch-handle {
+  background: #ffffff !important;
+}
+
+html.dark .p-card {
+  background-color: #172a35 !important;
+  color: #f7f9fa !important;
+}
+
+html.dark .p-card .p-card-title {
+  color: #f7f9fa;
+}
+
+html.dark .p-card .p-card-subtitle {
+  color: #a9b6bf;
+}
+
+html.dark .p-inputtext,
+html.dark .p-select-label,
+html.dark .p-select {
+  background-color: #0d1c26 !important;
+  color: #f7f9fa !important;
+  border-color: #2d4657 !important;
+}
+
+html.dark .p-select .p-select-option,
+html.dark .p-select-overlay {
+  background-color: #172a35 !important;
+  color: #f7f9fa !important;
+}
+
+html.dark .p-button-link {
+  color: #5fb3cb;
+}
+
+html.dark .p-toast .p-toast-message,
+html.dark .p-toast-message {
+  background-color: #172a35 !important;
+  color: #f7f9fa !important;
+}
+
+html.dark .p-toast-message .p-toast-message-content .p-toast-detail {
+  color: #a9b6bf;
 }
 
 body {
   background-color: var(--color-cloud);
   color: var(--color-ink);
   font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+.p-drawer-left .p-drawer {
+  width: 20rem;
+}
+
+@media (max-width: 640px) {
+  .p-drawer-left .p-drawer {
+    width: 85vw;
+    max-width: 22rem;
+  }
 }

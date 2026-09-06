@@ -112,6 +112,12 @@ export const MantaPreset = definePreset(Aura, {
     },
   },
   components: {
+    drawer: {
+      root: {
+        background: '{surface.0}',
+        color: '{surface.800}',
+      },
+    },
     button: {
       root: {
         warn: warnButton,
