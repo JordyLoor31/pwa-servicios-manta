@@ -13,6 +13,7 @@ import { ChatModule } from './modules/chat/chat.module';
 import { NotificacionesModule } from './modules/notificaciones/notificaciones.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { Usuario } from './modules/usuarios/entities/usuario.entity';
+import { PerfilTecnico } from './modules/perfiles-tecnico/entities/perfil-tecnico.entity';
 
 @Module({
   imports: [
@@ -26,7 +27,7 @@ import { Usuario } from './modules/usuarios/entities/usuario.entity';
         username: config.get<string>('DB_USER'),
         password: config.get<string>('DB_PASS'),
         database: config.get<string>('DB_NAME'),
-        entities: [Usuario],
+        entities: [Usuario, PerfilTecnico],
         synchronize: false,
       }),
     }),

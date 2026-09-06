@@ -1,6 +1,7 @@
 import { DataSource } from 'typeorm';
 import { config } from 'dotenv';
 import { Usuario } from './src/modules/usuarios/entities/usuario.entity';
+import { PerfilTecnico } from './src/modules/perfiles-tecnico/entities/perfil-tecnico.entity';
 
 config();
 
@@ -11,6 +12,6 @@ export default new DataSource({
   username: process.env.DB_USER,
   password: process.env.DB_PASS,
   database: process.env.DB_NAME,
-  entities: [Usuario],
+  entities: [Usuario, PerfilTecnico],
   migrations: ['src/migrations/*.ts'],
 });
