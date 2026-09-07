@@ -62,7 +62,7 @@ async function guardarPasoUno(activateCallback: (step: number) => void) {
     if (perfilExistente.value) {
       await api.put(`/perfiles-tecnico/${id}`, datos)
     } else {
-      await api.post('/perfiles-tecnico', { usuario_id: id, ...datos })
+      await api.post('/perfiles-tecnico', datos)
     }
     perfilExistente.value = true
     toast.add({ severity: 'success', summary: 'Guardado', detail: 'Datos del técnico guardados.', life: 3000 })

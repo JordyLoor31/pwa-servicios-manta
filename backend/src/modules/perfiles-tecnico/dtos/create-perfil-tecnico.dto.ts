@@ -10,7 +10,8 @@ import {
 
 export class CreatePerfilTecnicoDto {
   @IsUUID()
-  usuario_id: string;
+  @IsOptional()
+  usuario_id?: string;
 
   @IsString()
   @IsOptional()

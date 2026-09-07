@@ -14,6 +14,9 @@ export class PerfilesTecnicoService {
   ) {}
 
   async create(dto: CreatePerfilTecnicoDto) {
+    if (!dto.usuario_id) {
+      throw new BadRequestException('usuario_id es requerido');
+    }
     try {
       await this.perfilesRepository.insert(dto);
     } catch (error) {
@@ -32,12 +35,39 @@ export class PerfilesTecnicoService {
     return this.perfilesRepository.find({ order: { usuario_id: 'ASC' } });
   }
 
+  async findAllPublic() {
+    const perfiles = await this.perfilesRepository.find({ order: { usuario_id: 'ASC' } });
+    return perfiles.map((perfil) => this.toPublic(perfil));
+  }
+
   async findOne(usuarioId: string) {
     const perfil = await this.perfilesRepository.findOneBy({ usuario_id: usuarioId });
     if (!perfil) {
       throw new NotFoundException(`Perfil técnico del usuario ${usuarioId} no encontrado`);
     }
     return perfil;
+  }
+
+  async findOnePublic(usuarioId: string) {
+    return this.toPublic(await this.findOne(usuarioId));
+  }
+
+  private toPublic(perfil: PerfilTecnico) {
+    const {
+      biografia,
+      anios_experiencia,
+      calificacion_promedio,
+      total_servicios_completados,
+      verificado,
+    } = perfil;
+    return {
+      usuario_id: perfil.usuario_id,
+      biografia,
+      anios_experiencia,
+      calificacion_promedio,
+      total_servicios_completados,
+      verificado,
+    };
   }
 
   async update(usuarioId: string, dto: UpdatePerfilTecnicoDto) {

@@ -1,7 +1,9 @@
-import { Controller, Get, Post, Body, Param, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, ForbiddenException, Get, Post, Body, Param, ParseUUIDPipe } from '@nestjs/common';
 import { UsuariosService } from '../services/usuarios.service';
 import { CreateUsuarioDto } from '../dtos/create-usuario.dto';
 import { Public } from '../../auth/decorators/public.decorator';
+import { CurrentUser, type AuthenticatedUser } from '../../auth/decorators/current-user.decorator';
+import { RolUsuario } from '../entities/usuario.entity';
 
 @Controller('usuarios')
 export class UsuariosController {
@@ -14,7 +16,13 @@ export class UsuariosController {
   }
 
   @Get(':id')
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
+  findOne(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    if (user.rol !== RolUsuario.ADMIN && id !== user.id) {
+      throw new ForbiddenException('Solo puedes consultar tu propio perfil');
+    }
     return this.usuariosService.findOne(id);
   }
 }
