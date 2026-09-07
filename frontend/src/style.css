@@ -48,11 +48,11 @@
 }
 
 html {
-  color-scheme: light;
+  color-scheme: light !important;
 }
 
 html.dark {
-  color-scheme: dark;
+  color-scheme: dark !important;
   --color-sand: #463a24;
   --color-cloud: #0d1c26;
   --color-ink: #f7f9fa;

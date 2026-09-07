@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
@@ -8,7 +8,7 @@ import InputText from 'primevue/inputtext'
 import Label from 'primevue/label'
 import Select from 'primevue/select'
 import Toast from 'primevue/toast'
-import { api } from '../services/api'
+import { api } from '../../services/api'
 
 const router = useRouter()
 const toast = useToast()
@@ -62,13 +62,13 @@ function goToLogin() {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center p-4">
+  <div class="flex min-h-screen items-center justify-center p-4">
     <Toast />
-    <Card class="max-w-md w-full">
+    <Card class="w-full max-w-md">
       <template #title>Create your account</template>
       <template #subtitle>Join Manta Servicios to get started.</template>
       <template #content>
-        <form class="space-y-4 mt-3" @submit.prevent="onRegister">
+        <form class="mt-3 space-y-4" @submit.prevent="onRegister">
           <div class="flex flex-col gap-2">
             <Label for="nombres">Nombres</Label>
             <InputText id="nombres" v-model="nombres" type="text" />
@@ -98,7 +98,7 @@ function goToLogin() {
       <template #footer>
         <div class="flex flex-col gap-4">
           <Button severity="warn" class="w-full" :loading="cargando" @click="onRegister">Create account</Button>
-          <div class="mt-2 text-center text-muted text-sm">
+          <div class="mt-2 text-center text-sm text-muted">
             Already have an account?
             <Button variant="link" class="p-0" @click="goToLogin">Sign in</Button>
           </div>

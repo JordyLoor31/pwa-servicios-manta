@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
@@ -7,8 +7,8 @@ import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Label from 'primevue/label'
 import Toast from 'primevue/toast'
-import { api } from '../services/api'
-import { iniciarSesion } from '../composables/useAuthz'
+import { api } from '../../services/api'
+import { iniciarSesion } from '../../composables/useAuthz'
 
 const router = useRouter()
 const toast = useToast()
@@ -23,7 +23,7 @@ interface LoginResponse {
     nombres: string
     apellidos: string
     email: string
-    rol: import('../composables/useAuthz').RolUsuario
+    rol: import('../../composables/useAuthz').RolUsuario
   }
 }
 
@@ -54,13 +54,13 @@ function goToRegister() {
 </script>
 
 <template>
-  <div class="min-h-screen flex items-center justify-center p-4">
+  <div class="flex min-h-screen items-center justify-center p-4">
     <Toast />
-    <Card class="max-w-sm w-full">
+    <Card class="w-full max-w-sm">
       <template #title>Welcome back</template>
       <template #subtitle>Sign in with your email to continue.</template>
       <template #content>
-        <form class="space-y-6 mt-3" @submit.prevent="onLogin">
+        <form class="mt-3 space-y-6" @submit.prevent="onLogin">
           <div class="flex flex-col gap-2">
             <Label for="email">Email</Label>
             <InputText id="email" v-model="email" type="email" />
@@ -77,8 +77,7 @@ function goToRegister() {
       <template #footer>
         <div class="flex flex-col gap-4">
           <Button severity="warn" class="w-full" :loading="cargando" @click="onLogin">Login</Button>
-          <Button severity="secondary" variant="outlined" class="w-full">Login with Google</Button>
-          <div class="mt-2 text-center text-muted text-sm">
+          <div class="mt-2 text-center text-sm text-muted">
             Don't have an account?
             <Button variant="link" class="p-0" @click="goToRegister">Sign up</Button>
           </div>

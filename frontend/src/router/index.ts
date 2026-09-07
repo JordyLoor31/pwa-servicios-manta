@@ -1,7 +1,8 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import LoginView from '../views/LoginView.vue'
-import RegisterView from '../views/RegisterView.vue'
-import HomeView from '../views/HomeView.vue'
+import LoginView from '../views/auth/LoginView.vue'
+import RegisterView from '../views/auth/RegisterView.vue'
+import HomeView from '../views/home/HomeView.vue'
+import PerfilTecnicoView from '../views/tecnico/PerfilTecnicoView.vue'
 import { tieneToken, leerUsuario, type RolUsuario } from '../composables/useAuthz'
 
 declare module 'vue-router' {
@@ -15,6 +16,7 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/', name: 'home', component: HomeView },
+    { path: '/perfil', name: 'perfil', component: PerfilTecnicoView, meta: { roles: ['tecnico'] } },
     { path: '/login', name: 'login', component: LoginView, meta: { publica: true } },
     { path: '/registro', name: 'registro', component: RegisterView, meta: { publica: true } },
   ],
