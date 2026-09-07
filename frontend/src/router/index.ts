@@ -2,25 +2,44 @@ import { createRouter, createWebHistory } from 'vue-router'
 import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import HomeView from '../views/HomeView.vue'
+import { tieneToken, leerUsuario, type RolUsuario } from '../composables/useAuthz'
+
+declare module 'vue-router' {
+  interface RouteMeta {
+    publica?: boolean
+    roles?: RolUsuario[]
+  }
+}
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/', name: 'home', component: HomeView },
-    { path: '/login', name: 'login', component: LoginView },
-    { path: '/registro', name: 'registro', component: RegisterView },
+    { path: '/login', name: 'login', component: LoginView, meta: { publica: true } },
+    { path: '/registro', name: 'registro', component: RegisterView, meta: { publica: true } },
   ],
 })
 
-router.beforeEach((to) => {
-  const token = localStorage.getItem('access_token')
-  const esRutaPublica = to.name === 'login' || to.name === 'registro'
+function tieneSesion() {
+  return Boolean(tieneToken() && leerUsuario())
+}
 
-  if (token && esRutaPublica) {
+router.beforeEach((to) => {
+  const esPublica = to.meta.publica === true
+
+  if (tieneSesion() && esPublica) {
     return { name: 'home' }
   }
-  if (!token && !esRutaPublica) {
+  if (!tieneSesion() && !esPublica) {
     return { name: 'login' }
+  }
+
+  const roles = to.meta.roles
+  if (roles?.length) {
+    const usuario = leerUsuario()
+    if (!usuario || !roles.includes(usuario.rol)) {
+      return { name: 'home' }
+    }
   }
 })
 

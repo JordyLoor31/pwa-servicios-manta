@@ -8,6 +8,7 @@ import InputText from 'primevue/inputtext'
 import Label from 'primevue/label'
 import Toast from 'primevue/toast'
 import { api } from '../services/api'
+import { iniciarSesion } from '../composables/useAuthz'
 
 const router = useRouter()
 const toast = useToast()
@@ -22,7 +23,7 @@ interface LoginResponse {
     nombres: string
     apellidos: string
     email: string
-    rol: string
+    rol: import('../composables/useAuthz').RolUsuario
   }
 }
 
@@ -33,8 +34,7 @@ async function onLogin() {
       email: email.value,
       password: password.value,
     })
-    localStorage.setItem('access_token', data.access_token)
-    localStorage.setItem('user', JSON.stringify(data.user))
+    iniciarSesion(data.access_token, data.user)
     router.push('/')
   } catch (error) {
     toast.add({

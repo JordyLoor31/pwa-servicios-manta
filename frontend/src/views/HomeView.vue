@@ -5,32 +5,21 @@ import Drawer from 'primevue/drawer'
 import Button from 'primevue/button'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { useTheme } from '../composables/useTheme'
-
-interface StoredUser {
-  id: string
-  nombres: string
-  apellidos: string
-  email: string
-  rol: string
-}
+import { useAuthz, cerrarSesion } from '../composables/useAuthz'
 
 const router = useRouter()
 const visible = ref(false)
 const { isDark, toggle } = useTheme()
-
-const user = computed<StoredUser | null>(() => {
-  const raw = localStorage.getItem('user')
-  return raw ? JSON.parse(raw) : null
-})
+const { usuario, hasAnyRole } = useAuthz()
 
 const iniciales = computed(() => {
-  const u = user.value
+  const u = usuario.value
   if (!u) return 'CA'
   return `${u.nombres?.[0] ?? ''}${u.apellidos?.[0] ?? ''}`.toUpperCase()
 })
 
 const rolLabel = computed(() => {
-  switch (user.value?.rol) {
+  switch (usuario.value?.rol) {
     case 'tecnico':
       return 'Técnico'
     case 'admin':
@@ -40,12 +29,21 @@ const rolLabel = computed(() => {
   }
 })
 
-const menu = [
-  { label: 'Inicio', icon: 'pi pi-home', ruta: '/' },
-  { label: 'Mis solicitudes', icon: 'pi pi-list-check', ruta: '/solicitudes' },
-  { label: 'Mi perfil', icon: 'pi pi-user', ruta: '/perfil' },
-  { label: 'Categorías', icon: 'pi pi-tags', ruta: '/categorias' },
-]
+const menu = computed(() => {
+  const filas: { label: string; icon: string; ruta: string }[] = [
+    { label: 'Inicio', icon: 'pi pi-home', ruta: '/' },
+  ]
+  if (hasAnyRole('cliente')) {
+    filas.push({ label: 'Mis solicitudes', icon: 'pi pi-list-check', ruta: '/solicitudes' })
+  }
+  if (hasAnyRole('tecnico')) {
+    filas.push({ label: 'Mi perfil', icon: 'pi pi-user', ruta: '/perfil' })
+  }
+  if (hasAnyRole('admin')) {
+    filas.push({ label: 'Categorías', icon: 'pi pi-tags', ruta: '/categorias' })
+  }
+  return filas
+})
 
 const accesos = [
   {
@@ -73,8 +71,7 @@ function navegar(ruta: string) {
 
 function logout() {
   visible.value = false
-  localStorage.removeItem('access_token')
-  localStorage.removeItem('user')
+  cerrarSesion()
   router.push('/login')
 }
 </script>
@@ -98,7 +95,7 @@ function logout() {
       <div class="flex items-center gap-2 sm:gap-3">
         <div class="hidden text-right sm:block">
           <p class="text-sm font-medium leading-tight text-ink">
-            {{ user?.nombres }} {{ user?.apellidos }}
+            {{ usuario?.nombres }} {{ usuario?.apellidos }}
           </p>
           <p class="text-xs leading-tight text-muted">{{ rolLabel }}</p>
         </div>
@@ -120,8 +117,8 @@ function logout() {
 
       <div class="flex h-full flex-col">
         <div class="mb-6 rounded-xl bg-pacific/5 p-4">
-          <p class="text-sm font-semibold text-ink">{{ user?.nombres }} {{ user?.apellidos }}</p>
-          <p class="mt-0.5 truncate text-xs text-muted">{{ user?.email }}</p>
+          <p class="text-sm font-semibold text-ink">            {{ usuario?.nombres }} {{ usuario?.apellidos }}</p>
+          <p class="mt-0.5 truncate text-xs text-muted">{{ usuario?.email }}</p>
           <span
             class="mt-3 inline-block rounded-full bg-pacific px-2.5 py-0.5 text-xs font-medium text-white"
           >
@@ -169,7 +166,7 @@ function logout() {
       >
         <p class="text-sm font-medium text-pacific-100">Bienvenido de nuevo</p>
         <h1 class="mt-1 text-2xl font-semibold sm:text-3xl">
-          Hola, {{ user?.nombres }} {{ user?.apellidos }}
+          Hola, {{ usuario?.nombres }} {{ usuario?.apellidos }}
         </h1>
         <p class="mt-3 max-w-xl text-sm leading-relaxed text-pacific-100 sm:text-base">
           Gestiona tus servicios técnicos en Manta desde un solo lugar: solicita, cotiza y
