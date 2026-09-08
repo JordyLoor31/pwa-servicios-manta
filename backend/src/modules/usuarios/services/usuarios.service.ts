@@ -1,8 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { Usuario } from '../entities/usuario.entity';
+import { Usuario, RolUsuario } from '../entities/usuario.entity';
 import { CreateUsuarioDto } from '../dtos/create-usuario.dto';
 
 @Injectable()
@@ -13,6 +13,13 @@ export class UsuariosService {
     @InjectRepository(Usuario)
     private readonly usuariosRepository: Repository<Usuario>,
   ) {}
+
+  async createPublic(createUsuarioDto: CreateUsuarioDto) {
+    if (createUsuarioDto.rol === RolUsuario.ADMIN) {
+      throw new ForbiddenException('Solo un administrador puede crear cuentas de administrador');
+    }
+    return this.create(createUsuarioDto);
+  }
 
   async create(createUsuarioDto: CreateUsuarioDto) {
     const password_hash = await bcrypt.hash(createUsuarioDto.password, this.SALT_ROUNDS);

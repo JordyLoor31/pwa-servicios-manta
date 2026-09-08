@@ -2,6 +2,7 @@ import { Controller, ForbiddenException, Get, Post, Body, Param, ParseUUIDPipe }
 import { UsuariosService } from '../services/usuarios.service';
 import { CreateUsuarioDto } from '../dtos/create-usuario.dto';
 import { Public } from '../../auth/decorators/public.decorator';
+import { Roles } from '../../auth/decorators/roles.decorator';
 import { CurrentUser, type AuthenticatedUser } from '../../auth/decorators/current-user.decorator';
 import { RolUsuario } from '../entities/usuario.entity';
 
@@ -12,6 +13,12 @@ export class UsuariosController {
   @Public()
   @Post()
   create(@Body() createUsuarioDto: CreateUsuarioDto) {
+    return this.usuariosService.createPublic(createUsuarioDto);
+  }
+
+  @Roles(RolUsuario.ADMIN)
+  @Post('admin')
+  createAdmin(@Body() createUsuarioDto: CreateUsuarioDto) {
     return this.usuariosService.create(createUsuarioDto);
   }
 
