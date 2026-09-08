@@ -13,9 +13,9 @@ services:
       - PORT=3000
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_USER=servicios_manta
-      - DB_PASS=servicios_manta_2024
-      - DB_NAME=servicios_manta
+      - DB_USER=${DB_USER:-servicios_manta}
+      - DB_PASS=${DB_PASS:-servicios_manta_2024}
+      - DB_NAME=${DB_NAME:-servicios_manta}
     depends_on:
       postgres:
         condition: service_healthy
@@ -24,15 +24,15 @@ services:
     image: postgres:16-alpine
     container_name: servicios_manta_db
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     environment:
-      POSTGRES_USER: servicios_manta
-      POSTGRES_PASSWORD: servicios_manta_2024
-      POSTGRES_DB: servicios_manta
+      POSTGRES_USER: ${DB_USER:-servicios_manta}
+      POSTGRES_PASSWORD: ${DB_PASS:-servicios_manta_2024}
+      POSTGRES_DB: ${DB_NAME:-servicios_manta}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U servicios_manta -d servicios_manta"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-servicios_manta} -d ${DB_NAME:-servicios_manta}"]
       interval: 5s
       timeout: 3s
       retries: 5
