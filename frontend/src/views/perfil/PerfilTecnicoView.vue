@@ -13,7 +13,7 @@ import DatosStep from '../../components/perfil-tecnico/DatosStep.vue'
 import CategoriasTecnicoStep from '../../components/perfil-tecnico/CategoriasTecnicoStep.vue'
 import InfoAdicionalStep from '../../components/perfil-tecnico/InfoAdicionalStep.vue'
 import ListoStep from '../../components/perfil-tecnico/ListoStep.vue'
-import { usePerfilTecnicoForm } from '../../composables/usePerfilTecnicoForm'
+import { usePerfilTecnicoForm } from '../../composables/perfil-tecnico/usePerfilTecnicoForm'
 
 const router = useRouter()
 

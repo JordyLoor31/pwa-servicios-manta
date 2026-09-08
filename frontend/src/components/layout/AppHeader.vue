@@ -5,7 +5,7 @@ import Drawer from 'primevue/drawer'
 import Button from 'primevue/button'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { useTheme } from '../../composables/useTheme'
-import { useAuthz, cerrarSesion } from '../../composables/useAuthz'
+import { useAuthz, cerrarSesion } from '../../composables/auth/useAuthz'
 
 const router = useRouter()
 const visible = ref(false)

@@ -2,8 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import LoginView from '../views/auth/LoginView.vue'
 import RegisterView from '../views/auth/RegisterView.vue'
 import HomeView from '../views/home/HomeView.vue'
-import PerfilTecnicoView from '../views/tecnico/PerfilTecnicoView.vue'
-import { tieneToken, leerUsuario, type RolUsuario } from '../composables/useAuthz'
+import PerfilTecnicoView from '../views/perfil/PerfilTecnicoView.vue'
+import { tieneToken, leerUsuario, type RolUsuario } from '../composables/auth/useAuthz'
 
 declare module 'vue-router' {
   interface RouteMeta {

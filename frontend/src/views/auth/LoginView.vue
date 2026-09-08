@@ -6,7 +6,7 @@ import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Label from 'primevue/label'
 import Toast from 'primevue/toast'
-import { useAuth } from '../../composables/useAuth'
+import { useAuth } from '../../composables/auth/useAuth'
 
 const router = useRouter()
 const { cargando, login } = useAuth()

@@ -1,27 +1,32 @@
 import { computed, onMounted, ref } from 'vue'
 import { useToast } from 'primevue/usetoast'
-import { useAuthz } from './useAuthz'
-import { api } from '../services/api'
-import type { CategoriaServicio, PerfilTecnico, TarifaCategoria } from '../types/perfil-tecnico'
+import { useAuthz } from '../auth/useAuthz'
+import { api } from '../../services/api'
+import { useCategoriasTecnico } from './useCategoriasTecnico'
+import type { PerfilTecnico } from '../../types/perfil-tecnico'
 
 export function usePerfilTecnicoForm() {
   const toast = useToast()
   const { usuario } = useAuthz()
   const usuarioId = computed(() => usuario.value?.id)
 
+  const {
+    categorias,
+    tarifas,
+    categoriasSeleccionadas,
+    cargandoCatalogo,
+    guardandoCategorias,
+    alternarCategoria,
+    guardarCategorias: guardarCategoriasTecnico,
+  } = useCategoriasTecnico()
+
   const activeStep = ref(1)
   const cargandoDatos = ref(false)
-  const cargandoCatalogo = ref(true)
-  const guardandoCategorias = ref(false)
 
   const aniosExperiencia = ref<number | null>(null)
   const radioCobertura = ref<number | null>(null)
   const biografia = ref('')
   const perfilExistente = ref(false)
-
-  const categorias = ref<CategoriaServicio[]>([])
-  const tarifas = ref<TarifaCategoria[]>([])
-  const categoriasSeleccionadas = ref<string[]>([])
 
   function notificarExito(detail: string) {
     toast.add({ severity: 'success', summary: 'Guardado', detail, life: 3000 })
@@ -49,43 +54,9 @@ export function usePerfilTecnicoForm() {
     }
   }
 
-  async function cargarCatalogo() {
-    try {
-      const [cats, tarifasRest] = await Promise.all([
-        api.get<CategoriaServicio[]>('/categorias-servicio?soloActivas=true'),
-        api.get<TarifaCategoria[]>('/tarifas-categoria'),
-      ])
-      categorias.value = cats
-      tarifas.value = tarifasRest
-    } catch {
-      categorias.value = []
-      tarifas.value = []
-    }
-  }
-
-  async function cargarSeleccion() {
-    if (!usuarioId.value) return
-    try {
-      const seleccion = await api.get<CategoriaServicio[]>(`/perfiles-tecnico/${usuarioId.value}/categorias`)
-      categoriasSeleccionadas.value = seleccion.map((categoria) => categoria.id)
-    } catch {
-      categoriasSeleccionadas.value = []
-    }
-  }
-
   onMounted(async () => {
-    await Promise.allSettled([cargarPerfil(), cargarCatalogo(), cargarSeleccion()])
-    cargandoCatalogo.value = false
+    await Promise.allSettled([cargarPerfil()])
   })
-
-  function alternarCategoria(id: string) {
-    const indice = categoriasSeleccionadas.value.indexOf(id)
-    if (indice >= 0) {
-      categoriasSeleccionadas.value.splice(indice, 1)
-    } else {
-      categoriasSeleccionadas.value.push(id)
-    }
-  }
 
   function irAPaso(paso: number) {
     activeStep.value = paso
@@ -119,22 +90,9 @@ export function usePerfilTecnicoForm() {
   }
 
   async function guardarCategorias(): Promise<boolean> {
-    const id = usuarioId.value
-    if (!id) return false
-    guardandoCategorias.value = true
-    try {
-      await api.put(`/perfiles-tecnico/${id}/categorias`, {
-        categoria_ids: categoriasSeleccionadas.value,
-      })
-      notificarExito('Categorías y servicios actualizados.')
-      irAPaso(3)
-      return true
-    } catch (error) {
-      notificarError(error, 'No se pudieron guardar las categorías')
-      return false
-    } finally {
-      guardandoCategorias.value = false
-    }
+    if (!(await guardarCategoriasTecnico())) return false
+    irAPaso(3)
+    return true
   }
 
   return {

@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
-import { api } from '../services/api'
+import { api } from '../../services/api'
 import { iniciarSesion, type RolUsuario, type UsuarioSesion } from './useAuthz'
 
 interface LoginResponse {

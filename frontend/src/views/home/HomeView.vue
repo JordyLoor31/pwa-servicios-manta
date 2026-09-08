@@ -1,6 +1,6 @@
 ﻿<script setup lang="ts">
 import AppHeader from '../../components/layout/AppHeader.vue'
-import { useAuthz } from '../../composables/useAuthz'
+import { useAuthz } from '../../composables/auth/useAuthz'
 
 const { usuario } = useAuthz()
 

@@ -7,8 +7,8 @@ import InputText from 'primevue/inputtext'
 import Label from 'primevue/label'
 import Select from 'primevue/select'
 import Toast from 'primevue/toast'
-import { useAuth } from '../../composables/useAuth'
-import type { RolUsuario } from '../../composables/useAuthz'
+import { useAuth } from '../../composables/auth/useAuth'
+import type { RolUsuario } from '../../composables/auth/useAuthz'
 
 const router = useRouter()
 const { cargando, registro } = useAuth()
