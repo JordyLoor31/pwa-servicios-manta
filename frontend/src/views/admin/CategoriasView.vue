@@ -76,7 +76,7 @@ function abrirMenu(event: Event, categoria: CategoriaServicio) {
           :rows="5"
           :rows-per-page-options="[5, 10, 20]"
           :current-page-report-template="'Mostrando {first}-{last} de {totalRecords}'"
-          paginator-template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
+          paginator-template="FirstPageLink PrevPageLink PageLinks CurrentPageReport NextPageLink LastPageLink RowsPerPageDropdown"
           table-style="min-width: 42rem"
           class="w-full"
         >

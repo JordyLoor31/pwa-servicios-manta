@@ -1,4 +1,4 @@
-import { Controller, ForbiddenException, Get, Post, Body, Param, ParseUUIDPipe } from '@nestjs/common';
+import { Controller, ForbiddenException, Get, Post, Body, Param, ParseUUIDPipe, Query, DefaultValuePipe, ParseIntPipe } from '@nestjs/common';
 import { UsuariosService } from '../services/usuarios.service';
 import { CreateUsuarioDto } from '../dtos/create-usuario.dto';
 import { Public } from '../../auth/decorators/public.decorator';
@@ -20,6 +20,15 @@ export class UsuariosController {
   @Post('admin')
   createAdmin(@Body() createUsuarioDto: CreateUsuarioDto) {
     return this.usuariosService.create(createUsuarioDto);
+  }
+
+  @Roles(RolUsuario.ADMIN)
+  @Get()
+  findAll(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+  ) {
+    return this.usuariosService.findAll(page, limit);
   }
 
   @Get(':id')

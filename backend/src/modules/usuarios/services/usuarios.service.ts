@@ -47,6 +47,20 @@ export class UsuariosService {
     return this.sanitize(usuario);
   }
 
+  async findAll(page: number, limit: number) {
+    const [data, total] = await this.usuariosRepository.findAndCount({
+      skip: (page - 1) * limit,
+      take: limit,
+      order: { fecha_registro: 'DESC' },
+    });
+    return {
+      data: data.map((usuario) => this.sanitize(usuario)),
+      total,
+      page,
+      limit,
+    };
+  }
+
   async findByEmail(email: string) {
     return this.usuariosRepository.findOneBy({ email });
   }
