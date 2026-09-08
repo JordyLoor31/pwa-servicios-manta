@@ -1,8 +1,8 @@
 import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, ILike } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { Usuario, RolUsuario } from '../entities/usuario.entity';
+import { Usuario, RolUsuario, EstadoUsuario } from '../entities/usuario.entity';
 import { CreateUsuarioDto } from '../dtos/create-usuario.dto';
 
 @Injectable()
@@ -47,8 +47,16 @@ export class UsuariosService {
     return this.sanitize(usuario);
   }
 
-  async findAll(page: number, limit: number) {
+  async findAll(page: number, limit: number, busqueda?: string) {
+    const where = busqueda
+      ? [
+          { nombres: ILike(`%${busqueda}%`) },
+          { apellidos: ILike(`%${busqueda}%`) },
+          { email: ILike(`%${busqueda}%`) },
+        ]
+      : undefined;
     const [data, total] = await this.usuariosRepository.findAndCount({
+      where,
       skip: (page - 1) * limit,
       take: limit,
       order: { fecha_registro: 'DESC' },
@@ -59,6 +67,16 @@ export class UsuariosService {
       page,
       limit,
     };
+  }
+
+  async cambiarEstado(id: string, estado: EstadoUsuario) {
+    const usuario = await this.usuariosRepository.findOneBy({ id });
+    if (!usuario) {
+      throw new NotFoundException(`Usuario con id ${id} no encontrado`);
+    }
+    usuario.estado = estado;
+    const updated = await this.usuariosRepository.save(usuario);
+    return this.sanitize(updated);
   }
 
   async findByEmail(email: string) {
