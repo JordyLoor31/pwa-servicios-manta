@@ -9,3 +9,4 @@ frontend/dist/
 !.env.example
 .pnpm-store/
 .vscode/
+SECURITY-README.md

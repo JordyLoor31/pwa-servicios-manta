@@ -1,0 +1,19 @@
+FROM node:22-alpine AS builder
+RUN corepack enable && corepack prepare pnpm@latest --activate
+WORKDIR /usr/src/app
+COPY package.json pnpm-lock.yaml .npmrc ./
+RUN pnpm install --frozen-lockfile || (pnpm approve-builds --all && pnpm install --frozen-lockfile)
+ENV CI=true
+COPY . .
+RUN pnpm run build
+
+FROM node:22-alpine AS runtime
+RUN corepack enable && corepack prepare pnpm@latest --activate
+ENV NODE_ENV=production
+WORKDIR /usr/src/app
+COPY package.json pnpm-lock.yaml .npmrc ./
+RUN pnpm install --frozen-lockfile --prod || (pnpm approve-builds --all && pnpm install --frozen-lockfile --prod) && pnpm store prune && rm -rf /root/.local/share/pnpm
+COPY --from=builder /usr/src/app/dist ./dist
+EXPOSE 3000
+USER node
+CMD ["node", "dist/main.js"]
