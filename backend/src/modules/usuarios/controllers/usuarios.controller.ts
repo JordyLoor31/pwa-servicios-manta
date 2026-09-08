@@ -1,4 +1,5 @@
 import { Controller, ForbiddenException, Get, Post, Body, Param, ParseUUIDPipe, Query, DefaultValuePipe, ParseIntPipe, Patch } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { UsuariosService } from '../services/usuarios.service';
 import { CreateUsuarioDto } from '../dtos/create-usuario.dto';
 import { UpdateEstadoUsuarioDto } from '../dtos/update-estado-usuario.dto';
@@ -12,6 +13,7 @@ export class UsuariosController {
   constructor(private readonly usuariosService: UsuariosService) {}
 
   @Public()
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @Post()
   create(@Body() createUsuarioDto: CreateUsuarioDto) {
     return this.usuariosService.createPublic(createUsuarioDto);
