@@ -36,7 +36,7 @@ docker compose up --build
 
 - Backend: http://localhost:3000
 - Frontend: http://localhost:5173
-- PostgreSQL: `127.0.0.1:5432` (solo accesible desde localhost)
+- PostgreSQL: solo accesible por la red interna de Docker (no expone puertos al host). Las migraciones se aplican automáticamente al arrancar el backend.
 
 Al actualizar `docker-compose.yml` o los `Dockerfile.dev`, reconstruir con `docker compose up --build`.
 

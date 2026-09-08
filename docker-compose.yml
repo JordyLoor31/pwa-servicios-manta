@@ -9,6 +9,7 @@ services:
     volumes:
       - ./backend:/usr/src/app
       - /usr/src/app/node_modules
+    command: pnpm run start:docker
     environment:
       - PORT=3000
       - DB_HOST=postgres
@@ -23,8 +24,6 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: servicios_manta_db
-    ports:
-      - "127.0.0.1:5432:5432"
     environment:
       POSTGRES_USER: ${DB_USER:-servicios_manta}
       POSTGRES_PASSWORD: ${DB_PASS:-servicios_manta_2024}
