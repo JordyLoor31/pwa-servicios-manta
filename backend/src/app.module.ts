@@ -16,6 +16,7 @@ import { Usuario } from './modules/usuarios/entities/usuario.entity';
 import { PerfilTecnico } from './modules/perfiles-tecnico/entities/perfil-tecnico.entity';
 import { DisponibilidadTecnico } from './modules/perfiles-tecnico/entities/disponibilidad-tecnico.entity';
 import { CertificacionTecnico } from './modules/perfiles-tecnico/entities/certificacion-tecnico.entity';
+import { TecnicoCategoria } from './modules/perfiles-tecnico/entities/tecnico-categoria.entity';
 import { Categoria } from './modules/categorias/entities/categoria.entity';
 import { CategoriaServicio } from './modules/categorias/entities/categoria-servicio.entity';
 import { TarifaCategoria } from './modules/categorias/entities/tarifa-categoria.entity';
@@ -32,7 +33,7 @@ import { TarifaCategoria } from './modules/categorias/entities/tarifa-categoria.
         username: config.get<string>('DB_USER'),
         password: config.get<string>('DB_PASS'),
         database: config.get<string>('DB_NAME'),
-        entities: [Usuario, PerfilTecnico, DisponibilidadTecnico, CertificacionTecnico, Categoria, CategoriaServicio, TarifaCategoria],
+        entities: [Usuario, PerfilTecnico, DisponibilidadTecnico, CertificacionTecnico, TecnicoCategoria, Categoria, CategoriaServicio, TarifaCategoria],
         synchronize: false,
       }),
     }),

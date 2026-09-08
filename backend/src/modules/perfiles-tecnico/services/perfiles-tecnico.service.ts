@@ -1,7 +1,9 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { PerfilTecnico } from '../entities/perfil-tecnico.entity';
+import { TecnicoCategoria } from '../entities/tecnico-categoria.entity';
+import { CategoriaServicio } from '../../categorias/entities/categoria-servicio.entity';
 import { CreatePerfilTecnicoDto } from '../dtos/create-perfil-tecnico.dto';
 import { UpdatePerfilTecnicoDto } from '../dtos/update-perfil-tecnico.dto';
 import { CalificarPerfilTecnicoDto } from '../dtos/calificar-perfil-tecnico.dto';
@@ -11,6 +13,10 @@ export class PerfilesTecnicoService {
   constructor(
     @InjectRepository(PerfilTecnico)
     private readonly perfilesRepository: Repository<PerfilTecnico>,
+    @InjectRepository(TecnicoCategoria)
+    private readonly tecnicoCategoriaRepository: Repository<TecnicoCategoria>,
+    @InjectRepository(CategoriaServicio)
+    private readonly categoriasRepository: Repository<CategoriaServicio>,
   ) {}
 
   async create(dto: CreatePerfilTecnicoDto) {
@@ -121,5 +127,41 @@ export class PerfilesTecnicoService {
       1,
     );
     return this.findOne(usuarioId);
+  }
+
+  async obtenerCategorias(usuarioId: string) {
+    await this.findOne(usuarioId);
+    const filas = await this.tecnicoCategoriaRepository.find({
+      where: { tecnico_id: usuarioId },
+      select: { categoria_id: true },
+    });
+    if (filas.length === 0) {
+      return [];
+    }
+    const ids = filas.map((fila) => fila.categoria_id);
+    return this.categoriasRepository.find({
+      where: { id: In(ids) },
+      order: { nombre: 'ASC' },
+    });
+  }
+
+  async reemplazarCategorias(usuarioId: string, categoriaIds: string[]) {
+    await this.findOne(usuarioId);
+    const unicas = [...new Set(categoriaIds)];
+    if (unicas.length > 0) {
+      const encontradas = await this.categoriasRepository.count({
+        where: { id: In(unicas) },
+      });
+      if (encontradas !== unicas.length) {
+        throw new BadRequestException('Una o más categorías no existen');
+      }
+    }
+    await this.tecnicoCategoriaRepository.delete({ tecnico_id: usuarioId });
+    if (unicas.length > 0) {
+      await this.tecnicoCategoriaRepository.insert(
+        unicas.map((categoriaId) => ({ tecnico_id: usuarioId, categoria_id: categoriaId })),
+      );
+    }
+    return this.obtenerCategorias(usuarioId);
   }
 }

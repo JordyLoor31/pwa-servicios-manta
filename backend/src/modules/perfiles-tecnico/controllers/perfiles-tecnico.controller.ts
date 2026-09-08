@@ -14,6 +14,7 @@ import { PerfilesTecnicoService } from '../services/perfiles-tecnico.service';
 import { CreatePerfilTecnicoDto } from '../dtos/create-perfil-tecnico.dto';
 import { UpdatePerfilTecnicoDto } from '../dtos/update-perfil-tecnico.dto';
 import { CalificarPerfilTecnicoDto } from '../dtos/calificar-perfil-tecnico.dto';
+import { ReemplazarCategoriasDto } from '../dtos/reemplazar-categorias.dto';
 import { Public } from '../../auth/decorators/public.decorator';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { CurrentUser, type AuthenticatedUser } from '../../auth/decorators/current-user.decorator';
@@ -97,6 +98,23 @@ export class PerfilesTecnicoController {
   ) {
     this.asegurarPropioOAdmin(user, usuarioId);
     return this.perfilesTecnicoService.registrarServicioCompletado(usuarioId);
+  }
+
+  @Roles(RolUsuario.TECNICO, RolUsuario.ADMIN)
+  @Put(':usuarioId/categorias')
+  reemplazarCategorias(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('usuarioId', ParseUUIDPipe) usuarioId: string,
+    @Body() dto: ReemplazarCategoriasDto,
+  ) {
+    this.asegurarPropioOAdmin(user, usuarioId);
+    return this.perfilesTecnicoService.reemplazarCategorias(usuarioId, dto.categoria_ids);
+  }
+
+  @Public()
+  @Get(':usuarioId/categorias')
+  obtenerCategorias(@Param('usuarioId', ParseUUIDPipe) usuarioId: string) {
+    return this.perfilesTecnicoService.obtenerCategorias(usuarioId);
   }
 
   private asegurarPropioOAdmin(user: AuthenticatedUser, usuarioId: string) {
