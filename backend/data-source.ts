@@ -6,6 +6,7 @@ import { DisponibilidadTecnico } from './src/modules/perfiles-tecnico/entities/d
 import { CertificacionTecnico } from './src/modules/perfiles-tecnico/entities/certificacion-tecnico.entity';
 import { Categoria } from './src/modules/categorias/entities/categoria.entity';
 import { CategoriaServicio } from './src/modules/categorias/entities/categoria-servicio.entity';
+import { TarifaCategoria } from './src/modules/categorias/entities/tarifa-categoria.entity';
 
 config();
 
@@ -16,6 +17,6 @@ export default new DataSource({
   username: process.env.DB_USER,
   password: process.env.DB_PASS,
   database: process.env.DB_NAME,
-  entities: [Usuario, PerfilTecnico, DisponibilidadTecnico, CertificacionTecnico, Categoria, CategoriaServicio],
+  entities: [Usuario, PerfilTecnico, DisponibilidadTecnico, CertificacionTecnico, Categoria, CategoriaServicio, TarifaCategoria],
   migrations: ['src/migrations/*.ts'],
 });
