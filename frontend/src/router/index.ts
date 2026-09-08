@@ -3,6 +3,7 @@ import LoginView from '../views/auth/LoginView.vue'
 import RegisterView from '../views/auth/RegisterView.vue'
 import HomeView from '../views/home/HomeView.vue'
 import PerfilTecnicoView from '../views/perfil/PerfilTecnicoView.vue'
+import CategoriasView from '../views/admin/CategoriasView.vue'
 import { tieneToken, leerUsuario, type RolUsuario } from '../composables/auth/useAuthz'
 
 declare module 'vue-router' {
@@ -17,6 +18,7 @@ const router = createRouter({
   routes: [
     { path: '/', name: 'home', component: HomeView },
     { path: '/perfil', name: 'perfil', component: PerfilTecnicoView, meta: { roles: ['tecnico'] } },
+    { path: '/categorias', name: 'categorias', component: CategoriasView, meta: { roles: ['admin'] } },
     { path: '/login', name: 'login', component: LoginView, meta: { publica: true } },
     { path: '/registro', name: 'registro', component: RegisterView, meta: { publica: true } },
   ],

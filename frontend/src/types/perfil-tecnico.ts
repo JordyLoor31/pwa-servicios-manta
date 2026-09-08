@@ -5,13 +5,7 @@ export interface PerfilTecnico {
   radio_cobertura_km: number | null
 }
 
-export interface CategoriaServicio {
-  id: string
-  nombre: string
-  descripcion: string | null
-  icono: string | null
-  activa: boolean
-}
+export type { CategoriaServicio } from './categorias'
 
 export interface TarifaCategoria {
   id: string
