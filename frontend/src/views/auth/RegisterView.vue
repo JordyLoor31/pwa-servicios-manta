@@ -1,59 +1,39 @@
 ﻿<script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useToast } from 'primevue/usetoast'
 import Card from 'primevue/card'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Label from 'primevue/label'
 import Select from 'primevue/select'
 import Toast from 'primevue/toast'
-import { api } from '../../services/api'
+import { useAuth } from '../../composables/useAuth'
+import type { RolUsuario } from '../../composables/useAuthz'
 
 const router = useRouter()
-const toast = useToast()
-const cargando = ref(false)
+const { cargando, registro } = useAuth()
 
 const nombres = ref('')
 const apellidos = ref('')
 const email = ref('')
 const password = ref('')
 const telefono = ref('')
-const rol = ref('cliente')
+const rol = ref<RolUsuario>('cliente')
 
 const roles = [
   { label: 'Cliente', value: 'cliente' },
   { label: 'Técnico', value: 'tecnico' },
 ]
 
-async function onRegister() {
-  cargando.value = true
-  try {
-    await api.post('/usuarios', {
-      nombres: nombres.value,
-      apellidos: apellidos.value,
-      email: email.value,
-      password: password.value,
-      telefono: telefono.value || undefined,
-      rol: rol.value,
-    })
-    toast.add({
-      severity: 'success',
-      summary: 'Cuenta creada',
-      detail: 'Ya puedes iniciar sesión.',
-      life: 3000,
-    })
-    router.push('/login')
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: error instanceof Error ? error.message : 'No se pudo crear la cuenta',
-      life: 4000,
-    })
-  } finally {
-    cargando.value = false
-  }
+function onRegister() {
+  registro({
+    nombres: nombres.value,
+    apellidos: apellidos.value,
+    email: email.value,
+    password: password.value,
+    telefono: telefono.value || undefined,
+    rol: rol.value,
+  })
 }
 
 function goToLogin() {
@@ -65,8 +45,8 @@ function goToLogin() {
   <div class="flex min-h-screen items-center justify-center p-4">
     <Toast />
     <Card class="w-full max-w-md">
-      <template #title>Create your account</template>
-      <template #subtitle>Join Manta Servicios to get started.</template>
+      <template #title>Crea tu cuenta</template>
+      <template #subtitle>Únete a Servicios Manta para empezar.</template>
       <template #content>
         <form class="mt-3 space-y-4" @submit.prevent="onRegister">
           <div class="flex flex-col gap-2">
@@ -78,11 +58,11 @@ function goToLogin() {
             <InputText id="apellidos" v-model="apellidos" type="text" />
           </div>
           <div class="flex flex-col gap-2">
-            <Label for="email">Email</Label>
+            <Label for="email">Correo electrónico</Label>
             <InputText id="email" v-model="email" type="email" />
           </div>
           <div class="flex flex-col gap-2">
-            <Label for="password">Password</Label>
+            <Label for="password">Contraseña</Label>
             <InputText id="password" v-model="password" type="password" />
           </div>
           <div class="flex flex-col gap-2">
@@ -97,10 +77,10 @@ function goToLogin() {
       </template>
       <template #footer>
         <div class="flex flex-col gap-4">
-          <Button severity="warn" class="w-full" :loading="cargando" @click="onRegister">Create account</Button>
+          <Button severity="warn" class="w-full" :loading="cargando" @click="onRegister">Crear cuenta</Button>
           <div class="mt-2 text-center text-sm text-muted">
-            Already have an account?
-            <Button variant="link" class="p-0" @click="goToLogin">Sign in</Button>
+            ¿Ya tienes cuenta?
+            <Button variant="link" class="p-0" @click="goToLogin">Inicia sesión</Button>
           </div>
         </div>
       </template>
