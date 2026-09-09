@@ -16,6 +16,8 @@ import { UpdatePerfilTecnicoDto } from '../dtos/update-perfil-tecnico.dto';
 import { CalificarPerfilTecnicoDto } from '../dtos/calificar-perfil-tecnico.dto';
 import { ReemplazarCategoriasDto } from '../dtos/reemplazar-categorias.dto';
 import { ReemplazarDisponibilidadDto } from '../dtos/reemplazar-disponibilidad.dto';
+import { CrearCertificacionDto } from '../dtos/crear-certificacion.dto';
+import { RevisarCertificacionDto } from '../dtos/revisar-certificacion.dto';
 import { Public } from '../../auth/decorators/public.decorator';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { CurrentUser, type AuthenticatedUser } from '../../auth/decorators/current-user.decorator';
@@ -143,6 +145,43 @@ export class PerfilesTecnicoController {
   ) {
     this.asegurarPropioOAdmin(user, usuarioId);
     return this.perfilesTecnicoService.eliminarDisponibilidad(usuarioId);
+  }
+
+  @Public()
+  @Get(':usuarioId/certificaciones')
+  obtenerCertificaciones(@Param('usuarioId', ParseUUIDPipe) usuarioId: string) {
+    return this.perfilesTecnicoService.obtenerCertificaciones(usuarioId);
+  }
+
+  @Roles(RolUsuario.TECNICO, RolUsuario.ADMIN)
+  @Post(':usuarioId/certificaciones')
+  agregarCertificacion(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('usuarioId', ParseUUIDPipe) usuarioId: string,
+    @Body() dto: CrearCertificacionDto,
+  ) {
+    this.asegurarPropioOAdmin(user, usuarioId);
+    return this.perfilesTecnicoService.agregarCertificacion(usuarioId, dto);
+  }
+
+  @Roles(RolUsuario.TECNICO, RolUsuario.ADMIN)
+  @Delete(':usuarioId/certificaciones/:certificacionId')
+  eliminarCertificacion(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('usuarioId', ParseUUIDPipe) usuarioId: string,
+    @Param('certificacionId', ParseUUIDPipe) certificacionId: string,
+  ) {
+    this.asegurarPropioOAdmin(user, usuarioId);
+    return this.perfilesTecnicoService.eliminarCertificacion(usuarioId, certificacionId);
+  }
+
+  @Roles(RolUsuario.ADMIN)
+  @Put(':usuarioId/certificaciones/:certificacionId/revisar')
+  revisarCertificacion(
+    @Param('certificacionId', ParseUUIDPipe) certificacionId: string,
+    @Body() dto: RevisarCertificacionDto,
+  ) {
+    return this.perfilesTecnicoService.revisarCertificacion(certificacionId, dto);
   }
 
   private asegurarPropioOAdmin(user: AuthenticatedUser, usuarioId: string) {

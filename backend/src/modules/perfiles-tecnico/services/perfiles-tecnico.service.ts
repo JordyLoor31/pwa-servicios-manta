@@ -3,12 +3,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { PerfilTecnico } from '../entities/perfil-tecnico.entity';
 import { DisponibilidadTecnico } from '../entities/disponibilidad-tecnico.entity';
+import { CertificacionTecnico, EstadoCertificacion } from '../entities/certificacion-tecnico.entity';
 import { TecnicoCategoria } from '../entities/tecnico-categoria.entity';
 import { CategoriaServicio } from '../../categorias/entities/categoria-servicio.entity';
 import { CreatePerfilTecnicoDto } from '../dtos/create-perfil-tecnico.dto';
 import { UpdatePerfilTecnicoDto } from '../dtos/update-perfil-tecnico.dto';
 import { CalificarPerfilTecnicoDto } from '../dtos/calificar-perfil-tecnico.dto';
 import { SlotDisponibilidadDto } from '../dtos/reemplazar-disponibilidad.dto';
+import { CrearCertificacionDto } from '../dtos/crear-certificacion.dto';
+import { RevisarCertificacionDto } from '../dtos/revisar-certificacion.dto';
 
 @Injectable()
 export class PerfilesTecnicoService {
@@ -19,6 +22,8 @@ export class PerfilesTecnicoService {
     private readonly tecnicoCategoriaRepository: Repository<TecnicoCategoria>,
     @InjectRepository(DisponibilidadTecnico)
     private readonly disponibilidadRepository: Repository<DisponibilidadTecnico>,
+    @InjectRepository(CertificacionTecnico)
+    private readonly certificacionesRepository: Repository<CertificacionTecnico>,
     @InjectRepository(CategoriaServicio)
     private readonly categoriasRepository: Repository<CategoriaServicio>,
   ) {}
@@ -208,5 +213,48 @@ export class PerfilesTecnicoService {
       throw new BadRequestException('hora_fin debe ser posterior a hora_inicio');
     }
     return { dia_semana: slot.dia_semana, hora_inicio: inicio, hora_fin: fin };
+  }
+
+  async obtenerCertificaciones(usuarioId: string) {
+    await this.findOne(usuarioId);
+    return this.certificacionesRepository.find({
+      where: { tecnico_id: usuarioId },
+      order: { fecha_creacion: 'DESC' },
+    });
+  }
+
+  async agregarCertificacion(usuarioId: string, dto: CrearCertificacionDto) {
+    await this.findOne(usuarioId);
+    return this.certificacionesRepository.save({
+      tecnico_id: usuarioId,
+      tipo_documento: dto.tipo_documento.trim(),
+      url_documento: dto.url_documento.trim(),
+      estado: EstadoCertificacion.PENDIENTE,
+    });
+  }
+
+  async eliminarCertificacion(usuarioId: string, certificacionId: string) {
+    await this.findOne(usuarioId);
+    const resultado = await this.certificacionesRepository.delete({
+      id: certificacionId,
+      tecnico_id: usuarioId,
+    });
+    if (!resultado.affected) {
+      throw new NotFoundException('Certificación no encontrada');
+    }
+    return { id: certificacionId, eliminado: true };
+  }
+
+  async revisarCertificacion(certificacionId: string, dto: RevisarCertificacionDto) {
+    const certificacion = await this.certificacionesRepository.findOneBy({ id: certificacionId });
+    if (!certificacion) {
+      throw new NotFoundException('Certificación no encontrada');
+    }
+    if (dto.estado === EstadoCertificacion.PENDIENTE) {
+      throw new BadRequestException('La revisión debe aprobar o rechazar la certificación');
+    }
+    certificacion.estado = dto.estado;
+    certificacion.fecha_revision = new Date();
+    return this.certificacionesRepository.save(certificacion);
   }
 }
