@@ -5,6 +5,7 @@ import HomeView from '../views/home/HomeView.vue'
 import PerfilTecnicoView from '../views/perfil/PerfilTecnicoView.vue'
 import CategoriasView from '../views/admin/CategoriasView.vue'
 import UsuariosView from '../views/admin/UsuariosView.vue'
+import MisDireccionesView from '../views/direcciones/MisDireccionesView.vue'
 import { tieneToken, leerUsuario, type RolUsuario } from '../composables/auth/useAuthz'
 
 declare module 'vue-router' {
@@ -21,6 +22,12 @@ const router = createRouter({
     { path: '/perfil', name: 'perfil', component: PerfilTecnicoView, meta: { roles: ['tecnico'] } },
     { path: '/categorias', name: 'categorias', component: CategoriasView, meta: { roles: ['admin'] } },
     { path: '/usuarios', name: 'usuarios', component: UsuariosView, meta: { roles: ['admin'] } },
+    {
+      path: '/direcciones',
+      name: 'direcciones',
+      component: MisDireccionesView,
+      meta: { roles: ['cliente', 'tecnico', 'admin'] },
+    },
     { path: '/login', name: 'login', component: LoginView, meta: { publica: true } },
     { path: '/registro', name: 'registro', component: RegisterView, meta: { publica: true } },
   ],

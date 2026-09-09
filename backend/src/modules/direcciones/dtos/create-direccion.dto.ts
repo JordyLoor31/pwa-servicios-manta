@@ -1,0 +1,33 @@
+import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength } from 'class-validator';
+
+export class CreateDireccionDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  etiqueta?: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(255)
+  direccion_texto: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  referencia?: string;
+
+  @IsNumber()
+  latitud: number;
+
+  @IsNumber()
+  longitud: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  ciudad?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  es_principal?: boolean;
+}
