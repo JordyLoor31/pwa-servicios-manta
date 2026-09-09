@@ -2,11 +2,13 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { PerfilTecnico } from '../entities/perfil-tecnico.entity';
+import { DisponibilidadTecnico } from '../entities/disponibilidad-tecnico.entity';
 import { TecnicoCategoria } from '../entities/tecnico-categoria.entity';
 import { CategoriaServicio } from '../../categorias/entities/categoria-servicio.entity';
 import { CreatePerfilTecnicoDto } from '../dtos/create-perfil-tecnico.dto';
 import { UpdatePerfilTecnicoDto } from '../dtos/update-perfil-tecnico.dto';
 import { CalificarPerfilTecnicoDto } from '../dtos/calificar-perfil-tecnico.dto';
+import { SlotDisponibilidadDto } from '../dtos/reemplazar-disponibilidad.dto';
 
 @Injectable()
 export class PerfilesTecnicoService {
@@ -15,6 +17,8 @@ export class PerfilesTecnicoService {
     private readonly perfilesRepository: Repository<PerfilTecnico>,
     @InjectRepository(TecnicoCategoria)
     private readonly tecnicoCategoriaRepository: Repository<TecnicoCategoria>,
+    @InjectRepository(DisponibilidadTecnico)
+    private readonly disponibilidadRepository: Repository<DisponibilidadTecnico>,
     @InjectRepository(CategoriaServicio)
     private readonly categoriasRepository: Repository<CategoriaServicio>,
   ) {}
@@ -163,5 +167,46 @@ export class PerfilesTecnicoService {
       );
     }
     return this.obtenerCategorias(usuarioId);
+  }
+
+  async obtenerDisponibilidad(usuarioId: string) {
+    await this.findOne(usuarioId);
+    return this.disponibilidadRepository.find({
+      where: { tecnico_id: usuarioId },
+      order: { dia_semana: 'ASC', hora_inicio: 'ASC' },
+    });
+  }
+
+  async reemplazarDisponibilidad(usuarioId: string, slots: SlotDisponibilidadDto[]) {
+    await this.findOne(usuarioId);
+    const normalizados = slots.map((slot) =>
+      this.normalizarSlot(slot),
+    );
+    normalizados.sort(
+      (a, b) => a.dia_semana - b.dia_semana || a.hora_inicio.localeCompare(b.hora_inicio),
+    );
+    await this.disponibilidadRepository.delete({ tecnico_id: usuarioId });
+    if (normalizados.length > 0) {
+      await this.disponibilidadRepository.insert(
+        normalizados.map((slot) => ({ tecnico_id: usuarioId, ...slot })),
+      );
+    }
+    return this.obtenerDisponibilidad(usuarioId);
+  }
+
+  async eliminarDisponibilidad(usuarioId: string) {
+    await this.findOne(usuarioId);
+    await this.disponibilidadRepository.delete({ tecnico_id: usuarioId });
+    return { tecnico_id: usuarioId, eliminado: true };
+  }
+
+  private normalizarSlot(slot: SlotDisponibilidadDto) {
+    const horas = (valor: string) => (valor.length === 5 ? `${valor}:00` : valor);
+    const inicio = horas(slot.hora_inicio);
+    const fin = horas(slot.hora_fin);
+    if (fin <= inicio) {
+      throw new BadRequestException('hora_fin debe ser posterior a hora_inicio');
+    }
+    return { dia_semana: slot.dia_semana, hora_inicio: inicio, hora_fin: fin };
   }
 }

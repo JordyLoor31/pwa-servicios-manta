@@ -6,6 +6,7 @@ import PerfilTecnicoView from '../views/perfil/PerfilTecnicoView.vue'
 import CategoriasView from '../views/admin/CategoriasView.vue'
 import UsuariosView from '../views/admin/UsuariosView.vue'
 import MisDireccionesView from '../views/direcciones/MisDireccionesView.vue'
+import MiDisponibilidadView from '../views/disponibilidad/MiDisponibilidadView.vue'
 import { tieneToken, leerUsuario, type RolUsuario } from '../composables/auth/useAuthz'
 
 declare module 'vue-router' {
@@ -27,6 +28,12 @@ const router = createRouter({
       name: 'direcciones',
       component: MisDireccionesView,
       meta: { roles: ['cliente', 'tecnico', 'admin'] },
+    },
+    {
+      path: '/disponibilidad',
+      name: 'disponibilidad',
+      component: MiDisponibilidadView,
+      meta: { roles: ['tecnico'] },
     },
     { path: '/login', name: 'login', component: LoginView, meta: { publica: true } },
     { path: '/registro', name: 'registro', component: RegisterView, meta: { publica: true } },

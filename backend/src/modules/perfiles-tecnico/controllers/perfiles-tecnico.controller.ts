@@ -15,6 +15,7 @@ import { CreatePerfilTecnicoDto } from '../dtos/create-perfil-tecnico.dto';
 import { UpdatePerfilTecnicoDto } from '../dtos/update-perfil-tecnico.dto';
 import { CalificarPerfilTecnicoDto } from '../dtos/calificar-perfil-tecnico.dto';
 import { ReemplazarCategoriasDto } from '../dtos/reemplazar-categorias.dto';
+import { ReemplazarDisponibilidadDto } from '../dtos/reemplazar-disponibilidad.dto';
 import { Public } from '../../auth/decorators/public.decorator';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { CurrentUser, type AuthenticatedUser } from '../../auth/decorators/current-user.decorator';
@@ -115,6 +116,33 @@ export class PerfilesTecnicoController {
   @Get(':usuarioId/categorias')
   obtenerCategorias(@Param('usuarioId', ParseUUIDPipe) usuarioId: string) {
     return this.perfilesTecnicoService.obtenerCategorias(usuarioId);
+  }
+
+  @Public()
+  @Get(':usuarioId/disponibilidad')
+  obtenerDisponibilidad(@Param('usuarioId', ParseUUIDPipe) usuarioId: string) {
+    return this.perfilesTecnicoService.obtenerDisponibilidad(usuarioId);
+  }
+
+  @Roles(RolUsuario.TECNICO, RolUsuario.ADMIN)
+  @Put(':usuarioId/disponibilidad')
+  reemplazarDisponibilidad(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('usuarioId', ParseUUIDPipe) usuarioId: string,
+    @Body() dto: ReemplazarDisponibilidadDto,
+  ) {
+    this.asegurarPropioOAdmin(user, usuarioId);
+    return this.perfilesTecnicoService.reemplazarDisponibilidad(usuarioId, dto.disponibilidad);
+  }
+
+  @Roles(RolUsuario.TECNICO, RolUsuario.ADMIN)
+  @Delete(':usuarioId/disponibilidad')
+  eliminarDisponibilidad(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('usuarioId', ParseUUIDPipe) usuarioId: string,
+  ) {
+    this.asegurarPropioOAdmin(user, usuarioId);
+    return this.perfilesTecnicoService.eliminarDisponibilidad(usuarioId);
   }
 
   private asegurarPropioOAdmin(user: AuthenticatedUser, usuarioId: string) {

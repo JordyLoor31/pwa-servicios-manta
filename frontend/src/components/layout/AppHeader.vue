@@ -38,6 +38,7 @@ const menu = computed(() => {
   }
   if (hasAnyRole('tecnico')) {
     filas.push({ label: 'Mi perfil', icon: 'pi pi-user', ruta: '/perfil' })
+    filas.push({ label: 'Mi disponibilidad', icon: 'pi pi-clock', ruta: '/disponibilidad' })
   }
   if (hasAnyRole('cliente', 'tecnico', 'admin')) {
     filas.push({ label: 'Mis direcciones', icon: 'pi pi-map-marker', ruta: '/direcciones' })
