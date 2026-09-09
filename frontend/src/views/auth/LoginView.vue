@@ -1,18 +1,32 @@
 ﻿<script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Card from 'primevue/card'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Label from 'primevue/label'
 import Toast from 'primevue/toast'
+import { useToast } from 'primevue/usetoast'
 import { useAuth } from '../../composables/auth/useAuth'
 
 const router = useRouter()
+const toast = useToast()
 const { cargando, login } = useAuth()
 
 const email = ref('')
 const password = ref('')
+
+onMounted(() => {
+  if (sessionStorage.getItem('sesion_expirada') === '1') {
+    sessionStorage.removeItem('sesion_expirada')
+    toast.add({
+      severity: 'warn',
+      summary: 'Sesión expirada',
+      detail: 'Tu sesión ya no es válida. Por favor, inicia sesión de nuevo.',
+      life: 5000,
+    })
+  }
+})
 
 function onLogin() {
   login(email.value, password.value)

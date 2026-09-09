@@ -34,6 +34,11 @@ async function bootstrap() {
         return;
       }
 
+      if (!isProduction && /^https?:\/\/192\.168\.\d{1,3}\.\d{1,3}(:\d+)?$/.test(origin)) {
+        callback(null, true);
+        return;
+      }
+
       callback(new Error('Origen no permitido por CORS'));
     },
     credentials: true,

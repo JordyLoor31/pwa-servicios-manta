@@ -1,3 +1,5 @@
+import { cerrarSesion } from '../composables/auth/useAuthz'
+
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
 interface ApiErrorBody {
@@ -36,6 +38,14 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const message = Array.isArray(body?.message)
       ? body.message.join(', ')
       : body?.message ?? 'Error inesperado'
+
+    if (response.status === 401) {
+      cerrarSesion()
+      sessionStorage.setItem('sesion_expirada', '1')
+      window.location.href = '/login'
+      throw new ApiError(response.status, message)
+    }
+
     throw new ApiError(response.status, message)
   }
 
