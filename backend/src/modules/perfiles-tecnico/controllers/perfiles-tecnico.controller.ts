@@ -2,13 +2,16 @@ import {
   BadRequestException,
   Body,
   Controller,
+  DefaultValuePipe,
   Delete,
   ForbiddenException,
   Get,
   Param,
+  ParseIntPipe,
   ParseUUIDPipe,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import { PerfilesTecnicoService } from '../services/perfiles-tecnico.service';
 import { CreatePerfilTecnicoDto } from '../dtos/create-perfil-tecnico.dto';
@@ -37,6 +40,22 @@ export class PerfilesTecnicoController {
       dto.usuario_id = user.id;
     }
     return this.perfilesTecnicoService.create(dto);
+  }
+
+  @Roles(RolUsuario.ADMIN)
+  @Get('admin')
+  listarAdmin(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number,
+    @Query('q', new DefaultValuePipe('')) q: string,
+  ) {
+    return this.perfilesTecnicoService.listarTecnicosAdmin(page, limit, q || undefined);
+  }
+
+  @Roles(RolUsuario.ADMIN)
+  @Get('admin/:usuarioId')
+  detalleAdmin(@Param('usuarioId', ParseUUIDPipe) usuarioId: string) {
+    return this.perfilesTecnicoService.detalleTecnicoAdmin(usuarioId);
   }
 
   @Public()

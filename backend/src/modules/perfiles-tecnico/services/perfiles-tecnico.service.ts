@@ -1,11 +1,12 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, Repository, ILike } from 'typeorm';
 import { PerfilTecnico } from '../entities/perfil-tecnico.entity';
 import { DisponibilidadTecnico } from '../entities/disponibilidad-tecnico.entity';
 import { CertificacionTecnico, EstadoCertificacion } from '../entities/certificacion-tecnico.entity';
 import { TecnicoCategoria } from '../entities/tecnico-categoria.entity';
 import { CategoriaServicio } from '../../categorias/entities/categoria-servicio.entity';
+import { Usuario } from '../../usuarios/entities/usuario.entity';
 import { CreatePerfilTecnicoDto } from '../dtos/create-perfil-tecnico.dto';
 import { UpdatePerfilTecnicoDto } from '../dtos/update-perfil-tecnico.dto';
 import { CalificarPerfilTecnicoDto } from '../dtos/calificar-perfil-tecnico.dto';
@@ -256,5 +257,59 @@ export class PerfilesTecnicoService {
     certificacion.estado = dto.estado;
     certificacion.fecha_revision = new Date();
     return this.certificacionesRepository.save(certificacion);
+  }
+
+  async listarTecnicosAdmin(page: number, limit: number, busqueda?: string) {
+    const qb = this.perfilesRepository
+      .createQueryBuilder('p')
+      .innerJoin(Usuario, 'u', 'u.id = p.usuario_id')
+      .select([
+        'u.id AS id',
+        'u.nombres AS nombres',
+        'u.apellidos AS apellidos',
+        'u.email AS email',
+        'u.telefono AS telefono',
+        'u.estado AS usuario_estado',
+        'u.fecha_registro AS fecha_registro',
+        'p.verificado AS verificado',
+        'p.fecha_verificacion AS fecha_verificacion',
+        'p.biografia AS biografia',
+        'p.anios_experiencia AS anios_experiencia',
+        'p.radio_cobertura_km AS radio_cobertura_km',
+        'p.calificacion_promedio AS calificacion_promedio',
+        'p.total_servicios_completados AS total_servicios_completados',
+      ]);
+    if (busqueda) {
+      qb.andWhere(
+        '(u.nombres ILIKE :q OR u.apellidos ILIKE :q OR u.email ILIKE :q)',
+        { q: `%${busqueda}%` },
+      );
+    }
+    const total = await qb.getCount();
+    const filas = await qb
+      .orderBy('u.fecha_registro', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getRawMany();
+    return {
+      data: filas.map((fila) => ({
+        ...fila,
+        calificacion_promedio: Number(fila.calificacion_promedio),
+        radio_cobertura_km: fila.radio_cobertura_km === null ? null : Number(fila.radio_cobertura_km),
+      })),
+      total,
+      page,
+      limit,
+    };
+  }
+
+  async detalleTecnicoAdmin(usuarioId: string) {
+    await this.findOne(usuarioId);
+    const [perfil, categorias, certificaciones] = await Promise.all([
+      this.findOne(usuarioId),
+      this.obtenerCategorias(usuarioId),
+      this.obtenerCertificaciones(usuarioId),
+    ]);
+    return { perfil, categorias, certificaciones };
   }
 }
