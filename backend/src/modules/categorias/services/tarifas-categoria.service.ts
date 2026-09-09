@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TarifaCategoria } from '../entities/tarifa-categoria.entity';
+import { CategoriaServicio } from '../entities/categoria-servicio.entity';
 import { CreateTarifaCategoriaDto } from '../dtos/create-tarifa-categoria.dto';
 import { UpdateTarifaCategoriaDto } from '../dtos/update-tarifa-categoria.dto';
 
@@ -29,6 +30,28 @@ export class TarifasCategoriaService {
 
   async findAll() {
     return this.tarifasRepository.find({ order: { categoria_id: 'ASC' } });
+  }
+
+  async findAllAdmin() {
+    const filas = await this.tarifasRepository
+      .createQueryBuilder('t')
+      .innerJoin(CategoriaServicio, 'c', 'c.id = t.categoria_id')
+      .select([
+        't.id AS id',
+        't.categoria_id AS categoria_id',
+        't.precio_base AS precio_base',
+        't.unidad_cobro AS unidad_cobro',
+        't.fecha_actualizacion AS fecha_actualizacion',
+        'c.nombre AS categoria_nombre',
+        'c.icono AS categoria_icono',
+        'c.activa AS categoria_activa',
+      ])
+      .orderBy('c.nombre', 'ASC')
+      .getRawMany();
+    return filas.map((fila) => ({
+      ...fila,
+      precio_base: Number(fila.precio_base),
+    }));
   }
 
   async findOne(id: string) {

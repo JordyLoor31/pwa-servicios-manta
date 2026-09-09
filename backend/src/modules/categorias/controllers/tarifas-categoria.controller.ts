@@ -16,6 +16,12 @@ export class TarifasCategoriaController {
     return this.tarifasCategoriaService.create(dto);
   }
 
+  @Roles(RolUsuario.ADMIN)
+  @Get('admin')
+  findAllAdmin() {
+    return this.tarifasCategoriaService.findAllAdmin();
+  }
+
   @Public()
   @Get()
   findAll() {
