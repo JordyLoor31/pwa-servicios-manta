@@ -1,6 +1,5 @@
-import { Column, Entity, JoinColumn, JoinTable, ManyToMany, OneToMany, OneToOne, PrimaryColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, OneToMany, OneToOne, PrimaryColumn } from 'typeorm';
 import { Usuario } from '../../usuarios/entities/usuario.entity';
-import { Categoria } from '../../categorias/entities/categoria.entity';
 import { DisponibilidadTecnico } from './disponibilidad-tecnico.entity';
 import { CertificacionTecnico } from './certificacion-tecnico.entity';
 
@@ -18,14 +17,6 @@ export class PerfilTecnico {
 
   @OneToMany(() => CertificacionTecnico, (certificacion) => certificacion.perfil)
   certificaciones: CertificacionTecnico[];
-
-  @ManyToMany(() => Categoria, (categoria) => categoria.tecnicos)
-  @JoinTable({
-    name: 'tecnico_categorias',
-    joinColumn: { name: 'tecnico_id', referencedColumnName: 'usuario_id' },
-    inverseJoinColumn: { name: 'categoria_id', referencedColumnName: 'id' },
-  })
-  categorias: Categoria[];
 
   @Column({ type: 'text', nullable: true })
   biografia: string | null;
