@@ -18,6 +18,7 @@ import { CreatePerfilTecnicoDto } from '../dtos/create-perfil-tecnico.dto';
 import { UpdatePerfilTecnicoDto } from '../dtos/update-perfil-tecnico.dto';
 import { CalificarPerfilTecnicoDto } from '../dtos/calificar-perfil-tecnico.dto';
 import { ReemplazarCategoriasDto } from '../dtos/reemplazar-categorias.dto';
+import { ReemplazarTarifasDto } from '../dtos/reemplazar-tarifas.dto';
 import { ReemplazarDisponibilidadDto } from '../dtos/reemplazar-disponibilidad.dto';
 import { CrearCertificacionDto } from '../dtos/crear-certificacion.dto';
 import { RevisarCertificacionDto } from '../dtos/revisar-certificacion.dto';
@@ -137,6 +138,23 @@ export class PerfilesTecnicoController {
   @Get(':usuarioId/categorias')
   obtenerCategorias(@Param('usuarioId', ParseUUIDPipe) usuarioId: string) {
     return this.perfilesTecnicoService.obtenerCategorias(usuarioId);
+  }
+
+  @Public()
+  @Get(':usuarioId/tarifas')
+  obtenerTarifas(@Param('usuarioId', ParseUUIDPipe) usuarioId: string) {
+    return this.perfilesTecnicoService.obtenerTarifas(usuarioId);
+  }
+
+  @Roles(RolUsuario.TECNICO, RolUsuario.ADMIN)
+  @Put(':usuarioId/tarifas')
+  reemplazarTarifas(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('usuarioId', ParseUUIDPipe) usuarioId: string,
+    @Body() dto: ReemplazarTarifasDto,
+  ) {
+    this.asegurarPropioOAdmin(user, usuarioId);
+    return this.perfilesTecnicoService.reemplazarTarifas(usuarioId, dto.tarifas);
   }
 
   @Public()

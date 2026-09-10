@@ -46,7 +46,6 @@ const menu = computed(() => {
   }
   if (hasAnyRole('admin')) {
     filas.push({ label: 'Categorías', icon: 'pi pi-tags', ruta: '/categorias' })
-    filas.push({ label: 'Tarifas', icon: 'pi pi-dollar', ruta: '/tarifas' })
     filas.push({ label: 'Usuarios', icon: 'pi pi-users', ruta: '/usuarios' })
     filas.push({ label: 'Técnicos', icon: 'pi pi-wrench', ruta: '/tecnicos' })
   }

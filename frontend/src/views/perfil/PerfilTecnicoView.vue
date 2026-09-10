@@ -26,7 +26,7 @@ const {
   radioCobertura,
   biografia,
   categorias,
-  tarifas,
+  tarifasPorCategoria,
   categoriasSeleccionadas,
   irAPaso,
   guardarDatos,
@@ -102,8 +102,8 @@ const {
             <StepPanel :value="2">
               <CategoriasTecnicoStep
                 v-model:seleccion="categoriasSeleccionadas"
+                v-model:tarifas="tarifasPorCategoria"
                 :categorias="categorias"
-                :tarifas="tarifas"
                 :cargando="cargandoCatalogo"
                 :guardando="guardandoCategorias"
                 @volver="irAPaso(1)"

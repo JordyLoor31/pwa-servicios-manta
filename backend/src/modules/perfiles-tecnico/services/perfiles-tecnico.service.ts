@@ -5,6 +5,7 @@ import { PerfilTecnico } from '../entities/perfil-tecnico.entity';
 import { DisponibilidadTecnico } from '../entities/disponibilidad-tecnico.entity';
 import { CertificacionTecnico, EstadoCertificacion } from '../entities/certificacion-tecnico.entity';
 import { TecnicoCategoria } from '../entities/tecnico-categoria.entity';
+import { TarifaTecnico } from '../entities/tarifa-tecnico.entity';
 import { CategoriaServicio } from '../../categorias/entities/categoria-servicio.entity';
 import { Usuario } from '../../usuarios/entities/usuario.entity';
 import { CreatePerfilTecnicoDto } from '../dtos/create-perfil-tecnico.dto';
@@ -13,6 +14,7 @@ import { CalificarPerfilTecnicoDto } from '../dtos/calificar-perfil-tecnico.dto'
 import { SlotDisponibilidadDto } from '../dtos/reemplazar-disponibilidad.dto';
 import { CrearCertificacionDto } from '../dtos/crear-certificacion.dto';
 import { RevisarCertificacionDto } from '../dtos/revisar-certificacion.dto';
+import { RangoPrecioDto } from '../dtos/reemplazar-tarifas.dto';
 
 @Injectable()
 export class PerfilesTecnicoService {
@@ -27,6 +29,8 @@ export class PerfilesTecnicoService {
     private readonly certificacionesRepository: Repository<CertificacionTecnico>,
     @InjectRepository(CategoriaServicio)
     private readonly categoriasRepository: Repository<CategoriaServicio>,
+    @InjectRepository(TarifaTecnico)
+    private readonly tarifasRepository: Repository<TarifaTecnico>,
   ) {}
 
   async create(dto: CreatePerfilTecnicoDto) {
@@ -173,6 +177,51 @@ export class PerfilesTecnicoService {
       );
     }
     return this.obtenerCategorias(usuarioId);
+  }
+
+  async obtenerTarifas(usuarioId: string) {
+    await this.findOne(usuarioId);
+    return this.tarifasRepository.find({
+      where: { tecnico_id: usuarioId },
+      order: { categoria_id: 'ASC' },
+    });
+  }
+
+  async reemplazarTarifas(usuarioId: string, tarifas: RangoPrecioDto[]) {
+    await this.findOne(usuarioId);
+    const unicas: RangoPrecioDto[] = [];
+    const vistas = new Set<string>();
+    for (const tarifa of tarifas) {
+      if (tarifa.precio_max < tarifa.precio_min) {
+        throw new BadRequestException(
+          'precio_max debe ser mayor o igual a precio_min en cada categoría',
+        );
+      }
+      if (!vistas.has(tarifa.categoria_id)) {
+        vistas.add(tarifa.categoria_id);
+        unicas.push(tarifa);
+      }
+    }
+    if (unicas.length > 0) {
+      const encontradas = await this.categoriasRepository.count({
+        where: { id: In(unicas.map((t) => t.categoria_id)) },
+      });
+      if (encontradas !== unicas.length) {
+        throw new BadRequestException('Una o más categorías no existen');
+      }
+    }
+    await this.tarifasRepository.delete({ tecnico_id: usuarioId });
+    if (unicas.length > 0) {
+      await this.tarifasRepository.insert(
+        unicas.map((tarifa) => ({
+          tecnico_id: usuarioId,
+          categoria_id: tarifa.categoria_id,
+          precio_min: tarifa.precio_min,
+          precio_max: tarifa.precio_max,
+        })),
+      );
+    }
+    return this.obtenerTarifas(usuarioId);
   }
 
   async obtenerDisponibilidad(usuarioId: string) {

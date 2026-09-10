@@ -7,9 +7,14 @@ export interface PerfilTecnico {
 
 export type { CategoriaServicio } from './categorias'
 
-export interface TarifaCategoria {
-  id: string
+export interface RangoPrecio {
+  min: string
+  max: string
+}
+
+export interface TarifaTecnico {
+  tecnico_id: string
   categoria_id: string
-  precio_base: number
-  unidad_cobro: string
+  precio_min: number
+  precio_max: number
 }

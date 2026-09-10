@@ -12,7 +12,7 @@ export function usePerfilTecnicoForm() {
 
   const {
     categorias,
-    tarifas,
+    tarifasPorCategoria,
     categoriasSeleccionadas,
     cargandoCatalogo,
     guardandoCategorias,
@@ -104,7 +104,7 @@ export function usePerfilTecnicoForm() {
     radioCobertura,
     biografia,
     categorias,
-    tarifas,
+    tarifasPorCategoria,
     categoriasSeleccionadas,
     alternarCategoria,
     irAPaso,

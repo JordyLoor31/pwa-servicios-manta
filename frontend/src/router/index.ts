@@ -6,7 +6,6 @@ import PerfilTecnicoView from '../views/perfil/PerfilTecnicoView.vue'
 import CategoriasView from '../views/admin/CategoriasView.vue'
 import UsuariosView from '../views/admin/UsuariosView.vue'
 import TecnicosView from '../views/admin/TecnicosView.vue'
-import TarifasView from '../views/admin/TarifasView.vue'
 import MisDireccionesView from '../views/direcciones/MisDireccionesView.vue'
 import MiDisponibilidadView from '../views/disponibilidad/MiDisponibilidadView.vue'
 import MisCertificacionesView from '../views/certificaciones/MisCertificacionesView.vue'
@@ -27,7 +26,6 @@ const router = createRouter({
     { path: '/categorias', name: 'categorias', component: CategoriasView, meta: { roles: ['admin'] } },
     { path: '/usuarios', name: 'usuarios', component: UsuariosView, meta: { roles: ['admin'] } },
     { path: '/tecnicos', name: 'tecnicos', component: TecnicosView, meta: { roles: ['admin'] } },
-    { path: '/tarifas', name: 'tarifas', component: TarifasView, meta: { roles: ['admin'] } },
     {
       path: '/direcciones',
       name: 'direcciones',
