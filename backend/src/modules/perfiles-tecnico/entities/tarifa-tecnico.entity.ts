@@ -33,6 +33,9 @@ export class TarifaTecnico {
   })
   precio_max: number;
 
+  @Column({ type: 'varchar', length: 20, default: 'por_servicio' })
+  unidad_cobro: 'por_hora' | 'por_servicio';
+
   @ManyToOne(() => PerfilTecnico)
   @JoinColumn({ name: 'tecnico_id' })
   perfil: PerfilTecnico;

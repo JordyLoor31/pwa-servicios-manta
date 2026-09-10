@@ -58,6 +58,7 @@ html.dark {
   --color-ink: #f7f9fa;
   --color-muted: #a9b6bf;
   --color-card: #172a35;
+  --color-turquoise-600: #52d4d4;
 }
 
 html.dark body {
@@ -118,6 +119,21 @@ html.dark .p-select {
   background-color: #0d1c26 !important;
   color: #f7f9fa !important;
   border-color: #2d4657 !important;
+}
+
+html.dark .p-checkbox-box {
+  background-color: #0d1c26 !important;
+  border-color: #2d4657 !important;
+}
+
+html.dark .p-checkbox-box .p-checkbox-icon {
+  color: #ffffff !important;
+}
+
+html.dark .p-checkbox-box.p-highlight,
+html.dark .p-checkbox-checked .p-checkbox-box {
+  background-color: #006d8f !important;
+  border-color: #006d8f !important;
 }
 
 html.dark .p-select .p-select-option,

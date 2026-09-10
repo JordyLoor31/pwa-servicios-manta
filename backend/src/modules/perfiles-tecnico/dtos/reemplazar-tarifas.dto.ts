@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsNumber, IsUUID, Max, Min, ValidateNested } from 'class-validator';
+import { IsArray, IsIn, IsNumber, IsUUID, Max, Min, ValidateNested } from 'class-validator';
 
 export class RangoPrecioDto {
   @IsUUID()
@@ -14,6 +14,9 @@ export class RangoPrecioDto {
   @Min(0)
   @Max(999999.99)
   precio_max: number;
+
+  @IsIn(['por_hora', 'por_servicio'])
+  unidad_cobro: 'por_hora' | 'por_servicio' = 'por_servicio';
 }
 
 export class ReemplazarTarifasDto {

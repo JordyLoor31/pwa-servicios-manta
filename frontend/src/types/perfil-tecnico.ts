@@ -7,9 +7,12 @@ export interface PerfilTecnico {
 
 export type { CategoriaServicio } from './categorias'
 
+export type UnidadCobro = 'por_hora' | 'por_servicio'
+
 export interface RangoPrecio {
   min: string
   max: string
+  unidad: UnidadCobro
 }
 
 export interface TarifaTecnico {
@@ -17,4 +20,5 @@ export interface TarifaTecnico {
   categoria_id: string
   precio_min: number
   precio_max: number
+  unidad_cobro: UnidadCobro
 }

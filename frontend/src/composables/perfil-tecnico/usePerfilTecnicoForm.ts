@@ -16,7 +16,6 @@ export function usePerfilTecnicoForm() {
     categoriasSeleccionadas,
     cargandoCatalogo,
     guardandoCategorias,
-    alternarCategoria,
     guardarCategorias: guardarCategoriasTecnico,
   } = useCategoriasTecnico()
 
@@ -106,7 +105,6 @@ export function usePerfilTecnicoForm() {
     categorias,
     tarifasPorCategoria,
     categoriasSeleccionadas,
-    alternarCategoria,
     irAPaso,
     guardarDatos,
     guardarCategorias,

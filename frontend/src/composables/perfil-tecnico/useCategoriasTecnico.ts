@@ -2,7 +2,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useAuthz } from '../auth/useAuthz'
 import { api } from '../../services/api'
-import type { CategoriaServicio, RangoPrecio, TarifaTecnico } from '../../types/perfil-tecnico'
+import type { CategoriaServicio, RangoPrecio, TarifaTecnico, UnidadCobro } from '../../types/perfil-tecnico'
 
 export function useCategoriasTecnico() {
   const toast = useToast()
@@ -33,6 +33,7 @@ export function useCategoriasTecnico() {
         tarifasPorCategoria[tarifa.categoria_id] = {
           min: String(tarifa.precio_min),
           max: String(tarifa.precio_max),
+          unidad: tarifa.unidad_cobro ?? 'por_servicio',
         }
       }
     } catch {
@@ -46,24 +47,16 @@ export function useCategoriasTecnico() {
       const seleccion = await api.get<CategoriaServicio[]>(`/perfiles-tecnico/${usuarioId.value}/categorias`)
       categoriasSeleccionadas.value = seleccion.map((categoria) => categoria.id)
       for (const categoria of seleccion) {
-        if (!tarifasPorCategoria[categoria.id]) {
-          tarifasPorCategoria[categoria.id] = { min: '', max: '' }
-        }
+        asegurarEntrada(categoria.id)
       }
     } catch {
       categoriasSeleccionadas.value = []
     }
   }
 
-  function alternarCategoria(id: string) {
-    const indice = categoriasSeleccionadas.value.indexOf(id)
-    if (indice >= 0) {
-      categoriasSeleccionadas.value.splice(indice, 1)
-    } else {
-      categoriasSeleccionadas.value.push(id)
-      if (!tarifasPorCategoria[id]) {
-        tarifasPorCategoria[id] = { min: '', max: '' }
-      }
+  function asegurarEntrada(id: string) {
+    if (!tarifasPorCategoria[id]) {
+      tarifasPorCategoria[id] = { min: '', max: '', unidad: 'por_servicio' }
     }
   }
 
@@ -109,6 +102,7 @@ export function useCategoriasTecnico() {
           categoria_id: categoriaId,
           precio_min: Number(rango.min),
           precio_max: Number(rango.max),
+          unidad_cobro: (rango.unidad || 'por_servicio') as UnidadCobro,
         }
       })
       await api.put(`/perfiles-tecnico/${id}/tarifas`, { tarifas })
@@ -143,7 +137,6 @@ export function useCategoriasTecnico() {
     tarifasPorCategoria,
     cargandoCatalogo,
     guardandoCategorias,
-    alternarCategoria,
     guardarCategorias,
   }
 }

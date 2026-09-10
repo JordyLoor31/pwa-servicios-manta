@@ -218,6 +218,7 @@ export class PerfilesTecnicoService {
           categoria_id: tarifa.categoria_id,
           precio_min: tarifa.precio_min,
           precio_max: tarifa.precio_max,
+          unidad_cobro: tarifa.unidad_cobro ?? 'por_servicio',
         })),
       );
     }

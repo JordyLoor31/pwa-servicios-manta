@@ -1,7 +1,11 @@
 <script setup lang="ts">
+import { watch } from 'vue'
 import Button from 'primevue/button'
+import Checkbox from 'primevue/checkbox'
 import InputText from 'primevue/inputtext'
-import type { CategoriaServicio, RangoPrecio } from '../../types/perfil-tecnico'
+import Label from 'primevue/label'
+import Select from 'primevue/select'
+import type { CategoriaServicio, RangoPrecio, UnidadCobro } from '../../types/perfil-tecnico'
 
 const props = defineProps<{
   categorias: CategoriaServicio[]
@@ -14,16 +18,25 @@ const tarifas = defineModel<Record<string, RangoPrecio>>('tarifas', { default: (
 
 defineEmits<{ volver: []; continuar: [] }>()
 
-function alternar(id: string) {
-  const indice = seleccion.value.indexOf(id)
-  if (indice >= 0) {
-    seleccion.value.splice(indice, 1)
-  } else {
-    seleccion.value.push(id)
-    if (!tarifas.value[id]) {
-      tarifas.value[id] = { min: '', max: '' }
+const unidades = [
+  { label: 'Por hora', value: 'por_hora' },
+  { label: 'Por servicio', value: 'por_servicio' },
+]
+
+watch(
+  seleccion,
+  (ids) => {
+    for (const id of ids) {
+      if (!tarifas.value[id]) {
+        tarifas.value[id] = { min: '', max: '', unidad: 'por_servicio' }
+      }
     }
-  }
+  },
+  { deep: true },
+)
+
+function unidadLabel(unidad: UnidadCobro): string {
+  return unidad === 'por_hora' ? 'por hora' : 'por servicio'
 }
 
 function rangoTexto(id: string): string | null {
@@ -33,7 +46,7 @@ function rangoTexto(id: string): string | null {
   const max = Number(rango.max)
   if (rango.min.trim() === '' || rango.max.trim() === '') return null
   if (isNaN(min) || isNaN(max)) return 'Rango inválido'
-  return `$${min.toFixed(2)} – $${max.toFixed(2)}`
+  return `${min.toFixed(2)} – ${max.toFixed(2)} $ / ${unidadLabel(rango.unidad || 'por_servicio')}`
 }
 </script>
 
@@ -41,7 +54,7 @@ function rangoTexto(id: string): string | null {
   <div class="mx-auto flex min-h-64 max-w-lg flex-col gap-4">
     <div class="mb-2 text-center text-lg font-semibold text-ink">Categorías y servicios</div>
     <p class="text-center text-sm text-muted">
-      Selecciona las categorías que ofreces y define tu rango de precio (mínimo–máximo).
+      Selecciona las categorías que ofreces y define tu rango de precio (mínimo–máximo) y la unidad de cobro.
     </p>
 
     <div v-if="cargando" class="flex justify-center py-8 text-2xl text-pacific">
@@ -59,40 +72,39 @@ function rangoTexto(id: string): string | null {
         class="rounded-xl border-2 bg-card p-3 transition-colors"
         :class="
           seleccion.includes(categoria.id)
-            ? 'border-pacific bg-pacific-50'
+            ? 'border-pacific bg-pacific/5'
             : 'border-ink/15 hover:border-pacific/50'
         "
       >
-        <button
-          type="button"
-          class="flex w-full items-center justify-between gap-3 text-left"
-          @click="alternar(categoria.id)"
-        >
-          <div class="flex min-w-0 items-center gap-3">
-            <span
-              :class="[
-                'flex h-9 w-9 shrink-0 items-center justify-center rounded-full',
-                seleccion.includes(categoria.id) ? 'bg-pacific text-white' : 'bg-cloud text-muted',
-              ]"
-            >
-              <i :class="categoria.icono ?? 'pi pi-tag'" class="pi" />
-            </span>
-            <div class="min-w-0">
-              <div class="truncate font-semibold text-ink">{{ categoria.nombre }}</div>
-              <div v-if="categoria.descripcion" class="truncate text-xs text-muted">{{ categoria.descripcion }}</div>
-            </div>
+        <div class="flex items-start gap-3">
+          <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-cloud text-muted">
+            <i :class="categoria.icono ?? 'pi pi-tag'" class="pi" />
           </div>
-          <span class="shrink-0 text-sm font-semibold" :class="rangoTexto(categoria.id) ? 'text-turquoise-600' : 'text-muted'">
-            {{ rangoTexto(categoria.id) ?? 'Sin precio' }}
+          <div class="flex min-w-0 flex-1 items-center gap-3">
+            <Checkbox
+              v-model="seleccion"
+              :input-id="categoria.id"
+              name="categorias"
+              :value="categoria.id"
+            />
+            <Label :for="categoria.id" class="min-w-0 cursor-pointer">
+              <div class="truncate font-semibold text-ink">{{ categoria.nombre }}</div>
+              <div v-if="categoria.descripcion" class="truncate text-xs text-muted">
+                {{ categoria.descripcion }}
+              </div>
+            </Label>
+          </div>
+          <span
+            v-if="seleccion.includes(categoria.id)"
+            class="shrink-0 self-center text-xs font-semibold text-turquoise-600"
+          >
+            {{ rangoTexto(categoria.id) }}
           </span>
-          <i
-            :class="seleccion.includes(categoria.id) ? 'pi-check-circle text-pacific' : 'pi-circle text-muted'"
-          />
-        </button>
+        </div>
 
         <div
           v-if="seleccion.includes(categoria.id)"
-          class="mt-3 grid grid-cols-2 gap-3 border-t border-pacific/15 pt-3"
+          class="mt-3 grid gap-3 border-t border-pacific/20 pt-3 sm:grid-cols-3"
         >
           <label class="flex flex-col gap-1">
             <span class="text-xs font-medium text-ink">Precio mín.</span>
@@ -101,6 +113,15 @@ function rangoTexto(id: string): string | null {
           <label class="flex flex-col gap-1">
             <span class="text-xs font-medium text-ink">Precio máx.</span>
             <InputText v-model="tarifas[categoria.id].max" inputmode="decimal" placeholder="$ 0.00" />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-xs font-medium text-ink">Unidad</span>
+            <Select
+              v-model="tarifas[categoria.id].unidad"
+              :options="unidades"
+              option-label="label"
+              option-value="value"
+            />
           </label>
         </div>
       </div>
