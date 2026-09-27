@@ -2,7 +2,7 @@ import { onBeforeUnmount, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import { api } from '../../services/api'
-import { iniciarSesion, type UsuarioSesion } from './useAuthz'
+import { iniciarSesion, type RolUsuario, type UsuarioSesion } from './useAuthz'
 import { useTheme } from '../useTheme'
 
 interface LoginResponse {
@@ -64,11 +64,14 @@ export function useGoogleAuth() {
   const cargando = ref(false)
   let contenedor: HTMLElement | null = null
 
-  async function procesarCredencial(credencial?: string) {
+  async function procesarCredencial(credencial?: string, rol?: RolUsuario) {
     if (!credencial) return
     cargando.value = true
     try {
-      const data = await api.post<LoginResponse>('/auth/google', { id_token: credencial })
+      const data = await api.post<LoginResponse>('/auth/google', {
+        id_token: credencial,
+        ...(rol ? { rol } : {}),
+      })
       iniciarSesion(data.access_token, data.user)
       router.push('/')
     } catch (error) {
@@ -83,7 +86,7 @@ export function useGoogleAuth() {
     }
   }
 
-  async function renderizar(el: HTMLElement) {
+  async function renderizar(el: HTMLElement, rol?: RolUsuario) {
     contenedor = el
     if (!CLIENT_ID) return
     try {
@@ -95,7 +98,7 @@ export function useGoogleAuth() {
         client_id: CLIENT_ID,
         auto_select: false,
         callback: (respuesta) => {
-          void procesarCredencial(respuesta.credential)
+          void procesarCredencial(respuesta.credential, rol)
         },
       })
       googleId.renderButton(contenedor, {

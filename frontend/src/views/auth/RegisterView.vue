@@ -6,8 +6,10 @@ import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Label from 'primevue/label'
 import Select from 'primevue/select'
+import Divider from 'primevue/divider'
 import Toast from 'primevue/toast'
 import { useAuth } from '../../composables/auth/useAuth'
+import GoogleAuthButton from '../../components/auth/GoogleAuthButton.vue'
 import type { RolUsuario } from '../../composables/auth/useAuthz'
 
 const router = useRouter()
@@ -48,6 +50,10 @@ function goToLogin() {
       <template #title>Crea tu cuenta</template>
       <template #subtitle>Únete a Servicios Manta para empezar.</template>
       <template #content>
+        <GoogleAuthButton :rol="rol" />
+        <Divider align="center" class="my-4">
+          <span class="text-sm text-muted">o regístrate con tu correo</span>
+        </Divider>
         <form class="mt-3 space-y-4" @submit.prevent="onRegister">
           <div class="flex flex-col gap-2">
             <Label for="nombres">Nombres</Label>

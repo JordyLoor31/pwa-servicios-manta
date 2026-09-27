@@ -9,19 +9,16 @@ import Divider from 'primevue/divider'
 import Toast from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import { useAuth } from '../../composables/auth/useAuth'
-import { useGoogleAuth } from '../../composables/auth/useGoogleAuth'
+import GoogleAuthButton from '../../components/auth/GoogleAuthButton.vue'
 
 const router = useRouter()
 const toast = useToast()
 const { cargando, login } = useAuth()
-const { renderizar: renderizarGoogle } = useGoogleAuth()
 
 const email = ref('')
 const password = ref('')
-const googleBtn = ref<HTMLElement | null>(null)
 
 onMounted(() => {
-  if (googleBtn.value) void renderizarGoogle(googleBtn.value)
   if (sessionStorage.getItem('sesion_expirada') === '1') {
     sessionStorage.removeItem('sesion_expirada')
     toast.add({
@@ -49,7 +46,7 @@ function goToRegister() {
       <template #title>Bienvenido de nuevo</template>
       <template #subtitle>Inicia sesión con tu correo para continuar.</template>
       <template #content>
-        <div ref="googleBtn" class="google-btn-container w-full"></div>
+        <GoogleAuthButton />
         <Divider align="center" class="my-4">
           <span class="text-sm text-muted">o continúa con tu correo</span>
         </Divider>
