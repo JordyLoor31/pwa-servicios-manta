@@ -19,8 +19,26 @@ export interface UsuarioSesion {
 
 const TOKEN_KEY = 'access_token'
 const USER_KEY = 'user'
+const SESION_KEY = 'sesion_creada'
+const DURACION_SESION_MS = 24 * 60 * 60 * 1000
+
+function sesionCaducadaLocal(): boolean {
+  const creada = Number(localStorage.getItem(SESION_KEY))
+  return creada <= 0 || Date.now() - creada >= DURACION_SESION_MS
+}
+
+function purgarSiCaducada(): void {
+  if (!localStorage.getItem(TOKEN_KEY)) return
+  if (sesionCaducadaLocal()) {
+    localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(USER_KEY)
+    localStorage.removeItem(SESION_KEY)
+    sessionStorage.setItem('sesion_expirada', '1')
+  }
+}
 
 export function leerUsuario(): UsuarioSesion | null {
+  purgarSiCaducada()
   const raw = localStorage.getItem(USER_KEY)
   if (!raw) return null
   try {
@@ -31,17 +49,20 @@ export function leerUsuario(): UsuarioSesion | null {
 }
 
 export function tieneToken(): boolean {
+  purgarSiCaducada()
   return Boolean(localStorage.getItem(TOKEN_KEY))
 }
 
 export function iniciarSesion(token: string, usuario: UsuarioSesion) {
   localStorage.setItem(TOKEN_KEY, token)
   localStorage.setItem(USER_KEY, JSON.stringify(usuario))
+  localStorage.setItem(SESION_KEY, String(Date.now()))
 }
 
 export function cerrarSesion() {
   localStorage.removeItem(TOKEN_KEY)
   localStorage.removeItem(USER_KEY)
+  localStorage.removeItem(SESION_KEY)
 }
 
 export function useAuthz() {
