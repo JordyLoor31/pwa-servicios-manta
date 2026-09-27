@@ -53,7 +53,7 @@ import { Direccion } from './modules/direcciones/entities/direccion.entity';
             url: databaseUrl,
             ssl: { rejectUnauthorized: false },
             entities,
-            synchronize: false,
+            synchronize: true,
           };
         }
 
