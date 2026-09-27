@@ -5,18 +5,23 @@ import Card from 'primevue/card'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Label from 'primevue/label'
+import Divider from 'primevue/divider'
 import Toast from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import { useAuth } from '../../composables/auth/useAuth'
+import { useGoogleAuth } from '../../composables/auth/useGoogleAuth'
 
 const router = useRouter()
 const toast = useToast()
 const { cargando, login } = useAuth()
+const { renderizar: renderizarGoogle } = useGoogleAuth()
 
 const email = ref('')
 const password = ref('')
+const googleBtn = ref<HTMLElement | null>(null)
 
 onMounted(() => {
+  if (googleBtn.value) void renderizarGoogle(googleBtn.value)
   if (sessionStorage.getItem('sesion_expirada') === '1') {
     sessionStorage.removeItem('sesion_expirada')
     toast.add({
@@ -44,6 +49,10 @@ function goToRegister() {
       <template #title>Bienvenido de nuevo</template>
       <template #subtitle>Inicia sesión con tu correo para continuar.</template>
       <template #content>
+        <div ref="googleBtn" class="google-btn-container w-full"></div>
+        <Divider align="center" class="my-4">
+          <span class="text-sm text-muted">o continúa con tu correo</span>
+        </Divider>
         <form class="mt-3 space-y-6" @submit.prevent="onLogin">
           <div class="flex flex-col gap-2">
             <Label for="email">Correo electrónico</Label>
