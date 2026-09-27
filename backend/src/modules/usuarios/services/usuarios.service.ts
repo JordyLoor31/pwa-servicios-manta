@@ -2,6 +2,7 @@ import { ConflictException, ForbiddenException, Injectable, NotFoundException } 
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, ILike } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { randomUUID } from 'crypto';
 import { Usuario, RolUsuario, EstadoUsuario } from '../entities/usuario.entity';
 import { CreateUsuarioDto } from '../dtos/create-usuario.dto';
 
@@ -81,6 +82,38 @@ export class UsuariosService {
 
   async findByEmail(email: string) {
     return this.usuariosRepository.findOneBy({ email });
+  }
+
+  async crearConGoogle(datos: {
+    nombres: string;
+    apellidos: string;
+    email: string;
+    rol: RolUsuario;
+    avatarUrl?: string;
+  }) {
+    const password_hash = await bcrypt.hash(randomUUID(), this.SALT_ROUNDS);
+    const usuario = this.usuariosRepository.create({
+      nombres: datos.nombres,
+      apellidos: datos.apellidos,
+      email: datos.email,
+      password_hash,
+      avatar_url: datos.avatarUrl,
+      rol: datos.rol,
+      estado: EstadoUsuario.ACTIVO,
+    });
+
+    try {
+      const saved = await this.usuariosRepository.save(usuario);
+      return saved;
+    } catch (error) {
+      if ((error as { code?: string })?.code === '23505') {
+        const existente = await this.findByEmail(datos.email);
+        if (existente) {
+          return existente;
+        }
+      }
+      throw error;
+    }
   }
 
   private sanitize(usuario: Usuario) {
