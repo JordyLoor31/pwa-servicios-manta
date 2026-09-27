@@ -34,16 +34,40 @@ import { Direccion } from './modules/direcciones/entities/direccion.entity';
     ]),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        type: 'postgres',
-        host: config.get<string>('DB_HOST'),
-        port: config.get<number>('DB_PORT'),
-        username: config.get<string>('DB_USER'),
-        password: config.get<string>('DB_PASS'),
-        database: config.get<string>('DB_NAME'),
-        entities: [Usuario, PerfilTecnico, DisponibilidadTecnico, CertificacionTecnico, TecnicoCategoria, TarifaTecnico, CategoriaServicio, Direccion],
-        synchronize: false,
-      }),
+      useFactory: (config: ConfigService) => {
+        const databaseUrl = config.get<string>('DATABASE_URL');
+        const entities = [
+          Usuario,
+          PerfilTecnico,
+          DisponibilidadTecnico,
+          CertificacionTecnico,
+          TecnicoCategoria,
+          TarifaTecnico,
+          CategoriaServicio,
+          Direccion,
+        ];
+
+        if (databaseUrl) {
+          return {
+            type: 'postgres',
+            url: databaseUrl,
+            ssl: { rejectUnauthorized: false },
+            entities,
+            synchronize: false,
+          };
+        }
+
+        return {
+          type: 'postgres',
+          host: config.get<string>('DB_HOST'),
+          port: config.get<number>('DB_PORT'),
+          username: config.get<string>('DB_USER'),
+          password: config.get<string>('DB_PASS'),
+          database: config.get<string>('DB_NAME'),
+          entities,
+          synchronize: false,
+        };
+      },
     }),
     UsuariosModule,
     AuthModule,

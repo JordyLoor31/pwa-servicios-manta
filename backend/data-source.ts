@@ -11,13 +11,36 @@ import { Direccion } from './src/modules/direcciones/entities/direccion.entity';
 
 config();
 
-export default new DataSource({
-  type: 'postgres',
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT),
-  username: process.env.DB_USER,
-  password: process.env.DB_PASS,
-  database: process.env.DB_NAME,
-  entities: [Usuario, PerfilTecnico, DisponibilidadTecnico, CertificacionTecnico, TecnicoCategoria, TarifaTecnico, CategoriaServicio, Direccion],
+const databaseUrl = process.env.DATABASE_URL;
+
+const base = {
+  type: 'postgres' as const,
+  entities: [
+    Usuario,
+    PerfilTecnico,
+    DisponibilidadTecnico,
+    CertificacionTecnico,
+    TecnicoCategoria,
+    TarifaTecnico,
+    CategoriaServicio,
+    Direccion,
+  ],
   migrations: ['src/migrations/*.ts'],
-});
+};
+
+export default new DataSource(
+  databaseUrl
+    ? {
+        ...base,
+        url: databaseUrl,
+        ssl: { rejectUnauthorized: false },
+      }
+    : {
+        ...base,
+        host: process.env.DB_HOST,
+        port: Number(process.env.DB_PORT),
+        username: process.env.DB_USER,
+        password: process.env.DB_PASS,
+        database: process.env.DB_NAME,
+      },
+);
