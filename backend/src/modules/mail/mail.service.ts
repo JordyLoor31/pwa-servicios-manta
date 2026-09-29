@@ -10,17 +10,21 @@ export class MailService {
   constructor(private readonly configService: ConfigService) {
     const host = this.configService.get<string>('SMTP_HOST');
     if (host) {
-      this.transporter = nodemailer.createTransport({
+      const options = {
         host,
         port: this.configService.get<number>('SMTP_PORT') ?? 587,
         secure: (this.configService.get<number>('SMTP_PORT') ?? 587) === 465,
+        connectionOptions: { family: 4 },
         auth: this.configService.get<string>('SMTP_USER')
           ? {
               user: this.configService.get<string>('SMTP_USER'),
               pass: this.configService.get<string>('SMTP_PASS'),
             }
           : undefined,
-      });
+      };
+      this.transporter = nodemailer.createTransport(
+        options as Parameters<typeof nodemailer.createTransport>[0],
+      );
     }
   }
 
