@@ -37,6 +37,10 @@ function onLogin() {
 function goToRegister() {
   router.push('/registro')
 }
+
+function goToRecuperar() {
+  router.push('/recuperar')
+}
 </script>
 
 <template>
@@ -58,7 +62,7 @@ function goToRegister() {
           <div class="flex flex-col gap-2">
             <div class="flex items-center justify-between">
               <Label for="password" class="flex-1">Contraseña</Label>
-              <Button variant="link" class="p-0">¿Olvidaste tu contraseña?</Button>
+              <Button variant="link" class="p-0" @click="goToRecuperar">¿Olvidaste tu contraseña?</Button>
             </div>
             <InputText id="password" v-model="password" type="password" />
           </div>

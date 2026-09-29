@@ -84,6 +84,50 @@ export class UsuariosService {
     return this.usuariosRepository.findOneBy({ email });
   }
 
+  async guardarTokenReset(id: string, reset_token_hash: string, reset_token_expira: Date) {
+    const usuario = await this.usuariosRepository.findOneBy({ id });
+    if (!usuario) {
+      throw new NotFoundException(`Usuario con id ${id} no encontrado`);
+    }
+    usuario.reset_token_hash = reset_token_hash;
+    usuario.reset_token_expira = reset_token_expira;
+    await this.usuariosRepository.save(usuario);
+    return usuario;
+  }
+
+  async buscarPorTokenReset(reset_token_hash: string) {
+    return this.usuariosRepository
+      .createQueryBuilder('usuario')
+      .addSelect(['usuario.reset_token_hash', 'usuario.reset_token_expira'])
+      .where('usuario.reset_token_hash = :hash', { hash: reset_token_hash })
+      .getOne();
+  }
+
+  async aplicarNuevaPassword(id: string, password_hash: string) {
+    const usuario = await this.usuariosRepository.findOneBy({ id });
+    if (!usuario) {
+      throw new NotFoundException(`Usuario con id ${id} no encontrado`);
+    }
+    usuario.password_hash = password_hash;
+    usuario.reset_token_hash = null;
+    usuario.reset_token_expira = null;
+    await this.usuariosRepository.save(usuario);
+    return this.sanitize(usuario);
+  }
+
+  async actualizarMiPerfil(id: string, datos: { nombres?: string; apellidos?: string; telefono?: string; avatar_url?: string }) {
+    const usuario = await this.usuariosRepository.findOneBy({ id });
+    if (!usuario) {
+      throw new NotFoundException(`Usuario con id ${id} no encontrado`);
+    }
+    if (datos.nombres !== undefined) usuario.nombres = datos.nombres;
+    if (datos.apellidos !== undefined) usuario.apellidos = datos.apellidos;
+    if (datos.telefono !== undefined) usuario.telefono = datos.telefono;
+    if (datos.avatar_url !== undefined) usuario.avatar_url = datos.avatar_url;
+    const updated = await this.usuariosRepository.save(usuario);
+    return this.sanitize(updated);
+  }
+
   async crearConGoogle(datos: {
     nombres: string;
     apellidos: string;

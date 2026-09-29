@@ -3,6 +3,7 @@ import { Throttle } from '@nestjs/throttler';
 import { UsuariosService } from '../services/usuarios.service';
 import { CreateUsuarioDto } from '../dtos/create-usuario.dto';
 import { UpdateEstadoUsuarioDto } from '../dtos/update-estado-usuario.dto';
+import { ActualizarUsuarioDto } from '../dtos/actualizar-usuario.dto';
 import { Public } from '../../auth/decorators/public.decorator';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { CurrentUser, type AuthenticatedUser } from '../../auth/decorators/current-user.decorator';
@@ -44,6 +45,14 @@ export class UsuariosController {
       throw new ForbiddenException('Solo puedes consultar tu propio perfil');
     }
     return this.usuariosService.findOne(id);
+  }
+
+  @Patch('me')
+  actualizarMiPerfil(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() actualizarUsuarioDto: ActualizarUsuarioDto,
+  ) {
+    return this.usuariosService.actualizarMiPerfil(user.id, actualizarUsuarioDto);
   }
 
   @Roles(RolUsuario.ADMIN)

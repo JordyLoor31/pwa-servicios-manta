@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   ServiceUnavailableException,
   UnauthorizedException,
@@ -7,8 +8,10 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { OAuth2Client } from 'google-auth-library';
 import * as bcrypt from 'bcrypt';
+import { createHash, randomBytes } from 'crypto';
 import { UsuariosService } from '../../usuarios/services/usuarios.service';
 import { RolUsuario, EstadoUsuario } from '../../usuarios/entities/usuario.entity';
+import { MailService } from '../../mail/mail.service';
 import { LoginDto } from '../dtos/login.dto';
 import { GoogleLoginDto } from '../dtos/google-login.dto';
 
@@ -18,7 +21,14 @@ export class AuthService {
     private readonly usuariosService: UsuariosService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly mailService: MailService,
   ) {}
+
+  private readonly EXPIRA_TOKEN_HORAS = 1;
+
+  private hashToken(token: string): string {
+    return createHash('sha256').update(token).digest('hex');
+  }
 
   async login(dto: LoginDto) {
     const usuario = await this.usuariosService.findByEmail(dto.email);
@@ -92,5 +102,43 @@ export class AuthService {
       access_token: await this.jwtService.signAsync(payload),
       user: publicUser,
     };
+  }
+
+  async solicitarRecuperacion(email: string) {
+    const usuario = await this.usuariosService.findByEmail(email);
+    if (!usuario || usuario.estado !== EstadoUsuario.ACTIVO) {
+      return { mensaje: 'Si el correo existe, recibirás un enlace para restablecer tu contraseña.' };
+    }
+
+    const token = randomBytes(32).toString('hex');
+    const expira = new Date(Date.now() + this.EXPIRA_TOKEN_HORAS * 60 * 60 * 1000);
+    await this.usuariosService.guardarTokenReset(usuario.id, this.hashToken(token), expira);
+
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+    if (!frontendUrl) {
+      throw new ServiceUnavailableException(
+        'FRONTEND_URL no está configurado. Define la URL de la aplicación para generar el enlace.',
+      );
+    }
+
+    const link = `${frontendUrl.replace(/\/$/, '')}/resetear?token=${token}`;
+    await this.mailService.enviarRecuperacion(usuario.email, usuario.nombres, link);
+
+    return { mensaje: 'Si el correo existe, recibirás un enlace para restablecer tu contraseña.' };
+  }
+
+  async restablecerPassword(token: string, nuevaPassword: string) {
+    const usuario = await this.usuariosService.buscarPorTokenReset(this.hashToken(token));
+    if (
+      !usuario ||
+      !usuario.reset_token_expira ||
+      usuario.reset_token_expira.getTime() < Date.now()
+    ) {
+      throw new BadRequestException('El enlace de recuperación es inválido o ya expiró.');
+    }
+
+    const password_hash = await bcrypt.hash(nuevaPassword, 10);
+    await this.usuariosService.aplicarNuevaPassword(usuario.id, password_hash);
+    return { mensaje: 'Contraseña actualizada correctamente. Ya puedes iniciar sesión.' };
   }
 }

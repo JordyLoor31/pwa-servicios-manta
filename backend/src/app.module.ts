@@ -14,6 +14,7 @@ import { PagosModule } from './modules/pagos/pagos.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { NotificacionesModule } from './modules/notificaciones/notificaciones.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { MailModule } from './modules/mail/mail.module';
 import { Usuario } from './modules/usuarios/entities/usuario.entity';
 import { PerfilTecnico } from './modules/perfiles-tecnico/entities/perfil-tecnico.entity';
 import { DisponibilidadTecnico } from './modules/perfiles-tecnico/entities/disponibilidad-tecnico.entity';
@@ -71,6 +72,7 @@ import { Direccion } from './modules/direcciones/entities/direccion.entity';
     }),
     UsuariosModule,
     AuthModule,
+    MailModule,
     PerfilesTecnicoModule,
     CategoriasModule,
     DireccionesModule,

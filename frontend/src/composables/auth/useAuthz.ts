@@ -59,6 +59,10 @@ export function iniciarSesion(token: string, usuario: UsuarioSesion) {
   localStorage.setItem(SESION_KEY, String(Date.now()))
 }
 
+export function actualizarSesionUsuario(usuario: UsuarioSesion) {
+  localStorage.setItem(USER_KEY, JSON.stringify(usuario))
+}
+
 export function cerrarSesion() {
   localStorage.removeItem(TOKEN_KEY)
   localStorage.removeItem(USER_KEY)

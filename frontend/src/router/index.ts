@@ -1,6 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import LoginView from '../views/auth/LoginView.vue'
 import RegisterView from '../views/auth/RegisterView.vue'
+import RecuperarPasswordView from '../views/auth/RecuperarPasswordView.vue'
+import ResetPasswordView from '../views/auth/ResetPasswordView.vue'
+import MiCuentaView from '../views/auth/MiCuentaView.vue'
 import HomeView from '../views/home/HomeView.vue'
 import PerfilTecnicoView from '../views/perfil/PerfilTecnicoView.vue'
 import CategoriasView from '../views/admin/CategoriasView.vue'
@@ -46,6 +49,14 @@ const router = createRouter({
     },
     { path: '/login', name: 'login', component: LoginView, meta: { publica: true } },
     { path: '/registro', name: 'registro', component: RegisterView, meta: { publica: true } },
+    { path: '/recuperar', name: 'recuperar', component: RecuperarPasswordView, meta: { publica: true } },
+    { path: '/resetear', name: 'resetear', component: ResetPasswordView, meta: { publica: true } },
+    {
+      path: '/cuenta',
+      name: 'cuenta',
+      component: MiCuentaView,
+      meta: { roles: ['cliente', 'tecnico', 'admin'] },
+    },
   ],
 })
 

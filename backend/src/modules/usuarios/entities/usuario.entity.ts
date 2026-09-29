@@ -50,4 +50,10 @@ export class Usuario {
 
   @UpdateDateColumn({ type: 'timestamptz' })
   fecha_actualizacion: Date;
+
+  @Column({ type: 'varchar', length: 64, nullable: true, select: false })
+  reset_token_hash: string | null;
+
+  @Column({ type: 'timestamptz', nullable: true, select: false })
+  reset_token_expira: Date | null;
 }

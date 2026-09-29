@@ -35,6 +35,9 @@ const menu = computed(() => {
   const filas: { label: string; icon: string; ruta: string }[] = [
     { label: 'Inicio', icon: 'pi pi-home', ruta: '/' },
   ]
+  if (hasAnyRole('cliente', 'tecnico', 'admin')) {
+    filas.push({ label: 'Mi cuenta', icon: 'pi pi-user-cog', ruta: '/cuenta' })
+  }
   if (hasAnyRole('cliente')) {
     filas.push({ label: 'Mis solicitudes', icon: 'pi pi-list-check', ruta: '/solicitudes' })
   }
