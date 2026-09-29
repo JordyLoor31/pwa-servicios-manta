@@ -6,11 +6,13 @@ import Button from 'primevue/button'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { useTheme } from '../../composables/useTheme'
 import { useAuthz, cerrarSesion } from '../../composables/auth/useAuthz'
+import { usePWAInstall } from '../../composables/usePWAInstall'
 
 const router = useRouter()
 const visible = ref(false)
 const { isDark, toggle } = useTheme()
 const { usuario, hasAnyRole } = useAuthz()
+const { canInstall, isIOS, showIosHint, promptInstall } = usePWAInstall()
 
 const iniciales = computed(() => {
   const u = usuario.value
@@ -126,14 +128,29 @@ function logout() {
           </button>
         </nav>
 
-        <div
-          class="mb-3 mt-auto flex items-center justify-between rounded-xl border border-pacific/10 px-3 py-2.5"
-        >
-          <span class="flex items-center gap-3 text-sm font-medium text-ink">
-            <i :class="isDark ? 'pi pi-moon' : 'pi pi-sun'" class="w-5 text-pacific" />
-            {{ isDark ? 'Modo claro' : 'Modo oscuro' }}
-          </span>
-          <ToggleSwitch :model-value="isDark" @update:model-value="toggle" aria-label="Cambiar modo oscuro" />
+        <div class="mt-auto flex flex-col gap-2">
+          <div v-if="canInstall" class="rounded-xl border border-pacific/10 px-3 py-2.5">
+            <Button
+              label="Instalar la app"
+              icon="pi pi-download"
+              class="w-full"
+              severity="primary"
+              @click="promptInstall"
+            />
+            <p v-if="showIosHint" class="mt-2 text-xs leading-relaxed text-muted">
+              En {{ isIOS ? 'iOS' : 'Android' }}: toca el botón Compartir y elige
+              «{{ isIOS ? 'Añadir a pantalla de inicio' : 'Añadir a la pantalla de inicio' }}» para instalar
+              CamelloApp.
+            </p>
+          </div>
+
+          <div class="flex items-center justify-between rounded-xl border border-pacific/10 px-3 py-2.5">
+            <span class="flex items-center gap-3 text-sm font-medium text-ink">
+              <i :class="isDark ? 'pi pi-moon' : 'pi pi-sun'" class="w-5 text-pacific" />
+              {{ isDark ? 'Modo claro' : 'Modo oscuro' }}
+            </span>
+            <ToggleSwitch :model-value="isDark" @update:model-value="toggle" aria-label="Cambiar modo oscuro" />
+          </div>
         </div>
 
         <div class="pt-4">
