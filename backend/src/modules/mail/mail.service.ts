@@ -1,31 +1,40 @@
-import { Injectable, ServiceUnavailableException } from '@nestjs/common';
+import { Injectable, OnModuleInit, ServiceUnavailableException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import * as net from 'node:net';
 import * as nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
 
 @Injectable()
-export class MailService {
-  private readonly transporter: Transporter | null = null;
+export class MailService implements OnModuleInit {
+  private transporter: Transporter | null = null;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(private readonly configService: ConfigService) {}
+
+  async onModuleInit(): Promise<void> {
     const host = this.configService.get<string>('SMTP_HOST');
-    if (host) {
-      const options = {
-        host,
-        port: this.configService.get<number>('SMTP_PORT') ?? 587,
-        secure: (this.configService.get<number>('SMTP_PORT') ?? 587) === 465,
-        connectionOptions: { family: 4 },
-        auth: this.configService.get<string>('SMTP_USER')
-          ? {
-              user: this.configService.get<string>('SMTP_USER'),
-              pass: this.configService.get<string>('SMTP_PASS'),
-            }
-          : undefined,
-      };
-      this.transporter = nodemailer.createTransport(
-        options as Parameters<typeof nodemailer.createTransport>[0],
-      );
-    }
+    if (!host) return;
+
+    const options = {
+      host,
+      port: this.configService.get<number>('SMTP_PORT') ?? 587,
+      secure: (this.configService.get<number>('SMTP_PORT') ?? 587) === 465,
+      connectionTimeout: 10000,
+      auth: this.configService.get<string>('SMTP_USER')
+        ? {
+            user: this.configService.get<string>('SMTP_USER'),
+            pass: this.configService.get<string>('SMTP_PASS'),
+          }
+        : undefined,
+      getSocket: (
+        _transportOptions: unknown,
+        callback: (err: Error | null, socket?: { socket: net.Socket }) => void,
+      ) => {
+        callback(null, { socket: new net.Socket({ family: 4 } as net.SocketConstructorOpts) });
+      },
+    };
+    this.transporter = nodemailer.createTransport(
+      options as Parameters<typeof nodemailer.createTransport>[0],
+    );
   }
 
   private get from(): string {
