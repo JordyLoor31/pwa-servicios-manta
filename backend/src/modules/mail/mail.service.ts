@@ -16,9 +16,9 @@ export class MailService implements OnModuleInit {
 
     const options = {
       host,
-      port: this.configService.get<number>('SMTP_PORT') ?? 587,
-      secure: (this.configService.get<number>('SMTP_PORT') ?? 587) === 465,
-      connectionTimeout: 10000,
+      port: this.configService.get<number>('SMTP_PORT') ?? 465,
+      secure: (this.configService.get<number>('SMTP_PORT') ?? 465) === 465,
+      connectionTimeout: 20000,
       auth: this.configService.get<string>('SMTP_USER')
         ? {
             user: this.configService.get<string>('SMTP_USER'),
