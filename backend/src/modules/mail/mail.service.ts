@@ -17,7 +17,11 @@ export class MailService {
   constructor(private readonly configService: ConfigService) {}
 
   private get clientId(): string {
-    return this.configService.get<string>('GOOGLE_CLIENT_ID') ?? '';
+    return (
+      this.configService.get<string>('GMAIL_CLIENT_ID') ??
+      this.configService.get<string>('GOOGLE_CLIENT_ID') ??
+      ''
+    );
   }
 
   private get clientSecret(): string {
