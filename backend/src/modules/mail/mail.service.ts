@@ -65,7 +65,7 @@ export class MailService {
     const raw = [
       `From: ${this.from}`,
       `To: ${email}`,
-      'Subject: Recuperación de contraseña — CamelloApp',
+      `Subject: ${this.encodeMimeHeader('Recuperación de contraseña — CamelloApp')}`,
       'MIME-Version: 1.0',
       'Content-Type: text/html; charset=UTF-8',
       '',
@@ -90,6 +90,10 @@ export class MailService {
         `Error enviando correo (${res.status}): ${JSON.stringify(data).slice(0, 300)}`,
       );
     }
+  }
+
+  private encodeMimeHeader(text: string): string {
+    return `=?UTF-8?B?${Buffer.from(text, 'utf8').toString('base64')}?=`;
   }
 
   private async obtenerAccessToken(): Promise<string> {
