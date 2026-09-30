@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from '../services/auth.service';
 import { LoginDto } from '../dtos/login.dto';
@@ -33,12 +33,19 @@ export class AuthController {
   }
 
   @Public()
-  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
   @Post('restablecer')
   restablecer(@Body() restablecerPasswordDto: RestablecerPasswordDto) {
     return this.authService.restablecerPassword(
       restablecerPasswordDto.token,
       restablecerPasswordDto.nueva_password,
     );
+  }
+
+  @Public()
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
+  @Get('reset-token/validar')
+  validarToken(@Query('token') token: string) {
+    return this.authService.validarTokenReset(token);
   }
 }

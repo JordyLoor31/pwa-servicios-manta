@@ -141,4 +141,15 @@ export class AuthService {
     await this.usuariosService.aplicarNuevaPassword(usuario.id, password_hash);
     return { mensaje: 'Contraseña actualizada correctamente. Ya puedes iniciar sesión.' };
   }
+
+  async validarTokenReset(token: string) {
+    const usuario = await this.usuariosService.buscarPorTokenReset(this.hashToken(token));
+    if (!usuario || !usuario.reset_token_expira) {
+      return { valido: false, motivo: 'invalido' };
+    }
+    if (usuario.reset_token_expira.getTime() < Date.now()) {
+      return { valido: false, motivo: 'expirado' };
+    }
+    return { valido: true };
+  }
 }

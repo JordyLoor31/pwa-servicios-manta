@@ -91,6 +91,20 @@ export function useAuth() {
     }
   }
 
+  async function validarTokenRestablecer(token: string): Promise<{
+    valido: boolean
+    motivo: 'expirado' | 'invalido' | null
+  }> {
+    try {
+      const data = await api.get<{ valido: boolean; motivo: 'expirado' | 'invalido' }>(
+        `/auth/reset-token/validar?token=${encodeURIComponent(token)}`,
+      )
+      return { valido: data.valido, motivo: data.valido ? null : data.motivo }
+    } catch {
+      return { valido: false, motivo: 'invalido' }
+    }
+  }
+
   async function restablecerContrasena(token: string, nuevaPassword: string): Promise<boolean> {
     cargando.value = true
     try {
@@ -138,5 +152,13 @@ export function useAuth() {
     }
   }
 
-  return { cargando, login, registro, solicitarRecuperacion, restablecerContrasena, actualizarMisDatos }
+  return {
+    cargando,
+    login,
+    registro,
+    solicitarRecuperacion,
+    validarTokenRestablecer,
+    restablecerContrasena,
+    actualizarMisDatos,
+  }
 }
