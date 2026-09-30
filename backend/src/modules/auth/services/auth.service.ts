@@ -24,7 +24,7 @@ export class AuthService {
     private readonly mailService: MailService,
   ) {}
 
-  private readonly EXPIRA_TOKEN_HORAS = 1;
+  private readonly EXPIRA_TOKEN_MIN = 5;
 
   private hashToken(token: string): string {
     return createHash('sha256').update(token).digest('hex');
@@ -111,7 +111,7 @@ export class AuthService {
     }
 
     const token = randomBytes(32).toString('hex');
-    const expira = new Date(Date.now() + this.EXPIRA_TOKEN_HORAS * 60 * 60 * 1000);
+    const expira = new Date(Date.now() + this.EXPIRA_TOKEN_MIN * 60 * 1000);
     await this.usuariosService.guardarTokenReset(usuario.id, this.hashToken(token), expira);
 
     const frontendUrl = this.configService.get<string>('FRONTEND_URL');

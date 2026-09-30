@@ -55,7 +55,7 @@ export class MailService {
         <h2 style="color:#006D8F;margin:0 0 8px;">Recuperación de contraseña</h2>
         <p style="color:#334155;line-height:1.6;">Hola <strong>${nombre}</strong>, recibimos una solicitud para
         restablecer tu contraseña en CamelloApp.</p>
-        <p style="color:#334155;">Este enlace es válido por <strong>1 hora</strong>:</p>
+        <p style="color:#334155;">Este enlace es válido por <strong>5 minutos</strong>:</p>
         <p style="text-align:center;margin:24px 0;">
           <a href="${link}" style="display:inline-block;background:#006D8F;color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;">Restablecer contraseña</a>
         </p>
