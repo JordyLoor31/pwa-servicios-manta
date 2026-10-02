@@ -9,8 +9,12 @@ import Tag from 'primevue/tag'
 import Textarea from 'primevue/textarea'
 import Toast from 'primevue/toast'
 import AppHeader from '../../components/layout/AppHeader.vue'
-import { useSolicitudes } from '../../composables/solicitudes/useSolicitudes'
-import type { Solicitud } from '../../types/solicitudes'
+import {
+  useSolicitudes,
+  OPCIONES_HORA,
+} from '../../composables/solicitudes/useSolicitudes'
+import { DIAS_SEMANA, nombreDia } from '../../composables/disponibilidad/useDisponibilidad'
+import type { EstadoSolicitud, Solicitud } from '../../types/solicitudes'
 import { estadoSeveridad, estadoLabel } from '../../utils/solicitudes'
 
 const {
@@ -19,6 +23,9 @@ const {
   total,
   page,
   totalPaginas,
+  filtroEstado,
+  diaBusqueda,
+  horaBusqueda,
   formAbierto,
   detalleVisible,
   solicitudActiva,
@@ -26,6 +33,7 @@ const {
   tecnicos,
   cargandoTecnicos,
   form,
+  cambiarFiltroEstado,
   abrirFormulario,
   crear,
   irPagina,
@@ -35,6 +43,15 @@ const {
   ejecutarAccion,
   cerrarConfirmacion,
 } = useSolicitudes()
+
+const FRECUENCIAS: { valor: 'todos' | EstadoSolicitud; label: string }[] = [
+  { valor: 'todos', label: 'Todos' },
+  { valor: 'pendiente', label: 'Pendiente' },
+  { valor: 'aceptada', label: 'Aceptada' },
+  { valor: 'completada', label: 'Completada' },
+  { valor: 'rechazada', label: 'Rechazada' },
+  { valor: 'cancelada', label: 'Cancelada' },
+]
 
 const placeholders = Array.from({ length: 3 }, (_, i) => ({ id: `skeleton-${i}` }))
 </script>
@@ -53,6 +70,23 @@ const placeholders = Array.from({ length: 3 }, (_, i) => ({ id: `skeleton-${i}` 
           </p>
         </div>
         <Button label="Nueva solicitud" icon="pi pi-plus" @click="abrirFormulario" />
+      </div>
+
+      <div class="mb-4 flex flex-wrap gap-2">
+        <button
+          v-for="frecuencia in FRECUENCIAS"
+          :key="frecuencia.label"
+          type="button"
+          class="rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors"
+          :class="
+            filtroEstado === frecuencia.valor
+              ? 'bg-pacific text-white'
+              : 'border border-pacific/20 bg-card text-muted hover:text-pacific'
+          "
+          @click="cambiarFiltroEstado(frecuencia.valor)"
+        >
+          {{ frecuencia.label }}
+        </button>
       </div>
 
       <div v-if="solicitudes.length === 0 && !cargando" class="py-16 text-center">
@@ -146,6 +180,33 @@ const placeholders = Array.from({ length: 3 }, (_, i) => ({ id: `skeleton-${i}` 
 
       <Dialog v-model:visible="formAbierto" header="Nueva solicitud de servicio" modal class="w-full max-w-lg">
         <div class="mt-2 flex flex-col gap-4">
+          <div class="rounded-xl bg-pacific/5 p-3 text-sm text-ink">
+            <i class="pi pi-clock mr-1 text-pacific" />
+            Mostrando técnicos disponibles el
+            <span class="font-semibold">{{ nombreDia(diaBusqueda) }}</span> a las
+            <span class="font-semibold">{{ horaBusqueda }}</span>.
+          </div>
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div class="flex flex-col gap-1.5">
+              <label for="dia" class="text-sm font-medium text-ink">Día del servicio *</label>
+              <Select
+                id="dia"
+                v-model="diaBusqueda"
+                :options="DIAS_SEMANA"
+                option-label="nombre"
+                class="w-full"
+              />
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <label for="hora" class="text-sm font-medium text-ink">Hora *</label>
+              <Select
+                id="hora"
+                v-model="horaBusqueda"
+                :options="OPCIONES_HORA"
+                class="w-full"
+              />
+            </div>
+          </div>
           <div class="flex flex-col gap-1.5">
             <label for="tecnico" class="text-sm font-medium text-ink">Técnico *</label>
             <Select
@@ -154,7 +215,7 @@ const placeholders = Array.from({ length: 3 }, (_, i) => ({ id: `skeleton-${i}` 
               :options="tecnicos"
               option-label="nombres"
               :loading="cargandoTecnicos"
-              placeholder="Elige un técnico"
+              :placeholder="tecnicos.length ? 'Elige un técnico' : 'Sin técnicos en este horario'"
               class="w-full"
             >
               <template #option="{ option }">
@@ -171,6 +232,9 @@ const placeholders = Array.from({ length: 3 }, (_, i) => ({ id: `skeleton-${i}` 
                 </div>
               </template>
             </Select>
+            <p v-if="!cargandoTecnicos && tecnicos.length === 0" class="text-xs text-muted">
+              Ningún técnico registra horario para ese día y hora. Prueba con otro horario.
+            </p>
           </div>
           <div class="flex flex-col gap-1.5">
             <label for="descripcion" class="text-sm font-medium text-ink">Describe lo que necesitas *</label>

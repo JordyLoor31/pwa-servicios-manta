@@ -85,6 +85,56 @@ export class PerfilesTecnicoService {
         calificacion_promedio: string | number;
         total_servicios_completados: string | number;
       }>();
+    return this.toDirectorio(filas);
+  }
+
+  async disponiblesPublic(dia: number, hora: string) {
+    const filas = await this.perfilesRepository
+      .createQueryBuilder('p')
+      .innerJoin(Usuario, 'u', 'u.id = p.usuario_id')
+      .innerJoin(
+        DisponibilidadTecnico,
+        'd',
+        'd.tecnico_id = p.usuario_id AND d.dia_semana = :dia',
+        { dia },
+      )
+      .select([
+        'u.id AS id',
+        'u.nombres AS nombres',
+        'u.apellidos AS apellidos',
+        'u.email AS email',
+        'p.verificado AS verificado',
+        'p.calificacion_promedio AS calificacion_promedio',
+        'p.total_servicios_completados AS total_servicios_completados',
+      ])
+      .where('u.estado = :activo', { activo: EstadoUsuario.ACTIVO })
+      .andWhere('d.hora_inicio <= :hora', { hora })
+      .andWhere('d.hora_fin > :hora', { hora })
+      .orderBy('p.calificacion_promedio', 'DESC')
+      .addOrderBy('u.nombres', 'ASC')
+      .getRawMany<{
+        id: string;
+        nombres: string;
+        apellidos: string;
+        email: string;
+        verificado: boolean;
+        calificacion_promedio: string | number;
+        total_servicios_completados: string | number;
+      }>();
+    return this.toDirectorio(filas);
+  }
+
+  private toDirectorio(
+    filas: {
+      id: string;
+      nombres: string;
+      apellidos: string;
+      email: string;
+      verificado: boolean;
+      calificacion_promedio: string | number;
+      total_servicios_completados: string | number;
+    }[],
+  ) {
     return filas.map((fila) => ({
       ...fila,
       calificacion_promedio: Number(fila.calificacion_promedio ?? 0),

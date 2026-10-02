@@ -1,9 +1,10 @@
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import { api } from '../../services/api'
 import type {
   CrearSolicitudPayload,
+  EstadoSolicitud,
   Solicitud,
   SolicitudesPaginadas,
   TecnicoDirectorio,
@@ -11,6 +12,19 @@ import type {
 import { useAuthz } from '../auth/useAuthz'
 
 const LIMITE = 20
+
+export const OPCIONES_HORA: string[] = Array.from({ length: 48 }, (_, i) => {
+  const horas = Math.floor(i / 2)
+  const minutos = i % 2 === 0 ? '00' : '30'
+  return `${String(horas).padStart(2, '0')}:${minutos}`
+})
+
+function horaActualAproximada(): string {
+  const d = new Date()
+  const horas = String(d.getHours()).padStart(2, '0')
+  const minutos = d.getMinutes() < 30 ? '00' : '30'
+  return `${horas}:${minutos}`
+}
 
 export function useSolicitudes() {
   const toast = useToast()
@@ -23,6 +37,10 @@ export function useSolicitudes() {
   const page = ref(1)
   const cargando = ref(false)
   const enviando = ref(false)
+
+  const filtroEstado = ref<'todos' | EstadoSolicitud>('todos')
+  const diaBusqueda = ref(new Date().getDay())
+  const horaBusqueda = ref(horaActualAproximada())
 
   const tecnicos = ref<TecnicoDirectorio[]>([])
   const cargandoTecnicos = ref(false)
@@ -49,9 +67,11 @@ export function useSolicitudes() {
   async function cargar() {
     cargando.value = true
     try {
-      const respuesta = await api.get<SolicitudesPaginadas>(
-        `${rutaApi()}?page=${page.value}&limit=${LIMITE}`,
-      )
+      const parametros = new URLSearchParams({ page: String(page.value), limit: String(LIMITE) })
+      if (filtroEstado.value !== 'todos') {
+        parametros.set('estado', filtroEstado.value)
+      }
+      const respuesta = await api.get<SolicitudesPaginadas>(`${rutaApi()}?${parametros.toString()}`)
       solicitudes.value = respuesta.data
       total.value = respuesta.total
     } catch (error) {
@@ -68,10 +88,19 @@ export function useSolicitudes() {
     }
   }
 
+  function cambiarFiltroEstado(estado: 'todos' | EstadoSolicitud) {
+    if (filtroEstado.value === estado) return
+    filtroEstado.value = estado
+    page.value = 1
+    cargar()
+  }
+
   async function cargarTecnicos() {
     cargandoTecnicos.value = true
     try {
-      tecnicos.value = await api.get<TecnicoDirectorio[]>('/perfiles-tecnico/directorio')
+      tecnicos.value = await api.get<TecnicoDirectorio[]>(
+        `/perfiles-tecnico/disponibles?dia=${diaBusqueda.value}&hora=${horaBusqueda.value}`,
+      )
     } catch (error) {
       toast.add({
         severity: 'error',
@@ -85,6 +114,10 @@ export function useSolicitudes() {
     }
   }
 
+  watch([diaBusqueda, horaBusqueda], () => {
+    cargarTecnicos()
+  })
+
   const form = ref({
     tecnico_id: '',
     descripcion: '',
@@ -94,9 +127,7 @@ export function useSolicitudes() {
   function abrirFormulario() {
     form.value = { tecnico_id: '', descripcion: '', direccion: '' }
     formAbierto.value = true
-    if (tecnicos.value.length === 0) {
-      cargarTecnicos()
-    }
+    cargarTecnicos()
   }
 
   async function crear() {
@@ -245,6 +276,9 @@ export function useSolicitudes() {
     totalPaginas,
     cargando,
     enviando,
+    filtroEstado,
+    diaBusqueda,
+    horaBusqueda,
     tecnicos,
     cargandoTecnicos,
     formAbierto,
@@ -258,6 +292,7 @@ export function useSolicitudes() {
     baseRuta,
     form,
     cargar,
+    cambiarFiltroEstado,
     abrirFormulario,
     crear,
     irPagina,
