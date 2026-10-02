@@ -8,6 +8,7 @@ import { TecnicoCategoria } from './src/modules/perfiles-tecnico/entities/tecnic
 import { TarifaTecnico } from './src/modules/perfiles-tecnico/entities/tarifa-tecnico.entity';
 import { CategoriaServicio } from './src/modules/categorias/entities/categoria-servicio.entity';
 import { Direccion } from './src/modules/direcciones/entities/direccion.entity';
+import { Solicitud } from './src/modules/solicitudes/entities/solicitud.entity';
 
 config();
 
@@ -24,6 +25,7 @@ const base = {
     TarifaTecnico,
     CategoriaServicio,
     Direccion,
+    Solicitud,
   ],
   migrations: ['src/migrations/*.ts'],
 };

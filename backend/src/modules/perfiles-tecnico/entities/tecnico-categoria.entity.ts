@@ -1,5 +1,6 @@
-import { Entity, PrimaryColumn } from 'typeorm';
+import { Entity, Index, PrimaryColumn } from 'typeorm';
 
+@Index('idx_tecnico_categoria_categoria', ['categoria_id'])
 @Entity('tecnico_categoria')
 export class TecnicoCategoria {
   @PrimaryColumn({ type: 'uuid' })

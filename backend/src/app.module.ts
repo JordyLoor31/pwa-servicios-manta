@@ -23,6 +23,7 @@ import { TecnicoCategoria } from './modules/perfiles-tecnico/entities/tecnico-ca
 import { TarifaTecnico } from './modules/perfiles-tecnico/entities/tarifa-tecnico.entity';
 import { CategoriaServicio } from './modules/categorias/entities/categoria-servicio.entity';
 import { Direccion } from './modules/direcciones/entities/direccion.entity';
+import { Solicitud } from './modules/solicitudes/entities/solicitud.entity';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { Direccion } from './modules/direcciones/entities/direccion.entity';
           TarifaTecnico,
           CategoriaServicio,
           Direccion,
+          Solicitud,
         ];
 
         if (databaseUrl) {

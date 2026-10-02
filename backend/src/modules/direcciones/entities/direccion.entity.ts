@@ -1,6 +1,7 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Usuario } from '../../usuarios/entities/usuario.entity';
 
+@Index('idx_direcciones_geo', ['latitud', 'longitud'])
 @Entity('direcciones')
 export class Direccion {
   @PrimaryGeneratedColumn('uuid')
