@@ -6,12 +6,14 @@ import Button from 'primevue/button'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { useTheme } from '../../composables/useTheme'
 import { useAuthz, cerrarSesion } from '../../composables/auth/useAuthz'
+import { usarNotificaciones, limpiarNotificacionesNuevas } from '../../composables/notificaciones/useNotificaciones'
 import { usePWAInstall } from '../../composables/usePWAInstall'
 
 const router = useRouter()
 const visible = ref(false)
 const { isDark, toggle } = useTheme()
 const { usuario, hasAnyRole } = useAuthz()
+const { solicitudesNuevas } = usarNotificaciones()
 const { canInstall, isIOS, showIosHint, promptInstall } = usePWAInstall()
 
 const iniciales = computed(() => {
@@ -64,6 +66,13 @@ function navegar(ruta: string) {
   router.push(ruta).catch(() => {})
 }
 
+function irARecibidas() {
+  limpiarNotificacionesNuevas()
+  if (router.currentRoute.value.path !== '/solicitudes/recibidas') {
+    router.push('/solicitudes/recibidas').catch(() => {})
+  }
+}
+
 function logout() {
   visible.value = false
   cerrarSesion()
@@ -86,6 +95,22 @@ function logout() {
       <div class="flex-1" />
 
       <div class="flex items-center gap-2 sm:gap-3">
+        <Button
+          v-if="hasAnyRole('tecnico')"
+          icon="pi pi-bell"
+          text
+          rounded
+          aria-label="Notificaciones de solicitudes"
+          class="relative"
+          @click="irARecibidas"
+        >
+          <span
+            v-if="solicitudesNuevas > 0"
+            class="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold leading-none text-white"
+          >
+            {{ solicitudesNuevas > 9 ? '9+' : solicitudesNuevas }}
+          </span>
+        </Button>
         <div class="hidden text-right sm:block">
           <p class="text-sm font-medium leading-tight text-ink">
             {{ usuario?.nombres }} {{ usuario?.apellidos }}

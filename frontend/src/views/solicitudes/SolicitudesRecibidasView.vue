@@ -1,14 +1,19 @@
 <script setup lang="ts">
+import { onMounted, onUnmounted } from 'vue'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import Skeleton from 'primevue/skeleton'
 import Tag from 'primevue/tag'
 import Textarea from 'primevue/textarea'
 import Toast from 'primevue/toast'
+import { useToast } from 'primevue/usetoast'
 import AppHeader from '../../components/layout/AppHeader.vue'
 import { useSolicitudes } from '../../composables/solicitudes/useSolicitudes'
+import { limpiarNotificacionesNuevas } from '../../composables/notificaciones/useNotificaciones'
 import type { Solicitud } from '../../types/solicitudes'
 import { estadoSeveridad, estadoLabel } from '../../utils/solicitudes'
+
+const toast = useToast()
 
 const {
   solicitudes,
@@ -28,10 +33,45 @@ const {
   confirmarRechazar,
   ejecutarAccion,
   cerrarConfirmacion,
+  cargar,
   irPagina,
 } = useSolicitudes()
 
 const placeholders = Array.from({ length: 3 }, (_, i) => ({ id: `skeleton-${i}` }))
+
+interface EventoSolicitud {
+  evento?: 'solicitud.nueva' | 'solicitud.actualizada'
+  solicitud?: {
+    cliente?: { nombres?: string; apellidos?: string }
+  }
+}
+
+function onSolicitudNueva(event: Event) {
+  const payload = (event as CustomEvent<EventoSolicitud>).detail
+  const cliente = payload?.solicitud?.cliente
+  toast.add({
+    severity: 'success',
+    summary: 'Nueva solicitud',
+    detail: `${cliente?.nombres ?? 'Un cliente'} quiere un servicio. Ábrela para responder.`,
+    life: 6000,
+  })
+  cargar()
+}
+
+function onSolicitudActualizada() {
+  cargar()
+}
+
+onMounted(() => {
+  limpiarNotificacionesNuevas()
+  window.addEventListener('camello:solicitud-nueva', onSolicitudNueva)
+  window.addEventListener('camello:solicitud-actualizada', onSolicitudActualizada)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('camello:solicitud-nueva', onSolicitudNueva)
+  window.removeEventListener('camello:solicitud-actualizada', onSolicitudActualizada)
+})
 </script>
 
 <template>

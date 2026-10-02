@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { onMounted, onUnmounted } from 'vue'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import FloatLabel from 'primevue/floatlabel'
@@ -36,6 +37,7 @@ const {
   cambiarFiltroEstado,
   abrirFormulario,
   crear,
+  cargar,
   irPagina,
   verDetalle,
   cerrarDetalle,
@@ -54,6 +56,18 @@ const FRECUENCIAS: { valor: 'todos' | EstadoSolicitud; label: string }[] = [
 ]
 
 const placeholders = Array.from({ length: 3 }, (_, i) => ({ id: `skeleton-${i}` }))
+
+function onSolicitudActualizada() {
+  cargar()
+}
+
+onMounted(() => {
+  window.addEventListener('camello:solicitud-actualizada', onSolicitudActualizada)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('camello:solicitud-actualizada', onSolicitudActualizada)
+})
 </script>
 
 <template>

@@ -1,4 +1,5 @@
 import { computed } from 'vue'
+import { desconectarNotificaciones } from '../notificaciones/useNotificaciones'
 
 export type RolUsuario = 'cliente' | 'tecnico' | 'admin'
 
@@ -67,6 +68,7 @@ export function cerrarSesion() {
   localStorage.removeItem(TOKEN_KEY)
   localStorage.removeItem(USER_KEY)
   localStorage.removeItem(SESION_KEY)
+  desconectarNotificaciones()
 }
 
 export function useAuthz() {

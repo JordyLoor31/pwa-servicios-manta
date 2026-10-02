@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 import helmet from 'helmet';
 import type { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
 import { ConfigService } from '@nestjs/config';
@@ -51,6 +52,8 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  app.useWebSocketAdapter(new IoAdapter(app));
 
   await app.listen(3000, '0.0.0.0');
 }

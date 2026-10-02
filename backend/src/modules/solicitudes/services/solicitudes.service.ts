@@ -7,6 +7,7 @@ import { PerfilTecnico } from '../../perfiles-tecnico/entities/perfil-tecnico.en
 import { CrearSolicitudDto } from '../dtos/crear-solicitud.dto';
 import { RechazarSolicitudDto } from '../dtos/rechazar-solicitud.dto';
 import type { AuthenticatedUser } from '../../auth/decorators/current-user.decorator';
+import { NotificacionesGateway } from '../../notificaciones/notificaciones.gateway';
 
 interface FiltrosPaginados {
   page: number;
@@ -23,6 +24,7 @@ export class SolicitudesService {
     private readonly usuariosRepository: Repository<Usuario>,
     @InjectRepository(PerfilTecnico)
     private readonly perfilesRepository: Repository<PerfilTecnico>,
+    private readonly notificaciones: NotificacionesGateway,
   ) {}
 
   async crear(clienteId: string, dto: CrearSolicitudDto) {
@@ -47,7 +49,15 @@ export class SolicitudesService {
       direccion: dto.direccion?.trim() || null,
       estado: EstadoSolicitud.PENDIENTE,
     });
-    return this.detalle(solicitud.id, { id: clienteId, rol: RolUsuario.CLIENTE } as AuthenticatedUser);
+    const vista = await this.detalle(solicitud.id, {
+      id: clienteId,
+      rol: RolUsuario.CLIENTE,
+    } as AuthenticatedUser);
+    this.notificaciones.notificarNuevaSolicitud(dto.tecnico_id, {
+      evento: 'solicitud.nueva',
+      solicitud: vista,
+    });
+    return vista;
   }
 
   async listarMis(clienteId: string, filtros: FiltrosPaginados) {
@@ -121,7 +131,12 @@ export class SolicitudesService {
       estado: EstadoSolicitud.ACEPTADA,
       fecha_aceptacion: new Date(),
     });
-    return this.detalle(id, user);
+    const vista = await this.detalle(id, user);
+    this.notificaciones.notificarSolicitudActualizada(solicitud.cliente_id, {
+      evento: 'solicitud.actualizada',
+      solicitud: vista,
+    });
+    return vista;
   }
 
   async rechazar(id: string, dto: RechazarSolicitudDto, user: AuthenticatedUser) {
@@ -136,7 +151,12 @@ export class SolicitudesService {
       estado: EstadoSolicitud.RECHAZADA,
       motivo_rechazo: dto.motivo_rechazo.trim(),
     });
-    return this.detalle(id, user);
+    const vista = await this.detalle(id, user);
+    this.notificaciones.notificarSolicitudActualizada(solicitud.cliente_id, {
+      evento: 'solicitud.actualizada',
+      solicitud: vista,
+    });
+    return vista;
   }
 
   async cancelar(id: string, user: AuthenticatedUser) {
@@ -154,7 +174,12 @@ export class SolicitudesService {
     await this.solicitudesRepository.update(solicitud.id, {
       estado: EstadoSolicitud.CANCELADA,
     });
-    return this.detalle(id, user);
+    const vista = await this.detalle(id, user);
+    this.notificaciones.notificarSolicitudActualizada(solicitud.tecnico_id, {
+      evento: 'solicitud.actualizada',
+      solicitud: vista,
+    });
+    return vista;
   }
 
   async completar(id: string, user: AuthenticatedUser) {
@@ -174,7 +199,12 @@ export class SolicitudesService {
       'total_servicios_completados',
       1,
     );
-    return this.detalle(id, user);
+    const vista = await this.detalle(id, user);
+    this.notificaciones.notificarSolicitudActualizada(solicitud.cliente_id, {
+      evento: 'solicitud.actualizada',
+      solicitud: vista,
+    });
+    return vista;
   }
 
   private async obtenerParaAccion(
