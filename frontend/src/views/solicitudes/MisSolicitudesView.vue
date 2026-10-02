@@ -194,6 +194,7 @@ const placeholders = Array.from({ length: 3 }, (_, i) => ({ id: `skeleton-${i}` 
                 v-model="diaBusqueda"
                 :options="DIAS_SEMANA"
                 option-label="nombre"
+                option-value="valor"
                 class="w-full"
               />
             </div>
@@ -214,6 +215,7 @@ const placeholders = Array.from({ length: 3 }, (_, i) => ({ id: `skeleton-${i}` 
               v-model="form.tecnico_id"
               :options="tecnicos"
               option-label="nombres"
+              option-value="id"
               :loading="cargandoTecnicos"
               :placeholder="tecnicos.length ? 'Elige un técnico' : 'Sin técnicos en este horario'"
               class="w-full"
