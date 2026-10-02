@@ -3,6 +3,7 @@ import { onMounted } from 'vue'
 import { RouterView } from 'vue-router'
 import { conectarNotificaciones, solicitarPermisoNotificaciones } from './composables/notificaciones/useNotificaciones'
 import { registrarSuscripcionPush } from './composables/notificaciones/usePush'
+import WidgetActualizarApp from './components/widgets/WidgetActualizarApp.vue'
 
 async function iniciar() {
   const token = localStorage.getItem('access_token')
@@ -18,5 +19,6 @@ onMounted(() => {
 </script>
 
 <template>
+  <WidgetActualizarApp />
   <RouterView />
 </template>

@@ -5,7 +5,6 @@ setCacheNameDetails({ prefix: 'camelloapp' })
 cleanupOutdatedCaches()
 precacheAndRoute((self as unknown as { __WB_MANIFEST: string[] }).__WB_MANIFEST)
 clientsClaim()
-;(self as unknown as { skipWaiting(): void }).skipWaiting()
 
 interface EventoPush extends Event {
   data?: { json(): unknown } | null
