@@ -8,6 +8,7 @@ import { CrearSolicitudDto } from '../dtos/crear-solicitud.dto';
 import { RechazarSolicitudDto } from '../dtos/rechazar-solicitud.dto';
 import type { AuthenticatedUser } from '../../auth/decorators/current-user.decorator';
 import { NotificacionesGateway } from '../../notificaciones/notificaciones.gateway';
+import { NotificacionesPushService } from '../../notificaciones-push/services/notificaciones-push.service';
 
 interface FiltrosPaginados {
   page: number;
@@ -25,6 +26,7 @@ export class SolicitudesService {
     @InjectRepository(PerfilTecnico)
     private readonly perfilesRepository: Repository<PerfilTecnico>,
     private readonly notificaciones: NotificacionesGateway,
+    private readonly notificacionesPush: NotificacionesPushService,
   ) {}
 
   async crear(clienteId: string, dto: CrearSolicitudDto) {
@@ -56,6 +58,11 @@ export class SolicitudesService {
     this.notificaciones.notificarNuevaSolicitud(dto.tecnico_id, {
       evento: 'solicitud.nueva',
       solicitud: vista,
+    });
+    await this.notificacionesPush.enviar(dto.tecnico_id, {
+      titulo: 'Nueva solicitud de servicio',
+      cuerpo: `${vista.cliente.nombres} ${vista.cliente.apellidos} quiere un servicio.`,
+      url: '/solicitudes/recibidas',
     });
     return vista;
   }
@@ -136,6 +143,11 @@ export class SolicitudesService {
       evento: 'solicitud.actualizada',
       solicitud: vista,
     });
+    await this.notificacionesPush.enviar(solicitud.cliente_id, {
+      titulo: 'Solicitud aceptada',
+      cuerpo: `${vista.tecnico.nombres} ${vista.tecnico.apellidos} aceptó tu solicitud.`,
+      url: '/solicitudes',
+    });
     return vista;
   }
 
@@ -155,6 +167,11 @@ export class SolicitudesService {
     this.notificaciones.notificarSolicitudActualizada(solicitud.cliente_id, {
       evento: 'solicitud.actualizada',
       solicitud: vista,
+    });
+    await this.notificacionesPush.enviar(solicitud.cliente_id, {
+      titulo: 'Solicitud rechazada',
+      cuerpo: `${vista.tecnico.nombres} ${vista.tecnico.apellidos} rechazó tu solicitud.`,
+      url: '/solicitudes',
     });
     return vista;
   }
@@ -178,6 +195,11 @@ export class SolicitudesService {
     this.notificaciones.notificarSolicitudActualizada(solicitud.tecnico_id, {
       evento: 'solicitud.actualizada',
       solicitud: vista,
+    });
+    await this.notificacionesPush.enviar(solicitud.tecnico_id, {
+      titulo: 'Solicitud cancelada',
+      cuerpo: `${vista.cliente.nombres} ${vista.cliente.apellidos} canceló la solicitud.`,
+      url: '/solicitudes/recibidas',
     });
     return vista;
   }
@@ -203,6 +225,11 @@ export class SolicitudesService {
     this.notificaciones.notificarSolicitudActualizada(solicitud.cliente_id, {
       evento: 'solicitud.actualizada',
       solicitud: vista,
+    });
+    await this.notificacionesPush.enviar(solicitud.cliente_id, {
+      titulo: 'Servicio completado',
+      cuerpo: `${vista.tecnico.nombres} ${vista.tecnico.apellidos} completó tu servicio.`,
+      url: '/solicitudes',
     });
     return vista;
   }

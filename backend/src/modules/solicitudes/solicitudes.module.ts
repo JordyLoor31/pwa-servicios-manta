@@ -6,11 +6,13 @@ import { PerfilTecnico } from '../perfiles-tecnico/entities/perfil-tecnico.entit
 import { SolicitudesController } from './controllers/solicitudes.controller';
 import { SolicitudesService } from './services/solicitudes.service';
 import { NotificacionesModule } from '../notificaciones/notificaciones.module';
+import { NotificacionesPushModule } from '../notificaciones-push/notificaciones-push.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Solicitud, Usuario, PerfilTecnico]),
     NotificacionesModule,
+    NotificacionesPushModule,
   ],
   controllers: [SolicitudesController],
   providers: [SolicitudesService],

@@ -9,6 +9,7 @@ import { TarifaTecnico } from './src/modules/perfiles-tecnico/entities/tarifa-te
 import { CategoriaServicio } from './src/modules/categorias/entities/categoria-servicio.entity';
 import { Direccion } from './src/modules/direcciones/entities/direccion.entity';
 import { Solicitud } from './src/modules/solicitudes/entities/solicitud.entity';
+import { SuscripcionPush } from './src/modules/notificaciones-push/entities/suscripcion-push.entity';
 
 config();
 
@@ -26,6 +27,7 @@ const base = {
     CategoriaServicio,
     Direccion,
     Solicitud,
+    SuscripcionPush,
   ],
   migrations: ['src/migrations/*.ts'],
 };

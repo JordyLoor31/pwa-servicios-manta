@@ -48,10 +48,10 @@ function notificarSistema(titulo: string, cuerpo: string) {
   }
 }
 
-export function solicitarPermisoNotificaciones() {
+export async function solicitarPermisoNotificaciones() {
   if (!('Notification' in window)) return
   if (Notification.permission === 'default') {
-    void Notification.requestPermission()
+    await Notification.requestPermission()
   }
 }
 

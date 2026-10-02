@@ -13,6 +13,7 @@ import { SolicitudesModule } from './modules/solicitudes/solicitudes.module';
 import { PagosModule } from './modules/pagos/pagos.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { NotificacionesModule } from './modules/notificaciones/notificaciones.module';
+import { NotificacionesPushModule } from './modules/notificaciones-push/notificaciones-push.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { MailModule } from './modules/mail/mail.module';
 import { Usuario } from './modules/usuarios/entities/usuario.entity';
@@ -24,6 +25,7 @@ import { TarifaTecnico } from './modules/perfiles-tecnico/entities/tarifa-tecnic
 import { CategoriaServicio } from './modules/categorias/entities/categoria-servicio.entity';
 import { Direccion } from './modules/direcciones/entities/direccion.entity';
 import { Solicitud } from './modules/solicitudes/entities/solicitud.entity';
+import { SuscripcionPush } from './modules/notificaciones-push/entities/suscripcion-push.entity';
 
 @Module({
   imports: [
@@ -48,6 +50,7 @@ import { Solicitud } from './modules/solicitudes/entities/solicitud.entity';
           CategoriaServicio,
           Direccion,
           Solicitud,
+          SuscripcionPush,
         ];
 
         if (databaseUrl) {
@@ -82,6 +85,7 @@ import { Solicitud } from './modules/solicitudes/entities/solicitud.entity';
     PagosModule,
     ChatModule,
     NotificacionesModule,
+    NotificacionesPushModule,
   ],
   controllers: [AppController],
   providers: [
