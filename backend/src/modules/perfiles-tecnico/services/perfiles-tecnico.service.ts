@@ -7,7 +7,7 @@ import { CertificacionTecnico, EstadoCertificacion } from '../entities/certifica
 import { TecnicoCategoria } from '../entities/tecnico-categoria.entity';
 import { TarifaTecnico } from '../entities/tarifa-tecnico.entity';
 import { CategoriaServicio } from '../../categorias/entities/categoria-servicio.entity';
-import { Usuario } from '../../usuarios/entities/usuario.entity';
+import { Usuario, EstadoUsuario } from '../../usuarios/entities/usuario.entity';
 import { CreatePerfilTecnicoDto } from '../dtos/create-perfil-tecnico.dto';
 import { UpdatePerfilTecnicoDto } from '../dtos/update-perfil-tecnico.dto';
 import { CalificarPerfilTecnicoDto } from '../dtos/calificar-perfil-tecnico.dto';
@@ -58,6 +58,38 @@ export class PerfilesTecnicoService {
   async findAllPublic() {
     const perfiles = await this.perfilesRepository.find({ order: { usuario_id: 'ASC' } });
     return perfiles.map((perfil) => this.toPublic(perfil));
+  }
+
+  async directorioPublic() {
+    const filas = await this.perfilesRepository
+      .createQueryBuilder('p')
+      .innerJoin(Usuario, 'u', 'u.id = p.usuario_id')
+      .select([
+        'u.id AS id',
+        'u.nombres AS nombres',
+        'u.apellidos AS apellidos',
+        'u.email AS email',
+        'p.verificado AS verificado',
+        'p.calificacion_promedio AS calificacion_promedio',
+        'p.total_servicios_completados AS total_servicios_completados',
+      ])
+      .where('u.estado = :activo', { activo: EstadoUsuario.ACTIVO })
+      .orderBy('p.calificacion_promedio', 'DESC')
+      .addOrderBy('u.nombres', 'ASC')
+      .getRawMany<{
+        id: string;
+        nombres: string;
+        apellidos: string;
+        email: string;
+        verificado: boolean;
+        calificacion_promedio: string | number;
+        total_servicios_completados: string | number;
+      }>();
+    return filas.map((fila) => ({
+      ...fila,
+      calificacion_promedio: Number(fila.calificacion_promedio ?? 0),
+      total_servicios_completados: Number(fila.total_servicios_completados ?? 0),
+    }));
   }
 
   async findOne(usuarioId: string) {

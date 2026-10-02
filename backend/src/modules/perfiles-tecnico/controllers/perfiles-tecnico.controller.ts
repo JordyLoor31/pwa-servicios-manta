@@ -66,6 +66,12 @@ export class PerfilesTecnicoController {
   }
 
   @Public()
+  @Get('directorio')
+  directorio() {
+    return this.perfilesTecnicoService.directorioPublic();
+  }
+
+  @Public()
   @Get(':usuarioId')
   findOne(@Param('usuarioId', ParseUUIDPipe) usuarioId: string) {
     return this.perfilesTecnicoService.findOnePublic(usuarioId);

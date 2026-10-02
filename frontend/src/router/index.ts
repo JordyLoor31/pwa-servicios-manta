@@ -12,6 +12,8 @@ import TecnicosView from '../views/admin/TecnicosView.vue'
 import MisDireccionesView from '../views/direcciones/MisDireccionesView.vue'
 import MiDisponibilidadView from '../views/disponibilidad/MiDisponibilidadView.vue'
 import MisCertificacionesView from '../views/certificaciones/MisCertificacionesView.vue'
+import MisSolicitudesView from '../views/solicitudes/MisSolicitudesView.vue'
+import SolicitudesRecibidasView from '../views/solicitudes/SolicitudesRecibidasView.vue'
 import { tieneToken, leerUsuario, type RolUsuario } from '../composables/auth/useAuthz'
 
 declare module 'vue-router' {
@@ -39,6 +41,18 @@ const router = createRouter({
       path: '/disponibilidad',
       name: 'disponibilidad',
       component: MiDisponibilidadView,
+      meta: { roles: ['tecnico'] },
+    },
+    {
+      path: '/solicitudes',
+      name: 'solicitudes',
+      component: MisSolicitudesView,
+      meta: { roles: ['cliente'] },
+    },
+    {
+      path: '/solicitudes/recibidas',
+      name: 'solicitudes-recibidas',
+      component: SolicitudesRecibidasView,
       meta: { roles: ['tecnico'] },
     },
     {
