@@ -92,6 +92,22 @@ export class PerfilesTecnicoController {
   }
 
   @Public()
+  @Get('disponibles/por-dia')
+  porDia(
+    @Query('dia', new DefaultValuePipe(-1), ParseIntPipe) dia: number,
+    @Query('categorias') categorias?: string,
+  ) {
+    if (dia < 0 || dia > 6) {
+      return [];
+    }
+    const idsCategorias = (categorias ?? '')
+      .split(',')
+      .map((categoria) => categoria.trim())
+      .filter(Boolean);
+    return this.perfilesTecnicoService.disponiblesPorDia(dia, idsCategorias);
+  }
+
+  @Public()
   @Get('disponibles/por-fecha')
   porFecha(
     @Query('fecha') fecha?: string,
