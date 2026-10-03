@@ -8,6 +8,11 @@ import { TarifaTecnico } from './entities/tarifa-tecnico.entity';
 import { CategoriaServicio } from '../categorias/entities/categoria-servicio.entity';
 import { PerfilesTecnicoController } from './controllers/perfiles-tecnico.controller';
 import { PerfilesTecnicoService } from './services/perfiles-tecnico.service';
+import { PerfilesTecnicoConsultaService } from './services/perfiles-tecnico-consulta.service';
+import { PerfilesTecnicoDisponibilidadService } from './services/perfiles-tecnico-disponibilidad.service';
+import { PerfilesTecnicoCategoriasService } from './services/perfiles-tecnico-categorias.service';
+import { PerfilesTecnicoTarifasService } from './services/perfiles-tecnico-tarifas.service';
+import { PerfilesTecnicoCertificacionesService } from './services/perfiles-tecnico-certificaciones.service';
 import { ReservaServicio } from '../solicitudes/entities/reserva-servicio.entity';
 
 @Module({
@@ -23,7 +28,14 @@ import { ReservaServicio } from '../solicitudes/entities/reserva-servicio.entity
     ]),
   ],
   controllers: [PerfilesTecnicoController],
-  providers: [PerfilesTecnicoService],
+  providers: [
+    PerfilesTecnicoService,
+    PerfilesTecnicoConsultaService,
+    PerfilesTecnicoDisponibilidadService,
+    PerfilesTecnicoCategoriasService,
+    PerfilesTecnicoTarifasService,
+    PerfilesTecnicoCertificacionesService,
+  ],
   exports: [PerfilesTecnicoService],
 })
 export class PerfilesTecnicoModule {}

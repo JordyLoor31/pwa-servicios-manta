@@ -1,13 +1,7 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository, ILike } from 'typeorm';
+import { Repository } from 'typeorm';
 import { PerfilTecnico } from '../entities/perfil-tecnico.entity';
-import { DisponibilidadTecnico } from '../entities/disponibilidad-tecnico.entity';
-import { CertificacionTecnico, EstadoCertificacion } from '../entities/certificacion-tecnico.entity';
-import { TecnicoCategoria } from '../entities/tecnico-categoria.entity';
-import { TarifaTecnico } from '../entities/tarifa-tecnico.entity';
-import { CategoriaServicio } from '../../categorias/entities/categoria-servicio.entity';
-import { Usuario, EstadoUsuario } from '../../usuarios/entities/usuario.entity';
 import { CreatePerfilTecnicoDto } from '../dtos/create-perfil-tecnico.dto';
 import { UpdatePerfilTecnicoDto } from '../dtos/update-perfil-tecnico.dto';
 import { CalificarPerfilTecnicoDto } from '../dtos/calificar-perfil-tecnico.dto';
@@ -15,41 +9,22 @@ import { SlotDisponibilidadDto } from '../dtos/reemplazar-disponibilidad.dto';
 import { CrearCertificacionDto } from '../dtos/crear-certificacion.dto';
 import { RevisarCertificacionDto } from '../dtos/revisar-certificacion.dto';
 import { RangoPrecioDto } from '../dtos/reemplazar-tarifas.dto';
-import { ReservaServicio } from '../../solicitudes/entities/reserva-servicio.entity';
-
-function agregarSlotsDisponibles(inicio: string, fin: string, slots: Set<string>): void {
-  const convertir = (hora: string): number => {
-    const [h, m] = hora.split(':').map(Number);
-    return h * 60 + m;
-  };
-  const formatear = (minutos: number): string => {
-    const h = Math.floor(minutos / 60);
-    const m = minutos % 60;
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-  };
-  const finMin = convertir(fin);
-  for (let t = convertir(inicio); t < finMin; t += 30) {
-    slots.add(formatear(t));
-  }
-}
+import { PerfilesTecnicoConsultaService } from './perfiles-tecnico-consulta.service';
+import { PerfilesTecnicoDisponibilidadService } from './perfiles-tecnico-disponibilidad.service';
+import { PerfilesTecnicoCategoriasService } from './perfiles-tecnico-categorias.service';
+import { PerfilesTecnicoTarifasService } from './perfiles-tecnico-tarifas.service';
+import { PerfilesTecnicoCertificacionesService } from './perfiles-tecnico-certificaciones.service';
 
 @Injectable()
 export class PerfilesTecnicoService {
   constructor(
     @InjectRepository(PerfilTecnico)
     private readonly perfilesRepository: Repository<PerfilTecnico>,
-    @InjectRepository(TecnicoCategoria)
-    private readonly tecnicoCategoriaRepository: Repository<TecnicoCategoria>,
-    @InjectRepository(DisponibilidadTecnico)
-    private readonly disponibilidadRepository: Repository<DisponibilidadTecnico>,
-    @InjectRepository(CertificacionTecnico)
-    private readonly certificacionesRepository: Repository<CertificacionTecnico>,
-    @InjectRepository(CategoriaServicio)
-    private readonly categoriasRepository: Repository<CategoriaServicio>,
-    @InjectRepository(TarifaTecnico)
-    private readonly tarifasRepository: Repository<TarifaTecnico>,
-    @InjectRepository(ReservaServicio)
-    private readonly reservasRepository: Repository<ReservaServicio>,
+    private readonly consultaService: PerfilesTecnicoConsultaService,
+    private readonly disponibilidadService: PerfilesTecnicoDisponibilidadService,
+    private readonly categoriasService: PerfilesTecnicoCategoriasService,
+    private readonly tarifasService: PerfilesTecnicoTarifasService,
+    private readonly certificacionesService: PerfilesTecnicoCertificacionesService,
   ) {}
 
   async create(dto: CreatePerfilTecnicoDto) {
@@ -67,7 +42,7 @@ export class PerfilesTecnicoService {
       }
       throw error;
     }
-    return this.findOne(dto.usuario_id);
+    return this.consultaService.findOne(dto.usuario_id);
   }
 
   async findAll() {
@@ -76,202 +51,34 @@ export class PerfilesTecnicoService {
 
   async findAllPublic() {
     const perfiles = await this.perfilesRepository.find({ order: { usuario_id: 'ASC' } });
-    return perfiles.map((perfil) => this.toPublic(perfil));
+    return perfiles.map((perfil) => ({
+      usuario_id: perfil.usuario_id,
+      biografia: perfil.biografia,
+      anios_experiencia: perfil.anios_experiencia,
+      calificacion_promedio: perfil.calificacion_promedio,
+      total_servicios_completados: perfil.total_servicios_completados,
+      verificado: perfil.verificado,
+    }));
   }
 
   async directorioPublic() {
-    const filas = await this.perfilesRepository
-      .createQueryBuilder('p')
-      .innerJoin(Usuario, 'u', 'u.id = p.usuario_id')
-      .select([
-        'u.id AS id',
-        'u.nombres AS nombres',
-        'u.apellidos AS apellidos',
-        'u.email AS email',
-        'p.verificado AS verificado',
-        'p.calificacion_promedio AS calificacion_promedio',
-        'p.total_servicios_completados AS total_servicios_completados',
-      ])
-      .where('u.estado = :activo', { activo: EstadoUsuario.ACTIVO })
-      .orderBy('p.calificacion_promedio', 'DESC')
-      .addOrderBy('u.nombres', 'ASC')
-      .getRawMany<{
-        id: string;
-        nombres: string;
-        apellidos: string;
-        email: string;
-        verificado: boolean;
-        calificacion_promedio: string | number;
-        total_servicios_completados: string | number;
-      }>();
-    return this.toDirectorio(filas);
+    return this.consultaService.directorioPublic();
   }
 
   async disponiblesPublic(dia: number, hora: string, categorias: string[] = []) {
-    const query = this.perfilesRepository
-      .createQueryBuilder('p')
-      .innerJoin(Usuario, 'u', 'u.id = p.usuario_id')
-      .innerJoin(
-        DisponibilidadTecnico,
-        'd',
-        'd.tecnico_id = p.usuario_id AND d.dia_semana = :dia',
-        { dia },
-      )
-      .select([
-        'u.id AS id',
-        'u.nombres AS nombres',
-        'u.apellidos AS apellidos',
-        'u.email AS email',
-        'p.verificado AS verificado',
-        'p.calificacion_promedio AS calificacion_promedio',
-        'p.total_servicios_completados AS total_servicios_completados',
-      ])
-      .where('u.estado = :activo', { activo: EstadoUsuario.ACTIVO })
-      .andWhere('d.hora_inicio <= :hora', { hora })
-      .andWhere('d.hora_fin > :hora', { hora });
-
-    if (categorias.length > 0) {
-      query
-        .innerJoin(TecnicoCategoria, 'tc', 'tc.tecnico_id = p.usuario_id')
-        .andWhere('tc.categoria_id IN (:...ids)', { ids: [...new Set(categorias)] });
-    }
-
-    const filas = await query
-      .orderBy('p.calificacion_promedio', 'DESC')
-      .addOrderBy('u.nombres', 'ASC')
-      .getRawMany<{
-        id: string;
-        nombres: string;
-        apellidos: string;
-        email: string;
-        verificado: boolean;
-        calificacion_promedio: string | number;
-        total_servicios_completados: string | number;
-      }>();
-    return this.toDirectorio(filas);
+    return this.disponibilidadService.disponiblesPublic(dia, hora, categorias);
   }
 
   async disponiblesPorDia(dia: number, categorias: string[] = []) {
-    const query = this.perfilesRepository
-      .createQueryBuilder('p')
-      .innerJoin(Usuario, 'u', 'u.id = p.usuario_id')
-      .innerJoin(
-        DisponibilidadTecnico,
-        'd',
-        'd.tecnico_id = p.usuario_id AND d.dia_semana = :dia',
-        { dia },
-      )
-      .select([
-        'u.id AS id',
-        'u.nombres AS nombres',
-        'u.apellidos AS apellidos',
-        'u.email AS email',
-        'p.verificado AS verificado',
-        'p.calificacion_promedio AS calificacion_promedio',
-        'p.total_servicios_completados AS total_servicios_completados',
-      ])
-      .distinct(true)
-      .where('u.estado = :activo', { activo: EstadoUsuario.ACTIVO });
-
-    if (categorias.length > 0) {
-      query
-        .innerJoin(TecnicoCategoria, 'tc', 'tc.tecnico_id = p.usuario_id')
-        .andWhere('tc.categoria_id IN (:...ids)', { ids: [...new Set(categorias)] });
-    }
-
-    const filas = await query
-      .orderBy('p.calificacion_promedio', 'DESC')
-      .addOrderBy('u.nombres', 'ASC')
-      .getRawMany<{
-        id: string;
-        nombres: string;
-        apellidos: string;
-        email: string;
-        verificado: boolean;
-        calificacion_promedio: string | number;
-        total_servicios_completados: string | number;
-      }>();
-    return this.toDirectorio(filas);
+    return this.disponibilidadService.disponiblesPorDia(dia, categorias);
   }
 
   async disponiblesPorFecha(fecha: string, categorias: string[] = [], tecnicoId?: string) {
-    const dia = new Date(`${fecha}T12:00:00`).getDay();
-    const query = this.perfilesRepository
-      .createQueryBuilder('p')
-      .innerJoin(Usuario, 'u', 'u.id = p.usuario_id')
-      .innerJoin(
-        DisponibilidadTecnico,
-        'd',
-        'd.tecnico_id = p.usuario_id AND d.dia_semana = :dia',
-        { dia },
-      )
-      .select([
-        'u.id AS id',
-        'u.nombres AS nombres',
-        'u.apellidos AS apellidos',
-        'u.email AS email',
-        'p.verificado AS verificado',
-        'p.calificacion_promedio AS calificacion_promedio',
-        'p.total_servicios_completados AS total_servicios_completados',
-      ])
-      .distinct(true)
-      .where('u.estado = :activo', { activo: EstadoUsuario.ACTIVO });
-
-    if (tecnicoId) {
-      query.andWhere('p.usuario_id = :tecnicoId', { tecnicoId });
-    }
-
-    if (categorias.length > 0) {
-      query
-        .innerJoin(TecnicoCategoria, 'tc', 'tc.tecnico_id = p.usuario_id')
-        .andWhere('tc.categoria_id IN (:...ids)', { ids: [...new Set(categorias)] });
-    }
-
-    const filas = await query
-      .orderBy('p.calificacion_promedio', 'DESC')
-      .addOrderBy('u.nombres', 'ASC')
-      .getRawMany<{
-        id: string;
-        nombres: string;
-        apellidos: string;
-        email: string;
-        verificado: boolean;
-        calificacion_promedio: string | number;
-        total_servicios_completados: string | number;
-      }>();
-    return this.toDirectorio(filas);
+    return this.disponibilidadService.disponiblesPorFecha(fecha, categorias, tecnicoId);
   }
 
   async horariosDisponibles(dia: number, categorias: string[] = [], tecnicoId?: string) {
-    const query = this.disponibilidadRepository
-      .createQueryBuilder('d')
-      .innerJoin(PerfilTecnico, 'p', 'p.usuario_id = d.tecnico_id')
-      .innerJoin(
-        Usuario,
-        'u',
-        'u.id = d.tecnico_id AND u.estado = :activo',
-        { activo: EstadoUsuario.ACTIVO },
-      )
-      .select('d.hora_inicio', 'inicio')
-      .addSelect('d.hora_fin', 'fin')
-      .where('d.dia_semana = :dia', { dia });
-
-    if (tecnicoId) {
-      query.andWhere('d.tecnico_id = :tecnicoId', { tecnicoId });
-    }
-
-    if (categorias.length > 0) {
-      query
-        .innerJoin(TecnicoCategoria, 'tc', 'tc.tecnico_id = d.tecnico_id')
-        .andWhere('tc.categoria_id IN (:...ids)', { ids: [...new Set(categorias)] });
-    }
-
-    const filas = await query.getRawMany<{ inicio: string; fin: string }>();
-    const slots = new Set<string>();
-    for (const fila of filas) {
-      agregarSlotsDisponibles(fila.inicio, fila.fin, slots);
-    }
-    return [...slots].sort();
+    return this.disponibilidadService.horariosDisponibles(dia, categorias, tecnicoId);
   }
 
   async horariosDisponiblesPorFecha(
@@ -279,104 +86,47 @@ export class PerfilesTecnicoService {
     tecnicoId: string,
     categorias: string[] = [],
   ) {
-    const dia = new Date(`${fecha}T12:00:00`).getDay();
-    const horarios = await this.horariosDisponibles(dia, categorias, tecnicoId);
-    const reservas = await this.reservasRepository.find({
-      where: { tecnico_id: tecnicoId, fecha_servicio: fecha },
-      select: { hora_inicio: true, hora_fin: true },
-    });
-
-    const minutos = (hora: string) => {
-      const [horas, minutos] = hora.split(':').map(Number);
-      return horas * 60 + minutos;
-    };
-    return horarios.filter((hora) => {
-      const inicio = minutos(hora);
-      const fin = inicio + 30;
-      return !reservas.some(
-        (reserva) => minutos(reserva.hora_inicio) < fin && minutos(reserva.hora_fin) > inicio,
-      );
-    });
-  }
-
-  private toDirectorio(
-    filas: {
-      id: string;
-      nombres: string;
-      apellidos: string;
-      email: string;
-      verificado: boolean;
-      calificacion_promedio: string | number;
-      total_servicios_completados: string | number;
-    }[],
-  ) {
-    return filas.map((fila) => ({
-      ...fila,
-      calificacion_promedio: Number(fila.calificacion_promedio ?? 0),
-      total_servicios_completados: Number(fila.total_servicios_completados ?? 0),
-    }));
+    return this.disponibilidadService.horariosDisponiblesPorFecha(fecha, tecnicoId, categorias);
   }
 
   async findOne(usuarioId: string) {
-    const perfil = await this.perfilesRepository.findOneBy({ usuario_id: usuarioId });
-    if (!perfil) {
-      throw new NotFoundException(`Perfil técnico del usuario ${usuarioId} no encontrado`);
-    }
-    return perfil;
+    return this.consultaService.findOne(usuarioId);
   }
 
   async findOnePublic(usuarioId: string) {
-    return this.toPublic(await this.findOne(usuarioId));
-  }
-
-  private toPublic(perfil: PerfilTecnico) {
-    const {
-      biografia,
-      anios_experiencia,
-      calificacion_promedio,
-      total_servicios_completados,
-      verificado,
-    } = perfil;
-    return {
-      usuario_id: perfil.usuario_id,
-      biografia,
-      anios_experiencia,
-      calificacion_promedio,
-      total_servicios_completados,
-      verificado,
-    };
+    return this.consultaService.findOnePublic(usuarioId);
   }
 
   async update(usuarioId: string, dto: UpdatePerfilTecnicoDto) {
-    await this.findOne(usuarioId);
+    await this.consultaService.findOne(usuarioId);
     await this.perfilesRepository.update({ usuario_id: usuarioId }, dto);
-    return this.findOne(usuarioId);
+    return this.consultaService.findOne(usuarioId);
   }
 
   async remove(usuarioId: string) {
-    const perfil = await this.findOne(usuarioId);
+    const perfil = await this.consultaService.findOne(usuarioId);
     await this.perfilesRepository.remove(perfil);
     return { usuario_id: usuarioId, eliminado: true };
   }
 
   async verificar(usuarioId: string) {
-    await this.findOne(usuarioId);
+    await this.consultaService.findOne(usuarioId);
     await this.perfilesRepository.update(
       { usuario_id: usuarioId },
       { verificado: true, fecha_verificacion: new Date() },
     );
-    return this.findOne(usuarioId);
+    return this.consultaService.findOne(usuarioId);
   }
 
   async desverificar(usuarioId: string) {
-    const perfil = await this.findOne(usuarioId);
+    const perfil = await this.consultaService.findOne(usuarioId);
     perfil.verificado = false;
     perfil.fecha_verificacion = null;
     return this.perfilesRepository.save(perfil);
   }
 
   async calificar(usuarioId: string, dto: CalificarPerfilTecnicoDto) {
-    const perfil = await this.findOne(usuarioId);
+    const perfil = await this.consultaService.findOne(usuarioId);
     const serviciosCompletados = perfil.total_servicios_completados;
     const promedioActual = perfil.calificacion_promedio;
     const nuevoPromedio =
@@ -387,236 +137,68 @@ export class PerfilesTecnicoService {
       { usuario_id: usuarioId },
       { calificacion_promedio: redondeado },
     );
-    return this.findOne(usuarioId);
+    return this.consultaService.findOne(usuarioId);
   }
 
   async registrarServicioCompletado(usuarioId: string) {
-    await this.findOne(usuarioId);
+    await this.consultaService.findOne(usuarioId);
     await this.perfilesRepository.increment(
       { usuario_id: usuarioId },
       'total_servicios_completados',
       1,
     );
-    return this.findOne(usuarioId);
+    return this.consultaService.findOne(usuarioId);
   }
 
   async obtenerCategorias(usuarioId: string) {
-    await this.findOne(usuarioId);
-    const filas = await this.tecnicoCategoriaRepository.find({
-      where: { tecnico_id: usuarioId },
-      select: { categoria_id: true },
-    });
-    if (filas.length === 0) {
-      return [];
-    }
-    const ids = filas.map((fila) => fila.categoria_id);
-    return this.categoriasRepository.find({
-      where: { id: In(ids) },
-      order: { nombre: 'ASC' },
-    });
+    return this.categoriasService.obtenerCategorias(usuarioId);
   }
 
   async reemplazarCategorias(usuarioId: string, categoriaIds: string[]) {
-    await this.findOne(usuarioId);
-    const unicas = [...new Set(categoriaIds)];
-    if (unicas.length > 0) {
-      const encontradas = await this.categoriasRepository.count({
-        where: { id: In(unicas) },
-      });
-      if (encontradas !== unicas.length) {
-        throw new BadRequestException('Una o más categorías no existen');
-      }
-    }
-    await this.tecnicoCategoriaRepository.delete({ tecnico_id: usuarioId });
-    if (unicas.length > 0) {
-      await this.tecnicoCategoriaRepository.insert(
-        unicas.map((categoriaId) => ({ tecnico_id: usuarioId, categoria_id: categoriaId })),
-      );
-    }
-    return this.obtenerCategorias(usuarioId);
+    return this.categoriasService.reemplazarCategorias(usuarioId, categoriaIds);
   }
 
   async obtenerTarifas(usuarioId: string) {
-    await this.findOne(usuarioId);
-    return this.tarifasRepository.find({
-      where: { tecnico_id: usuarioId },
-      order: { categoria_id: 'ASC' },
-    });
+    return this.tarifasService.obtenerTarifas(usuarioId);
   }
 
   async reemplazarTarifas(usuarioId: string, tarifas: RangoPrecioDto[]) {
-    await this.findOne(usuarioId);
-    const unicas: RangoPrecioDto[] = [];
-    const vistas = new Set<string>();
-    for (const tarifa of tarifas) {
-      if (tarifa.precio_max < tarifa.precio_min) {
-        throw new BadRequestException(
-          'precio_max debe ser mayor o igual a precio_min en cada categoría',
-        );
-      }
-      if (!vistas.has(tarifa.categoria_id)) {
-        vistas.add(tarifa.categoria_id);
-        unicas.push(tarifa);
-      }
-    }
-    if (unicas.length > 0) {
-      const encontradas = await this.categoriasRepository.count({
-        where: { id: In(unicas.map((t) => t.categoria_id)) },
-      });
-      if (encontradas !== unicas.length) {
-        throw new BadRequestException('Una o más categorías no existen');
-      }
-    }
-    await this.tarifasRepository.delete({ tecnico_id: usuarioId });
-    if (unicas.length > 0) {
-      await this.tarifasRepository.insert(
-        unicas.map((tarifa) => ({
-          tecnico_id: usuarioId,
-          categoria_id: tarifa.categoria_id,
-          precio_min: tarifa.precio_min,
-          precio_max: tarifa.precio_max,
-          unidad_cobro: tarifa.unidad_cobro ?? 'por_servicio',
-        })),
-      );
-    }
-    return this.obtenerTarifas(usuarioId);
+    return this.tarifasService.reemplazarTarifas(usuarioId, tarifas);
   }
 
   async obtenerDisponibilidad(usuarioId: string) {
-    await this.findOne(usuarioId);
-    return this.disponibilidadRepository.find({
-      where: { tecnico_id: usuarioId },
-      order: { dia_semana: 'ASC', hora_inicio: 'ASC' },
-    });
+    return this.disponibilidadService.obtenerDisponibilidad(usuarioId);
   }
 
   async reemplazarDisponibilidad(usuarioId: string, slots: SlotDisponibilidadDto[]) {
-    await this.findOne(usuarioId);
-    const normalizados = slots.map((slot) =>
-      this.normalizarSlot(slot),
-    );
-    normalizados.sort(
-      (a, b) => a.dia_semana - b.dia_semana || a.hora_inicio.localeCompare(b.hora_inicio),
-    );
-    await this.disponibilidadRepository.delete({ tecnico_id: usuarioId });
-    if (normalizados.length > 0) {
-      await this.disponibilidadRepository.insert(
-        normalizados.map((slot) => ({ tecnico_id: usuarioId, ...slot })),
-      );
-    }
-    return this.obtenerDisponibilidad(usuarioId);
+    return this.disponibilidadService.reemplazarDisponibilidad(usuarioId, slots);
   }
 
   async eliminarDisponibilidad(usuarioId: string) {
-    await this.findOne(usuarioId);
-    await this.disponibilidadRepository.delete({ tecnico_id: usuarioId });
-    return { tecnico_id: usuarioId, eliminado: true };
-  }
-
-  private normalizarSlot(slot: SlotDisponibilidadDto) {
-    const horas = (valor: string) => (valor.length === 5 ? `${valor}:00` : valor);
-    const inicio = horas(slot.hora_inicio);
-    const fin = horas(slot.hora_fin);
-    if (fin <= inicio) {
-      throw new BadRequestException('hora_fin debe ser posterior a hora_inicio');
-    }
-    return { dia_semana: slot.dia_semana, hora_inicio: inicio, hora_fin: fin };
+    return this.disponibilidadService.eliminarDisponibilidad(usuarioId);
   }
 
   async obtenerCertificaciones(usuarioId: string) {
-    await this.findOne(usuarioId);
-    return this.certificacionesRepository.find({
-      where: { tecnico_id: usuarioId },
-      order: { fecha_creacion: 'DESC' },
-    });
+    return this.certificacionesService.obtenerCertificaciones(usuarioId);
   }
 
   async agregarCertificacion(usuarioId: string, dto: CrearCertificacionDto) {
-    await this.findOne(usuarioId);
-    return this.certificacionesRepository.save({
-      tecnico_id: usuarioId,
-      tipo_documento: dto.tipo_documento.trim(),
-      url_documento: dto.url_documento.trim(),
-      estado: EstadoCertificacion.PENDIENTE,
-    });
+    return this.certificacionesService.agregarCertificacion(usuarioId, dto);
   }
 
   async eliminarCertificacion(usuarioId: string, certificacionId: string) {
-    await this.findOne(usuarioId);
-    const resultado = await this.certificacionesRepository.delete({
-      id: certificacionId,
-      tecnico_id: usuarioId,
-    });
-    if (!resultado.affected) {
-      throw new NotFoundException('Certificación no encontrada');
-    }
-    return { id: certificacionId, eliminado: true };
+    return this.certificacionesService.eliminarCertificacion(usuarioId, certificacionId);
   }
 
   async revisarCertificacion(certificacionId: string, dto: RevisarCertificacionDto) {
-    const certificacion = await this.certificacionesRepository.findOneBy({ id: certificacionId });
-    if (!certificacion) {
-      throw new NotFoundException('Certificación no encontrada');
-    }
-    if (dto.estado === EstadoCertificacion.PENDIENTE) {
-      throw new BadRequestException('La revisión debe aprobar o rechazar la certificación');
-    }
-    certificacion.estado = dto.estado;
-    certificacion.fecha_revision = new Date();
-    return this.certificacionesRepository.save(certificacion);
+    return this.certificacionesService.revisarCertificacion(certificacionId, dto);
   }
 
   async listarTecnicosAdmin(page: number, limit: number, busqueda?: string) {
-    const qb = this.perfilesRepository
-      .createQueryBuilder('p')
-      .innerJoin(Usuario, 'u', 'u.id = p.usuario_id')
-      .select([
-        'u.id AS id',
-        'u.nombres AS nombres',
-        'u.apellidos AS apellidos',
-        'u.email AS email',
-        'u.telefono AS telefono',
-        'u.estado AS usuario_estado',
-        'u.fecha_registro AS fecha_registro',
-        'p.verificado AS verificado',
-        'p.fecha_verificacion AS fecha_verificacion',
-        'p.biografia AS biografia',
-        'p.anios_experiencia AS anios_experiencia',
-        'p.radio_cobertura_km AS radio_cobertura_km',
-        'p.calificacion_promedio AS calificacion_promedio',
-        'p.total_servicios_completados AS total_servicios_completados',
-      ]);
-    if (busqueda) {
-      qb.andWhere(
-        '(u.nombres ILIKE :q OR u.apellidos ILIKE :q OR u.email ILIKE :q)',
-        { q: `%${busqueda}%` },
-      );
-    }
-    const total = await qb.getCount();
-    const filas = await qb
-      .orderBy('u.fecha_registro', 'DESC')
-      .skip((page - 1) * limit)
-      .take(limit)
-      .getRawMany();
-    return {
-      data: filas.map((fila) => ({
-        ...fila,
-        calificacion_promedio: Number(fila.calificacion_promedio),
-        radio_cobertura_km: fila.radio_cobertura_km === null ? null : Number(fila.radio_cobertura_km),
-      })),
-      total,
-      page,
-      limit,
-    };
+    return this.consultaService.listarTecnicosAdmin(page, limit, busqueda);
   }
 
   async detalleTecnicoAdmin(usuarioId: string) {
-    await this.findOne(usuarioId);
-    const [perfil, categorias, certificaciones] = await Promise.all([
-      this.findOne(usuarioId),
-      this.obtenerCategorias(usuarioId),
-      this.obtenerCertificaciones(usuarioId),
-    ]);
-    return { perfil, categorias, certificaciones };
+    return this.consultaService.detalleTecnicoAdmin(usuarioId);
   }
 }
