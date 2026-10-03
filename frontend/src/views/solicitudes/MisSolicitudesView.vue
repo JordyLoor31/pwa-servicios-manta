@@ -12,10 +12,7 @@ import Tag from 'primevue/tag'
 import Textarea from 'primevue/textarea'
 import Toast from 'primevue/toast'
 import AppHeader from '../../components/layout/AppHeader.vue'
-import {
-  useSolicitudes,
-  OPCIONES_HORA,
-} from '../../composables/solicitudes/useSolicitudes'
+import { useSolicitudes } from '../../composables/solicitudes/useSolicitudes'
 import { nombreDia } from '../../composables/disponibilidad/useDisponibilidad'
 import type { EstadoSolicitud, Solicitud } from '../../types/solicitudes'
 import { estadoSeveridad, estadoLabel } from '../../utils/solicitudes'
@@ -37,6 +34,7 @@ const {
   solicitudActiva,
   confirmarAccionVisible,
   tecnicos,
+  horasDisponibles,
   cargandoTecnicos,
   form,
   cambiarFiltroEstado,
@@ -240,9 +238,13 @@ onUnmounted(() => {
               <Select
                 id="hora"
                 v-model="horaBusqueda"
-                :options="OPCIONES_HORA"
+                :options="horasDisponibles"
+                :loading="!horasDisponibles.length"
                 class="w-full"
               />
+              <p v-if="horasDisponibles.length === 0" class="text-xs text-muted">
+                Sin horarios disponibles para ese día y categoría.
+              </p>
             </div>
           </div>
           <div class="flex flex-col gap-1.5">

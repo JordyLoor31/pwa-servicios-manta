@@ -16,6 +16,22 @@ import { CrearCertificacionDto } from '../dtos/crear-certificacion.dto';
 import { RevisarCertificacionDto } from '../dtos/revisar-certificacion.dto';
 import { RangoPrecioDto } from '../dtos/reemplazar-tarifas.dto';
 
+function agregarSlotsDisponibles(inicio: string, fin: string, slots: Set<string>): void {
+  const convertir = (hora: string): number => {
+    const [h, m] = hora.split(':').map(Number);
+    return h * 60 + m;
+  };
+  const formatear = (minutos: number): string => {
+    const h = Math.floor(minutos / 60);
+    const m = minutos % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  };
+  const finMin = convertir(fin);
+  for (let t = convertir(inicio); t < finMin; t += 30) {
+    slots.add(formatear(t));
+  }
+}
+
 @Injectable()
 export class PerfilesTecnicoService {
   constructor(
@@ -130,6 +146,34 @@ export class PerfilesTecnicoService {
         total_servicios_completados: string | number;
       }>();
     return this.toDirectorio(filas);
+  }
+
+  async horariosDisponibles(dia: number, categorias: string[] = []) {
+    const query = this.disponibilidadRepository
+      .createQueryBuilder('d')
+      .innerJoin(PerfilTecnico, 'p', 'p.usuario_id = d.tecnico_id')
+      .innerJoin(
+        Usuario,
+        'u',
+        'u.id = d.tecnico_id AND u.estado = :activo',
+        { activo: EstadoUsuario.ACTIVO },
+      )
+      .select('d.hora_inicio', 'inicio')
+      .addSelect('d.hora_fin', 'fin')
+      .where('d.dia_semana = :dia', { dia });
+
+    if (categorias.length > 0) {
+      query
+        .innerJoin(TecnicoCategoria, 'tc', 'tc.tecnico_id = d.tecnico_id')
+        .andWhere('tc.categoria_id IN (:...ids)', { ids: [...new Set(categorias)] });
+    }
+
+    const filas = await query.getRawMany<{ inicio: string; fin: string }>();
+    const slots = new Set<string>();
+    for (const fila of filas) {
+      agregarSlotsDisponibles(fila.inicio, fila.fin, slots);
+    }
+    return [...slots].sort();
   }
 
   private toDirectorio(

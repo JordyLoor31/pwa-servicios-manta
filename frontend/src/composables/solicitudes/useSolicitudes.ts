@@ -48,6 +48,7 @@ export function useSolicitudes() {
   const categoriasSeleccionadas = ref<string[]>([])
 
   const tecnicos = ref<TecnicoDirectorio[]>([])
+  const horasDisponibles = ref<string[]>([])
   const cargandoTecnicos = ref(false)
   const formAbierto = ref(false)
   const detalleVisible = ref(false)
@@ -109,7 +110,29 @@ export function useSolicitudes() {
     }
   }
 
+  async function cargarHorarios() {
+  try {
+    const parametros = new URLSearchParams({ dia: String(diaBusqueda.value) })
+    if (categoriasSeleccionadas.value.length > 0) {
+      parametros.set('categorias', categoriasSeleccionadas.value.join(','))
+    }
+    const horas = await api.get<string[]>(
+      `/perfiles-tecnico/disponibles/horas?${parametros.toString()}`,
+    )
+    horasDisponibles.value = horas
+    if (!horas.includes(horaBusqueda.value)) {
+      horaBusqueda.value = horas[0] ?? ''
+    }
+  } catch {
+    horasDisponibles.value = []
+  }
+}
+
   async function cargarTecnicos() {
+    if (!horasDisponibles.value.includes(horaBusqueda.value)) {
+      tecnicos.value = []
+      return
+    }
     cargandoTecnicos.value = true
     try {
       const parametros = new URLSearchParams({
@@ -138,7 +161,16 @@ export function useSolicitudes() {
     }
   }
 
-  watch([fechaServicio, horaBusqueda, categoriasSeleccionadas], () => {
+  async function recalcular() {
+    await cargarHorarios()
+    await cargarTecnicos()
+  }
+
+  watch([fechaServicio, categoriasSeleccionadas], () => {
+    void recalcular()
+  })
+
+  watch(horaBusqueda, () => {
     cargarTecnicos()
   })
 
@@ -155,7 +187,7 @@ export function useSolicitudes() {
     horaBusqueda.value = horaActualAproximada()
     formAbierto.value = true
     void cargarCategorias()
-    cargarTecnicos()
+    void recalcular()
   }
 
   async function crear() {
@@ -311,6 +343,7 @@ export function useSolicitudes() {
     categoriasSeleccionadas,
     fechaServicio,
     tecnicos,
+    horasDisponibles,
     cargandoTecnicos,
     formAbierto,
     detalleVisible,
