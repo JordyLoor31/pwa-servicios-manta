@@ -76,11 +76,16 @@ export class PerfilesTecnicoController {
   disponibles(
     @Query('dia', new DefaultValuePipe(-1), ParseIntPipe) dia: number,
     @Query('hora', new DefaultValuePipe('')) hora: string,
+    @Query('categorias') categorias?: string,
   ) {
     if (dia < 0 || dia > 6 || !/^\d{2}:\d{2}$/.test(hora) || hora > '23:59') {
       return this.perfilesTecnicoService.directorioPublic();
     }
-    return this.perfilesTecnicoService.disponiblesPublic(dia, hora);
+    const idsCategorias = (categorias ?? '')
+      .split(',')
+      .map((categoria) => categoria.trim())
+      .filter(Boolean);
+    return this.perfilesTecnicoService.disponiblesPublic(dia, hora, idsCategorias);
   }
 
   @Public()

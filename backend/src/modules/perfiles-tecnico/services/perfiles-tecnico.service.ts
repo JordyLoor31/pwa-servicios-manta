@@ -88,8 +88,8 @@ export class PerfilesTecnicoService {
     return this.toDirectorio(filas);
   }
 
-  async disponiblesPublic(dia: number, hora: string) {
-    const filas = await this.perfilesRepository
+  async disponiblesPublic(dia: number, hora: string, categorias: string[] = []) {
+    const query = this.perfilesRepository
       .createQueryBuilder('p')
       .innerJoin(Usuario, 'u', 'u.id = p.usuario_id')
       .innerJoin(
@@ -109,7 +109,15 @@ export class PerfilesTecnicoService {
       ])
       .where('u.estado = :activo', { activo: EstadoUsuario.ACTIVO })
       .andWhere('d.hora_inicio <= :hora', { hora })
-      .andWhere('d.hora_fin > :hora', { hora })
+      .andWhere('d.hora_fin > :hora', { hora });
+
+    if (categorias.length > 0) {
+      query
+        .innerJoin(TecnicoCategoria, 'tc', 'tc.tecnico_id = p.usuario_id')
+        .andWhere('tc.categoria_id IN (:...ids)', { ids: [...new Set(categorias)] });
+    }
+
+    const filas = await query
       .orderBy('p.calificacion_promedio', 'DESC')
       .addOrderBy('u.nombres', 'ASC')
       .getRawMany<{

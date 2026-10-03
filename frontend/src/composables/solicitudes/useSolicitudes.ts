@@ -10,6 +10,7 @@ import type {
   TecnicoDirectorio,
 } from '../../types/solicitudes'
 import { useAuthz } from '../auth/useAuthz'
+import type { CategoriaServicio } from '../../types/categorias'
 
 const LIMITE = 20
 
@@ -39,8 +40,12 @@ export function useSolicitudes() {
   const enviando = ref(false)
 
   const filtroEstado = ref<'todos' | EstadoSolicitud>('todos')
-  const diaBusqueda = ref(new Date().getDay())
+  const fechaServicio = ref<Date>(new Date())
   const horaBusqueda = ref(horaActualAproximada())
+  const diaBusqueda = computed(() => fechaServicio.value.getDay())
+
+  const categorias = ref<CategoriaServicio[]>([])
+  const categoriasSeleccionadas = ref<string[]>([])
 
   const tecnicos = ref<TecnicoDirectorio[]>([])
   const cargandoTecnicos = ref(false)
@@ -95,12 +100,31 @@ export function useSolicitudes() {
     cargar()
   }
 
+  async function cargarCategorias() {
+    if (categorias.value.length > 0) return
+    try {
+      categorias.value = await api.get<CategoriaServicio[]>('/categorias-servicio?soloActivas=true')
+    } catch {
+      categorias.value = []
+    }
+  }
+
   async function cargarTecnicos() {
     cargandoTecnicos.value = true
     try {
+      const parametros = new URLSearchParams({
+        dia: String(diaBusqueda.value),
+        hora: horaBusqueda.value,
+      })
+      if (categoriasSeleccionadas.value.length > 0) {
+        parametros.set('categorias', categoriasSeleccionadas.value.join(','))
+      }
       tecnicos.value = await api.get<TecnicoDirectorio[]>(
-        `/perfiles-tecnico/disponibles?dia=${diaBusqueda.value}&hora=${horaBusqueda.value}`,
+        `/perfiles-tecnico/disponibles?${parametros.toString()}`,
       )
+      if (form.value.tecnico_id && !tecnicos.value.some((t) => t.id === form.value.tecnico_id)) {
+        form.value.tecnico_id = ''
+      }
     } catch (error) {
       toast.add({
         severity: 'error',
@@ -114,7 +138,7 @@ export function useSolicitudes() {
     }
   }
 
-  watch([diaBusqueda, horaBusqueda], () => {
+  watch([fechaServicio, horaBusqueda, categoriasSeleccionadas], () => {
     cargarTecnicos()
   })
 
@@ -126,7 +150,11 @@ export function useSolicitudes() {
 
   function abrirFormulario() {
     form.value = { tecnico_id: '', descripcion: '', direccion: '' }
+    categoriasSeleccionadas.value = []
+    fechaServicio.value = new Date()
+    horaBusqueda.value = horaActualAproximada()
     formAbierto.value = true
+    void cargarCategorias()
     cargarTecnicos()
   }
 
@@ -279,6 +307,9 @@ export function useSolicitudes() {
     filtroEstado,
     diaBusqueda,
     horaBusqueda,
+    categorias,
+    categoriasSeleccionadas,
+    fechaServicio,
     tecnicos,
     cargandoTecnicos,
     formAbierto,

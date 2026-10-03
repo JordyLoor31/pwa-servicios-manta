@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
 import Button from 'primevue/button'
+import DatePicker from 'primevue/datepicker'
 import Dialog from 'primevue/dialog'
 import FloatLabel from 'primevue/floatlabel'
 import InputText from 'primevue/inputtext'
+import Listbox from 'primevue/listbox'
 import Select from 'primevue/select'
 import Skeleton from 'primevue/skeleton'
 import Tag from 'primevue/tag'
@@ -14,7 +16,7 @@ import {
   useSolicitudes,
   OPCIONES_HORA,
 } from '../../composables/solicitudes/useSolicitudes'
-import { DIAS_SEMANA, nombreDia } from '../../composables/disponibilidad/useDisponibilidad'
+import { nombreDia } from '../../composables/disponibilidad/useDisponibilidad'
 import type { EstadoSolicitud, Solicitud } from '../../types/solicitudes'
 import { estadoSeveridad, estadoLabel } from '../../utils/solicitudes'
 
@@ -27,6 +29,9 @@ const {
   filtroEstado,
   diaBusqueda,
   horaBusqueda,
+  categorias,
+  categoriasSeleccionadas,
+  fechaServicio,
   formAbierto,
   detalleVisible,
   solicitudActiva,
@@ -200,16 +205,34 @@ onUnmounted(() => {
             <span class="font-semibold">{{ nombreDia(diaBusqueda) }}</span> a las
             <span class="font-semibold">{{ horaBusqueda }}</span>.
           </div>
+          <div class="flex flex-col gap-1.5">
+            <label for="categorias" class="text-sm font-medium text-ink">
+              Categoría del servicio *
+            </label>
+            <Listbox
+              id="categorias"
+              v-model="categoriasSeleccionadas"
+              :options="categorias"
+              multiple
+              checkbox
+              option-label="nombre"
+              option-value="id"
+              class="w-full"
+            />
+            <p v-if="categorias.length === 0" class="text-xs text-muted">
+              Cargando categorías…
+            </p>
+          </div>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div class="flex flex-col gap-1.5">
               <label for="dia" class="text-sm font-medium text-ink">Día del servicio *</label>
-              <Select
+              <DatePicker
                 id="dia"
-                v-model="diaBusqueda"
-                :options="DIAS_SEMANA"
-                option-label="nombre"
-                option-value="valor"
+                v-model="fechaServicio"
+                :min-date="new Date()"
+                date-format="dd/mm/yy"
                 class="w-full"
+                show-icon
               />
             </div>
             <div class="flex flex-col gap-1.5">
