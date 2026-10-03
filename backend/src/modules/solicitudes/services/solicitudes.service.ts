@@ -49,6 +49,8 @@ export class SolicitudesService {
       tecnico_id: dto.tecnico_id,
       descripcion: dto.descripcion.trim(),
       direccion: dto.direccion?.trim() || null,
+      fecha_propuesta: dto.fecha_propuesta || null,
+      hora_propuesta: dto.hora_propuesta || null,
       estado: EstadoSolicitud.PENDIENTE,
     });
     const vista = await this.detalle(solicitud.id, {
@@ -286,6 +288,8 @@ export class SolicitudesService {
       's.descripcion AS descripcion',
       's.direccion AS direccion',
       's.motivo_rechazo AS motivo_rechazo',
+      's.fecha_propuesta AS fecha_propuesta',
+      's.hora_propuesta AS hora_propuesta',
       's.fecha_solicitud AS fecha_solicitud',
       's.fecha_aceptacion AS fecha_aceptacion',
       's.fecha_completada AS fecha_completada',
@@ -305,6 +309,8 @@ export class SolicitudesService {
       descripcion: fila.descripcion,
       direccion: fila.direccion,
       motivo_rechazo: fila.motivo_rechazo,
+      fecha_propuesta: fila.fecha_propuesta,
+      hora_propuesta: fila.hora_propuesta,
       fecha_solicitud: fila.fecha_solicitud,
       fecha_aceptacion: fila.fecha_aceptacion,
       fecha_completada: fila.fecha_completada,

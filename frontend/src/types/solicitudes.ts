@@ -17,6 +17,8 @@ export interface Solicitud {
   descripcion: string
   direccion: string | null
   motivo_rechazo: string | null
+  fecha_propuesta: string | null
+  hora_propuesta: string | null
   fecha_solicitud: string
   fecha_aceptacion: string | null
   fecha_completada: string | null
@@ -35,6 +37,8 @@ export interface CrearSolicitudPayload {
   tecnico_id: string
   descripcion: string
   direccion?: string
+  fecha_propuesta?: string
+  hora_propuesta?: string
 }
 
 export interface TecnicoDirectorio {

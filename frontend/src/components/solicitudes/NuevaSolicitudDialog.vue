@@ -112,6 +112,13 @@ watch(
   },
 )
 
+function aFechaISO(fecha: Date) {
+  const anio = fecha.getFullYear()
+  const mes = String(fecha.getMonth() + 1).padStart(2, '0')
+  const dia = String(fecha.getDate()).padStart(2, '0')
+  return `${anio}-${mes}-${dia}`
+}
+
 async function crear() {
   const descripcion = form.value.descripcion.trim()
   if (!form.value.tecnico_id || !horaBusqueda.value || descripcion.length < 10) {
@@ -129,6 +136,8 @@ async function crear() {
       tecnico_id: form.value.tecnico_id,
       descripcion,
       direccion: form.value.direccion.trim() || undefined,
+      fecha_propuesta: aFechaISO(fechaServicio.value),
+      hora_propuesta: horaBusqueda.value,
     })
     toast.add({ severity: 'success', summary: 'Solicitud enviada', life: 3000 })
     visible.value = false
@@ -208,7 +217,7 @@ async function crear() {
       </div>
 
       <div class="flex flex-col gap-1.5">
-        <label for="hora" class="text-sm font-medium text-ink">Hora disponible *</label>
+        <label for="hora" class="text-sm font-medium text-ink">Hora aproximada de llegada *</label>
         <Select
           id="hora"
           v-model="horaBusqueda"
@@ -219,6 +228,9 @@ async function crear() {
         />
         <p v-if="form.tecnico_id && horas.length === 0" class="text-xs text-muted">
           Ese técnico no tiene horarios ese día.
+        </p>
+        <p class="text-xs text-muted">
+          Es una hora tentativa: el técnico acordará la hora exacta de llegada contigo.
         </p>
       </div>
 

@@ -11,7 +11,7 @@ import AppHeader from '../../components/layout/AppHeader.vue'
 import { useSolicitudes } from '../../composables/solicitudes/useSolicitudes'
 import { limpiarNotificacionesNuevas } from '../../composables/notificaciones/useNotificaciones'
 import type { Solicitud } from '../../types/solicitudes'
-import { estadoSeveridad, estadoLabel } from '../../utils/solicitudes'
+import { estadoSeveridad, estadoLabel, formatearPropuestaLlegada } from '../../utils/solicitudes'
 
 const toast = useToast()
 
@@ -161,6 +161,14 @@ onUnmounted(() => {
                 <i class="pi pi-calendar mr-1" />
                 {{ new Date((item as Solicitud).fecha_solicitud).toLocaleString() }}
               </span>
+              <span
+                v-if="formatearPropuestaLlegada((item as Solicitud).fecha_propuesta, (item as Solicitud).hora_propuesta)"
+                class="font-medium text-pacific"
+              >
+                <i class="pi pi-clock mr-1" />
+                Llegada propuesta:
+                {{ formatearPropuestaLlegada((item as Solicitud).fecha_propuesta, (item as Solicitud).hora_propuesta) }}
+              </span>
               <span v-if="(item as Solicitud).motivo_rechazo" class="text-red-500">
                 <i class="pi pi-comment mr-1" />{{ (item as Solicitud).motivo_rechazo }}
               </span>
@@ -204,6 +212,18 @@ onUnmounted(() => {
           <p class="text-muted">
             <i class="pi pi-map-marker mr-1" />{{ solicitudActiva.direccion || 'Dirección no indicada' }}
           </p>
+          <div
+            v-if="formatearPropuestaLlegada(solicitudActiva.fecha_propuesta, solicitudActiva.hora_propuesta)"
+            class="rounded-lg bg-pacific/10 p-3 text-sm text-ink"
+          >
+            <p class="font-semibold">
+              <i class="pi pi-clock mr-1" />Llegada propuesta:
+              {{ formatearPropuestaLlegada(solicitudActiva.fecha_propuesta, solicitudActiva.hora_propuesta) }}
+            </p>
+            <p class="mt-1 text-xs text-muted">
+              Es una hora tentativa: acuerda la hora exacta de llegada con el cliente.
+            </p>
+          </div>
           <p class="text-xs text-muted">
             <i class="pi pi-calendar mr-1" />
             Solicitada el {{ new Date(solicitudActiva.fecha_solicitud).toLocaleString() }}

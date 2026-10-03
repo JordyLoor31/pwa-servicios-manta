@@ -45,6 +45,12 @@ export class Solicitud {
   @Column({ type: 'text', nullable: true })
   direccion: string | null;
 
+  @Column({ type: 'date', nullable: true })
+  fecha_propuesta: string | null;
+
+  @Column({ type: 'time', nullable: true })
+  hora_propuesta: string | null;
+
   @Column({ type: 'enum', enum: EstadoSolicitud, default: EstadoSolicitud.PENDIENTE })
   estado: EstadoSolicitud;
 

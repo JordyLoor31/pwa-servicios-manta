@@ -4,7 +4,7 @@ import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import Tag from 'primevue/tag'
 import type { Solicitud } from '../../types/solicitudes'
-import { estadoSeveridad, estadoLabel } from '../../utils/solicitudes'
+import { estadoSeveridad, estadoLabel, formatearPropuestaLlegada } from '../../utils/solicitudes'
 
 const visible = defineModel<boolean>('visible', { required: true })
 
@@ -39,6 +39,18 @@ function pedirCancelar() {
       <p class="text-muted">
         <i class="pi pi-map-marker mr-1" />{{ solicitud.direccion || 'Dirección no indicada' }}
       </p>
+      <div
+        v-if="formatearPropuestaLlegada(solicitud.fecha_propuesta, solicitud.hora_propuesta)"
+        class="rounded-lg bg-pacific/10 p-3 text-sm text-ink"
+      >
+        <p class="font-semibold">
+          <i class="pi pi-clock mr-1" />Llegada propuesta:
+          {{ formatearPropuestaLlegada(solicitud.fecha_propuesta, solicitud.hora_propuesta) }}
+        </p>
+        <p class="mt-1 text-xs text-muted">
+          Es una hora tentativa: el técnico acordará la hora exacta de llegada contigo.
+        </p>
+      </div>
       <p class="text-xs text-muted">
         <i class="pi pi-calendar mr-1" />
         Solicitada el {{ new Date(solicitud.fecha_solicitud).toLocaleString() }}

@@ -10,7 +10,11 @@ import NuevaSolicitudDialog from '../../components/solicitudes/NuevaSolicitudDia
 import DetalleSolicitudDialog from '../../components/solicitudes/DetalleSolicitudDialog.vue'
 import { useSolicitudes } from '../../composables/solicitudes/useSolicitudes'
 import type { EstadoSolicitud, Solicitud } from '../../types/solicitudes'
-import { estadoSeveridad, estadoLabel } from '../../utils/solicitudes'
+import {
+  estadoSeveridad,
+  estadoLabel,
+  formatearPropuestaLlegada,
+} from '../../utils/solicitudes'
 import { api } from '../../services/api'
 
 const {
@@ -160,6 +164,11 @@ onUnmounted(() => {
               <span>
                 <i class="pi pi-calendar mr-1" />
                 {{ new Date((item as Solicitud).fecha_solicitud).toLocaleString() }}
+              </span>
+              <span v-if="formatearPropuestaLlegada((item as Solicitud).fecha_propuesta, (item as Solicitud).hora_propuesta)">
+                <i class="pi pi-clock mr-1" />
+                Llegada propuesta:
+                {{ formatearPropuestaLlegada((item as Solicitud).fecha_propuesta, (item as Solicitud).hora_propuesta) }}
               </span>
               <span v-if="(item as Solicitud).motivo_rechazo" class="text-red-500">
                 <i class="pi pi-comment mr-1" />{{ (item as Solicitud).motivo_rechazo }}

@@ -1,4 +1,13 @@
-import { IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import {
+  IsDateString,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class CrearSolicitudDto {
   @IsUUID()
@@ -14,4 +23,12 @@ export class CrearSolicitudDto {
   @IsString()
   @MaxLength(500)
   direccion?: string;
+
+  @IsOptional()
+  @IsDateString()
+  fecha_propuesta?: string;
+
+  @IsOptional()
+  @Matches(/^([01]\d|2[0-3]):[0-5]\d$/)
+  hora_propuesta?: string;
 }
