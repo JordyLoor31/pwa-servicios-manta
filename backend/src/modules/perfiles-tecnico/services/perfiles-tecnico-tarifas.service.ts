@@ -1,10 +1,11 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository } from 'typeorm';
 import { PerfilTecnico } from '../entities/perfil-tecnico.entity';
 import { TarifaTecnico } from '../entities/tarifa-tecnico.entity';
 import { CategoriaServicio } from '../../categorias/entities/categoria-servicio.entity';
 import { RangoPrecioDto } from '../dtos/reemplazar-tarifas.dto';
+import { asegurarPerfil } from './perfiles-tecnico.helpers';
 
 @Injectable()
 export class PerfilesTecnicoTarifasService {
@@ -19,7 +20,7 @@ export class PerfilesTecnicoTarifasService {
   ) {}
 
   async obtenerTarifas(usuarioId: string) {
-    await this.asegurarPerfil(usuarioId);
+    await asegurarPerfil(this.perfilesRepository, usuarioId);
     return this.tarifasRepository.find({
       where: { tecnico_id: usuarioId },
       order: { categoria_id: 'ASC' },
@@ -27,7 +28,7 @@ export class PerfilesTecnicoTarifasService {
   }
 
   async reemplazarTarifas(usuarioId: string, tarifas: RangoPrecioDto[]) {
-    await this.asegurarPerfil(usuarioId);
+    await asegurarPerfil(this.perfilesRepository, usuarioId);
     const unicas: RangoPrecioDto[] = [];
     const vistas = new Set<string>();
     for (const tarifa of tarifas) {
@@ -67,11 +68,4 @@ export class PerfilesTecnicoTarifasService {
     return this.obtenerTarifas(usuarioId);
   }
 
-  private async asegurarPerfil(usuarioId: string) {
-    const perfil = await this.perfilesRepository.findOneBy({ usuario_id: usuarioId });
-    if (!perfil) {
-      throw new NotFoundException(`Perfil técnico del usuario ${usuarioId} no encontrado`);
-    }
-    return perfil;
-  }
 }

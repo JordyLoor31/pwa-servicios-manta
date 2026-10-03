@@ -5,6 +5,7 @@ import { PerfilTecnico } from '../entities/perfil-tecnico.entity';
 import { Usuario, EstadoUsuario } from '../../usuarios/entities/usuario.entity';
 import { PerfilesTecnicoCategoriasService } from './perfiles-tecnico-categorias.service';
 import { PerfilesTecnicoCertificacionesService } from './perfiles-tecnico-certificaciones.service';
+import { toDirectorio, toPublic } from './perfiles-tecnico.helpers';
 
 @Injectable()
 export class PerfilesTecnicoConsultaService {
@@ -40,7 +41,7 @@ export class PerfilesTecnicoConsultaService {
         calificacion_promedio: string | number;
         total_servicios_completados: string | number;
       }>();
-    return this.toDirectorio(filas);
+    return toDirectorio(filas);
   }
 
   async listarTecnicosAdmin(page: number, limit: number, busqueda?: string) {
@@ -105,42 +106,6 @@ export class PerfilesTecnicoConsultaService {
   }
 
   async findOnePublic(usuarioId: string) {
-    return this.toPublic(await this.findOne(usuarioId));
-  }
-
-  private toPublic(perfil: PerfilTecnico) {
-    const {
-      biografia,
-      anios_experiencia,
-      calificacion_promedio,
-      total_servicios_completados,
-      verificado,
-    } = perfil;
-    return {
-      usuario_id: perfil.usuario_id,
-      biografia,
-      anios_experiencia,
-      calificacion_promedio,
-      total_servicios_completados,
-      verificado,
-    };
-  }
-
-  private toDirectorio(
-    filas: {
-      id: string;
-      nombres: string;
-      apellidos: string;
-      email: string;
-      verificado: boolean;
-      calificacion_promedio: string | number;
-      total_servicios_completados: string | number;
-    }[],
-  ) {
-    return filas.map((fila) => ({
-      ...fila,
-      calificacion_promedio: Number(fila.calificacion_promedio ?? 0),
-      total_servicios_completados: Number(fila.total_servicios_completados ?? 0),
-    }));
+    return toPublic(await this.findOne(usuarioId));
   }
 }

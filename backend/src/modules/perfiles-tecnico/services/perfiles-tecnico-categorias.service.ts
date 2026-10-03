@@ -1,9 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository } from 'typeorm';
 import { PerfilTecnico } from '../entities/perfil-tecnico.entity';
 import { TecnicoCategoria } from '../entities/tecnico-categoria.entity';
 import { CategoriaServicio } from '../../categorias/entities/categoria-servicio.entity';
+import { asegurarPerfil } from './perfiles-tecnico.helpers';
 
 @Injectable()
 export class PerfilesTecnicoCategoriasService {
@@ -18,7 +19,7 @@ export class PerfilesTecnicoCategoriasService {
   ) {}
 
   async obtenerCategorias(usuarioId: string) {
-    await this.asegurarPerfil(usuarioId);
+    await asegurarPerfil(this.perfilesRepository, usuarioId);
     const filas = await this.tecnicoCategoriaRepository.find({
       where: { tecnico_id: usuarioId },
       select: { categoria_id: true },
@@ -34,7 +35,7 @@ export class PerfilesTecnicoCategoriasService {
   }
 
   async reemplazarCategorias(usuarioId: string, categoriaIds: string[]) {
-    await this.asegurarPerfil(usuarioId);
+    await asegurarPerfil(this.perfilesRepository, usuarioId);
     const unicas = [...new Set(categoriaIds)];
     if (unicas.length > 0) {
       const encontradas = await this.categoriasRepository.count({
@@ -56,11 +57,4 @@ export class PerfilesTecnicoCategoriasService {
     return this.obtenerCategorias(usuarioId);
   }
 
-  private async asegurarPerfil(usuarioId: string) {
-    const perfil = await this.perfilesRepository.findOneBy({ usuario_id: usuarioId });
-    if (!perfil) {
-      throw new NotFoundException(`Perfil técnico del usuario ${usuarioId} no encontrado`);
-    }
-    return perfil;
-  }
 }

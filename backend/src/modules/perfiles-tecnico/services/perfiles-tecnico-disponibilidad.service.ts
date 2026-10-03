@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository } from 'typeorm';
 import { PerfilTecnico } from '../entities/perfil-tecnico.entity';
@@ -7,6 +7,7 @@ import { TecnicoCategoria } from '../entities/tecnico-categoria.entity';
 import { Usuario, EstadoUsuario } from '../../usuarios/entities/usuario.entity';
 import { ReservaServicio } from '../../solicitudes/entities/reserva-servicio.entity';
 import { SlotDisponibilidadDto } from '../dtos/reemplazar-disponibilidad.dto';
+import { asegurarPerfil, toDirectorio } from './perfiles-tecnico.helpers';
 
 function agregarSlotsDisponibles(inicio: string, fin: string, slots: Set<string>): void {
   const convertir = minutosDeHora;
@@ -54,7 +55,7 @@ export class PerfilesTecnicoDisponibilidadService {
         calificacion_promedio: string | number;
         total_servicios_completados: string | number;
       }>();
-    return this.toDirectorio(filas);
+    return toDirectorio(filas);
   }
 
   async disponiblesPorDia(dia: number, categorias: string[] = []) {
@@ -71,7 +72,7 @@ export class PerfilesTecnicoDisponibilidadService {
         calificacion_promedio: string | number;
         total_servicios_completados: string | number;
       }>();
-    return this.toDirectorio(filas);
+    return toDirectorio(filas);
   }
 
   async disponiblesPorFecha(fecha: string, categorias: string[] = [], tecnicoId?: string) {
@@ -128,7 +129,7 @@ export class PerfilesTecnicoDisponibilidadService {
         });
       });
     });
-    return this.toDirectorio(filasConSlots);
+    return toDirectorio(filasConSlots);
   }
 
   async horariosDisponibles(dia: number, categorias: string[] = [], tecnicoId?: string) {
@@ -186,7 +187,7 @@ export class PerfilesTecnicoDisponibilidadService {
   }
 
   async obtenerDisponibilidad(usuarioId: string) {
-    await this.asegurarPerfil(usuarioId);
+    await asegurarPerfil(this.perfilesRepository, usuarioId);
     return this.disponibilidadRepository.find({
       where: { tecnico_id: usuarioId },
       order: { dia_semana: 'ASC', hora_inicio: 'ASC' },
@@ -194,7 +195,7 @@ export class PerfilesTecnicoDisponibilidadService {
   }
 
   async reemplazarDisponibilidad(usuarioId: string, slots: SlotDisponibilidadDto[]) {
-    await this.asegurarPerfil(usuarioId);
+    await asegurarPerfil(this.perfilesRepository, usuarioId);
     const normalizados = slots.map((slot) => this.normalizarSlot(slot));
     normalizados.sort(
       (a, b) => a.dia_semana - b.dia_semana || a.hora_inicio.localeCompare(b.hora_inicio),
@@ -212,7 +213,7 @@ export class PerfilesTecnicoDisponibilidadService {
   }
 
   async eliminarDisponibilidad(usuarioId: string) {
-    await this.asegurarPerfil(usuarioId);
+    await asegurarPerfil(this.perfilesRepository, usuarioId);
     await this.disponibilidadRepository.delete({ tecnico_id: usuarioId });
     return { tecnico_id: usuarioId, eliminado: true };
   }
@@ -276,29 +277,4 @@ export class PerfilesTecnicoDisponibilidadService {
     return query;
   }
 
-  private toDirectorio(
-    filas: {
-      id: string;
-      nombres: string;
-      apellidos: string;
-      email: string;
-      verificado: boolean;
-      calificacion_promedio: string | number;
-      total_servicios_completados: string | number;
-    }[],
-  ) {
-    return filas.map((fila) => ({
-      ...fila,
-      calificacion_promedio: Number(fila.calificacion_promedio ?? 0),
-      total_servicios_completados: Number(fila.total_servicios_completados ?? 0),
-    }));
-  }
-
-  private async asegurarPerfil(usuarioId: string) {
-    const perfil = await this.perfilesRepository.findOneBy({ usuario_id: usuarioId });
-    if (!perfil) {
-      throw new NotFoundException(`Perfil técnico del usuario ${usuarioId} no encontrado`);
-    }
-    return perfil;
-  }
 }

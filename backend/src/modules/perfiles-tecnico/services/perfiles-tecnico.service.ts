@@ -14,6 +14,7 @@ import { PerfilesTecnicoDisponibilidadService } from './perfiles-tecnico-disponi
 import { PerfilesTecnicoCategoriasService } from './perfiles-tecnico-categorias.service';
 import { PerfilesTecnicoTarifasService } from './perfiles-tecnico-tarifas.service';
 import { PerfilesTecnicoCertificacionesService } from './perfiles-tecnico-certificaciones.service';
+import { toPublic } from './perfiles-tecnico.helpers';
 
 @Injectable()
 export class PerfilesTecnicoService {
@@ -51,14 +52,7 @@ export class PerfilesTecnicoService {
 
   async findAllPublic() {
     const perfiles = await this.perfilesRepository.find({ order: { usuario_id: 'ASC' } });
-    return perfiles.map((perfil) => ({
-      usuario_id: perfil.usuario_id,
-      biografia: perfil.biografia,
-      anios_experiencia: perfil.anios_experiencia,
-      calificacion_promedio: perfil.calificacion_promedio,
-      total_servicios_completados: perfil.total_servicios_completados,
-      verificado: perfil.verificado,
-    }));
+    return perfiles.map((perfil) => toPublic(perfil));
   }
 
   async directorioPublic() {
