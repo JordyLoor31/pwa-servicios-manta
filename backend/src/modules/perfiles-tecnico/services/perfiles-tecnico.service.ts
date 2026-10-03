@@ -126,27 +126,30 @@ export class PerfilesTecnicoService {
   }
 
   async calificar(usuarioId: string, dto: CalificarPerfilTecnicoDto) {
-    const perfil = await this.consultaService.findOne(usuarioId);
-    const serviciosCompletados = perfil.total_servicios_completados;
-    const promedioActual = perfil.calificacion_promedio;
-    const nuevoPromedio =
-      (promedioActual * serviciosCompletados + dto.calificacion) /
-      (serviciosCompletados + 1);
-    const redondeado = Math.round(nuevoPromedio * 100) / 100;
-    await this.perfilesRepository.update(
-      { usuario_id: usuarioId },
-      { calificacion_promedio: redondeado },
-    );
+    await this.consultaService.findOne(usuarioId);
+    await this.perfilesRepository
+      .createQueryBuilder()
+      .update(PerfilTecnico)
+      .set({
+        calificacion_promedio: () =>
+          'ROUND(((calificacion_promedio * total_servicios_completados + :calificacion) / (total_servicios_completados + 1))::numeric, 2)',
+      })
+      .where('usuario_id = :usuarioId', { usuarioId })
+      .setParameter('calificacion', dto.calificacion)
+      .execute();
     return this.consultaService.findOne(usuarioId);
   }
 
   async registrarServicioCompletado(usuarioId: string) {
     await this.consultaService.findOne(usuarioId);
-    await this.perfilesRepository.increment(
+    const resultado = await this.perfilesRepository.increment(
       { usuario_id: usuarioId },
       'total_servicios_completados',
       1,
     );
+    if (resultado.affected === 0) {
+      return this.consultaService.findOne(usuarioId);
+    }
     return this.consultaService.findOne(usuarioId);
   }
 

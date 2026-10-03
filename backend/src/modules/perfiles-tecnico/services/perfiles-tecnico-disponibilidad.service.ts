@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { PerfilTecnico } from '../entities/perfil-tecnico.entity';
 import { DisponibilidadTecnico } from '../entities/disponibilidad-tecnico.entity';
 import { TecnicoCategoria } from '../entities/tecnico-categoria.entity';
@@ -9,10 +9,7 @@ import { ReservaServicio } from '../../solicitudes/entities/reserva-servicio.ent
 import { SlotDisponibilidadDto } from '../dtos/reemplazar-disponibilidad.dto';
 
 function agregarSlotsDisponibles(inicio: string, fin: string, slots: Set<string>): void {
-  const convertir = (hora: string): number => {
-    const [h, m] = hora.split(':').map(Number);
-    return h * 60 + m;
-  };
+  const convertir = minutosDeHora;
   const formatear = (minutos: number): string => {
     const h = Math.floor(minutos / 60);
     const m = minutos % 60;
@@ -22,6 +19,11 @@ function agregarSlotsDisponibles(inicio: string, fin: string, slots: Set<string>
   for (let t = convertir(inicio); t < finMin; t += 30) {
     slots.add(formatear(t));
   }
+}
+
+function minutosDeHora(hora: string): number {
+  const [horas, minutos] = hora.split(':').map(Number);
+  return horas * 60 + minutos;
 }
 
 @Injectable()
@@ -87,7 +89,46 @@ export class PerfilesTecnicoDisponibilidadService {
         calificacion_promedio: string | number;
         total_servicios_completados: string | number;
       }>();
-    return this.toDirectorio(filas);
+    if (filas.length === 0) {
+      return [];
+    }
+    const ids = filas.map((fila) => fila.id);
+    const intervalos = await this.disponibilidadRepository.find({
+      where: { tecnico_id: In(ids), dia_semana: dia },
+      select: { tecnico_id: true, hora_inicio: true, hora_fin: true },
+    });
+    const reservas = await this.reservasRepository.find({
+      where: { tecnico_id: In(ids), fecha_servicio: fecha },
+      select: { tecnico_id: true, hora_inicio: true, hora_fin: true },
+    });
+    const intervalosPorTecnico = new Map<string, { inicio: string; fin: string }[]>();
+    for (const intervalo of intervalos) {
+      const lista = intervalosPorTecnico.get(intervalo.tecnico_id) ?? [];
+      lista.push({ inicio: intervalo.hora_inicio, fin: intervalo.hora_fin });
+      intervalosPorTecnico.set(intervalo.tecnico_id, lista);
+    }
+    const reservasPorTecnico = new Map<string, { inicio: string; fin: string }[]>();
+    for (const reserva of reservas) {
+      const lista = reservasPorTecnico.get(reserva.tecnico_id) ?? [];
+      lista.push({ inicio: reserva.hora_inicio, fin: reserva.hora_fin });
+      reservasPorTecnico.set(reserva.tecnico_id, lista);
+    }
+    const filasConSlots = filas.filter((fila) => {
+      const intervalosTecnico = intervalosPorTecnico.get(fila.id) ?? [];
+      const reservasTecnico = reservasPorTecnico.get(fila.id) ?? [];
+      return intervalosTecnico.some((intervalo) => {
+        const slots = new Set<string>();
+        agregarSlotsDisponibles(intervalo.inicio, intervalo.fin, slots);
+        return [...slots].some((slot) => {
+          const inicio = minutosDeHora(slot);
+          const fin = inicio + 30;
+          return !reservasTecnico.some(
+            (reserva) => minutosDeHora(reserva.inicio) < fin && minutosDeHora(reserva.fin) > inicio,
+          );
+        });
+      });
+    });
+    return this.toDirectorio(filasConSlots);
   }
 
   async horariosDisponibles(dia: number, categorias: string[] = [], tecnicoId?: string) {
@@ -134,15 +175,12 @@ export class PerfilesTecnicoDisponibilidadService {
       select: { hora_inicio: true, hora_fin: true },
     });
 
-    const minutos = (hora: string) => {
-      const [horas, minutos] = hora.split(':').map(Number);
-      return horas * 60 + minutos;
-    };
+    const convertir = minutosDeHora;
     return horarios.filter((hora) => {
-      const inicio = minutos(hora);
+      const inicio = convertir(hora);
       const fin = inicio + 30;
       return !reservas.some(
-        (reserva) => minutos(reserva.hora_inicio) < fin && minutos(reserva.hora_fin) > inicio,
+        (reserva) => convertir(reserva.hora_inicio) < fin && convertir(reserva.hora_fin) > inicio,
       );
     });
   }
