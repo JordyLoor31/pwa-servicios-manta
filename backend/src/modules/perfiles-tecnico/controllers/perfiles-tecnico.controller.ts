@@ -76,6 +76,26 @@ export class PerfilesTecnicoController {
   horarios(
     @Query('dia', new DefaultValuePipe(-1), ParseIntPipe) dia: number,
     @Query('categorias') categorias?: string,
+    @Query('tecnico') tecnico?: string,
+  ) {
+    if (dia < 0 || dia > 6) {
+      return [];
+    }
+    if (tecnico && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tecnico)) {
+      return [];
+    }
+    const idsCategorias = (categorias ?? '')
+      .split(',')
+      .map((categoria) => categoria.trim())
+      .filter(Boolean);
+    return this.perfilesTecnicoService.horariosDisponibles(dia, idsCategorias, tecnico);
+  }
+
+  @Public()
+  @Get('disponibles/por-dia')
+  porDia(
+    @Query('dia', new DefaultValuePipe(-1), ParseIntPipe) dia: number,
+    @Query('categorias') categorias?: string,
   ) {
     if (dia < 0 || dia > 6) {
       return [];
@@ -84,7 +104,7 @@ export class PerfilesTecnicoController {
       .split(',')
       .map((categoria) => categoria.trim())
       .filter(Boolean);
-    return this.perfilesTecnicoService.horariosDisponibles(dia, idsCategorias);
+    return this.perfilesTecnicoService.disponiblesPorDia(dia, idsCategorias);
   }
 
   @Public()

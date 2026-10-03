@@ -1,21 +1,17 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
 import Button from 'primevue/button'
-import DatePicker from 'primevue/datepicker'
-import Dialog from 'primevue/dialog'
-import FloatLabel from 'primevue/floatlabel'
-import InputText from 'primevue/inputtext'
-import Listbox from 'primevue/listbox'
-import Select from 'primevue/select'
 import Skeleton from 'primevue/skeleton'
 import Tag from 'primevue/tag'
-import Textarea from 'primevue/textarea'
 import Toast from 'primevue/toast'
+import { useToast } from 'primevue/usetoast'
 import AppHeader from '../../components/layout/AppHeader.vue'
+import NuevaSolicitudDialog from '../../components/solicitudes/NuevaSolicitudDialog.vue'
+import DetalleSolicitudDialog from '../../components/solicitudes/DetalleSolicitudDialog.vue'
 import { useSolicitudes } from '../../composables/solicitudes/useSolicitudes'
-import { nombreDia } from '../../composables/disponibilidad/useDisponibilidad'
 import type { EstadoSolicitud, Solicitud } from '../../types/solicitudes'
 import { estadoSeveridad, estadoLabel } from '../../utils/solicitudes'
+import { api } from '../../services/api'
 
 const {
   solicitudes,
@@ -24,30 +20,18 @@ const {
   page,
   totalPaginas,
   filtroEstado,
-  diaBusqueda,
-  horaBusqueda,
-  categorias,
-  categoriasSeleccionadas,
-  fechaServicio,
   formAbierto,
   detalleVisible,
   solicitudActiva,
-  confirmarAccionVisible,
-  tecnicos,
-  horasDisponibles,
-  cargandoTecnicos,
-  form,
   cambiarFiltroEstado,
   abrirFormulario,
-  crear,
   cargar,
   irPagina,
   verDetalle,
   cerrarDetalle,
-  confirmarCancelar,
-  ejecutarAccion,
-  cerrarConfirmacion,
 } = useSolicitudes()
+
+const toast = useToast()
 
 const FRECUENCIAS: { valor: 'todos' | EstadoSolicitud; label: string }[] = [
   { valor: 'todos', label: 'Todos' },
@@ -59,6 +43,27 @@ const FRECUENCIAS: { valor: 'todos' | EstadoSolicitud; label: string }[] = [
 ]
 
 const placeholders = Array.from({ length: 3 }, (_, i) => ({ id: `skeleton-${i}` }))
+
+async function onCreada(creada: Solicitud) {
+  await cargar()
+  verDetalle(creada)
+}
+
+async function cancelarSolicitud(solicitud: Solicitud) {
+  try {
+    await api.patch(`/solicitudes/${solicitud.id}/cancelar`, {})
+    toast.add({ severity: 'success', summary: 'Solicitud cancelada', life: 3000 })
+    cerrarDetalle()
+    await cargar()
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: error instanceof Error ? error.message : 'No se pudo cancelar la solicitud',
+      life: 4000,
+    })
+  }
+}
 
 function onSolicitudActualizada() {
   cargar()
@@ -138,25 +143,14 @@ onUnmounted(() => {
                   :severity="estadoSeveridad((item as Solicitud).estado)"
                 />
               </div>
-              <div class="flex gap-2">
-                <Button
-                  v-if="(item as Solicitud).estado === 'pendiente' || (item as Solicitud).estado === 'aceptada'"
-                  label="Cancelar"
-                  icon="pi pi-times"
-                  severity="warn"
-                  variant="outlined"
-                  size="small"
-                  @click="confirmarCancelar(item as Solicitud)"
-                />
-                <Button
-                  label="Ver detalle"
-                  icon="pi pi-eye"
-                  severity="secondary"
-                  variant="outlined"
-                  size="small"
-                  @click="verDetalle(item as Solicitud)"
-                />
-              </div>
+              <Button
+                label="Ver detalle"
+                icon="pi pi-eye"
+                severity="secondary"
+                variant="outlined"
+                size="small"
+                @click="verDetalle(item as Solicitud)"
+              />
             </div>
             <p class="mt-3 text-sm text-ink">{{ (item as Solicitud).descripcion }}</p>
             <p class="mt-1 text-sm text-muted">
@@ -195,176 +189,13 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <Dialog v-model:visible="formAbierto" header="Nueva solicitud de servicio" modal class="w-full max-w-lg">
-        <div class="mt-2 flex flex-col gap-4">
-          <div class="rounded-xl bg-pacific/5 p-3 text-sm text-ink">
-            <i class="pi pi-clock mr-1 text-pacific" />
-            Mostrando técnicos disponibles el
-            <span class="font-semibold">{{ nombreDia(diaBusqueda) }}</span> a las
-            <span class="font-semibold">{{ horaBusqueda }}</span>.
-          </div>
-          <div class="flex flex-col gap-1.5">
-            <label for="categorias" class="text-sm font-medium text-ink">
-              Categoría del servicio *
-            </label>
-            <Listbox
-              id="categorias"
-              v-model="categoriasSeleccionadas"
-              :options="categorias"
-              multiple
-              checkbox
-              option-label="nombre"
-              option-value="id"
-              class="w-full"
-            />
-            <p v-if="categorias.length === 0" class="text-xs text-muted">
-              Cargando categorías…
-            </p>
-          </div>
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div class="flex flex-col gap-1.5">
-              <label for="dia" class="text-sm font-medium text-ink">Día del servicio *</label>
-              <DatePicker
-                id="dia"
-                v-model="fechaServicio"
-                :min-date="new Date()"
-                date-format="dd/mm/yy"
-                class="w-full"
-                show-icon
-              />
-            </div>
-            <div class="flex flex-col gap-1.5">
-              <label for="hora" class="text-sm font-medium text-ink">Hora *</label>
-              <Select
-                id="hora"
-                v-model="horaBusqueda"
-                :options="horasDisponibles"
-                :loading="!horasDisponibles.length"
-                class="w-full"
-              />
-              <p v-if="horasDisponibles.length === 0" class="text-xs text-muted">
-                Sin horarios disponibles para ese día y categoría.
-              </p>
-            </div>
-          </div>
-          <div class="flex flex-col gap-1.5">
-            <label for="tecnico" class="text-sm font-medium text-ink">Técnico *</label>
-            <Select
-              id="tecnico"
-              v-model="form.tecnico_id"
-              :options="tecnicos"
-              option-label="nombres"
-              option-value="id"
-              :loading="cargandoTecnicos"
-              :placeholder="tecnicos.length ? 'Elige un técnico' : 'Sin técnicos en este horario'"
-              class="w-full"
-            >
-              <template #option="{ option }">
-                <div class="flex items-center gap-2">
-                  <i class="pi pi-user text-pacific" />
-                  <span>{{ option.nombres }} {{ option.apellidos }}</span>
-                  <Tag
-                    v-if="option.verificado"
-                    value="Verificado"
-                    icon="pi pi-shield-check"
-                    severity="success"
-                    class="ml-auto"
-                  />
-                </div>
-              </template>
-            </Select>
-            <p v-if="!cargandoTecnicos && tecnicos.length === 0" class="text-xs text-muted">
-              Ningún técnico registra horario para ese día y hora. Prueba con otro horario.
-            </p>
-          </div>
-          <div class="flex flex-col gap-1.5">
-            <label for="descripcion" class="text-sm font-medium text-ink">Describe lo que necesitas *</label>
-            <Textarea
-              id="descripcion"
-              v-model="form.descripcion"
-              rows="4"
-              auto-resize
-              placeholder="Ej.: Necesito reparar la lavadora, el motor no gira y hace ruido."
-              class="w-full"
-            />
-          </div>
-          <FloatLabel variant="on">
-            <InputText id="direccion" v-model="form.direccion" class="w-full" />
-            <label for="direccion">Dirección del servicio (opcional)</label>
-          </FloatLabel>
-        </div>
-        <template #footer>
-          <div class="flex justify-end gap-2">
-            <Button label="Cancelar" severity="secondary" @click="formAbierto = false" />
-            <Button label="Enviar solicitud" icon="pi pi-send" @click="crear" />
-          </div>
-        </template>
-      </Dialog>
-
-      <Dialog v-model:visible="detalleVisible" header="Detalle de la solicitud" modal class="w-full max-w-lg">
-        <div v-if="solicitudActiva" class="mt-2 flex flex-col gap-3 text-sm">
-          <div class="flex items-center gap-2">
-            <span class="font-semibold text-ink">
-              {{ solicitudActiva.tecnico.nombres }} {{ solicitudActiva.tecnico.apellidos }}
-            </span>
-            <Tag
-              :value="estadoLabel(solicitudActiva.estado)"
-              :severity="estadoSeveridad(solicitudActiva.estado)"
-            />
-          </div>
-          <p class="text-ink">{{ solicitudActiva.descripcion }}</p>
-          <p class="text-muted">
-            <i class="pi pi-map-marker mr-1" />{{ solicitudActiva.direccion || 'Dirección no indicada' }}
-          </p>
-          <p class="text-xs text-muted">
-            <i class="pi pi-calendar mr-1" />
-            Solicitada el {{ new Date(solicitudActiva.fecha_solicitud).toLocaleString() }}
-          </p>
-          <p v-if="solicitudActiva.fecha_aceptacion" class="text-xs text-muted">
-            <i class="pi pi-check-circle mr-1" />
-            Aceptada el {{ new Date(solicitudActiva.fecha_aceptacion).toLocaleString() }}
-          </p>
-          <p v-if="solicitudActiva.fecha_completada" class="text-xs text-muted">
-            <i class="pi pi-flag mr-1" />
-            Completada el {{ new Date(solicitudActiva.fecha_completada).toLocaleString() }}
-          </p>
-          <p v-if="solicitudActiva.motivo_rechazo" class="rounded-lg bg-red-50 p-3 text-sm text-red-600">
-            <i class="pi pi-comment mr-1" />{{ solicitudActiva.motivo_rechazo }}
-          </p>
-        </div>
-        <template #footer>
-          <div class="flex justify-end gap-2">
-            <Button
-              v-if="
-                solicitudActiva &&
-                (solicitudActiva.estado === 'pendiente' || solicitudActiva.estado === 'aceptada')
-              "
-              label="Cancelar solicitud"
-              icon="pi pi-times"
-              severity="warn"
-              variant="outlined"
-              @click="confirmarCancelar(solicitudActiva)"
-            />
-            <Button label="Cerrar" severity="secondary" @click="cerrarDetalle" />
-          </div>
-        </template>
-      </Dialog>
-
-      <Dialog v-model:visible="confirmarAccionVisible" header="Cancelar solicitud" modal class="w-full max-w-sm">
-        <p class="text-sm text-ink">
-          ¿Seguro que deseas cancelar esta solicitud a
-          <span class="font-semibold">
-            {{ solicitudActiva?.tecnico.nombres }} {{ solicitudActiva?.tecnico.apellidos }}
-          </span>
-          ? La cancelación no se puede deshacer.
-        </p>
-        <template #footer>
-          <div class="flex justify-end gap-2">
-            <Button label="No, mantenerla" severity="secondary" @click="cerrarConfirmacion" />
-            <Button label="Sí, cancelar" icon="pi pi-times" severity="danger" @click="ejecutarAccion" />
-          </div>
-        </template>
-      </Dialog>
+      <NuevaSolicitudDialog v-model:visible="formAbierto" @creada="onCreada" />
+      <DetalleSolicitudDialog
+        v-model:visible="detalleVisible"
+        :solicitud="solicitudActiva"
+        @cerrar="cerrarDetalle"
+        @cancelar="cancelarSolicitud"
+      />
     </section>
   </div>
 </template>

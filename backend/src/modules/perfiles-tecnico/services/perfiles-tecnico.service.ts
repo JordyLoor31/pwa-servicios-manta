@@ -148,7 +148,50 @@ export class PerfilesTecnicoService {
     return this.toDirectorio(filas);
   }
 
-  async horariosDisponibles(dia: number, categorias: string[] = []) {
+  async disponiblesPorDia(dia: number, categorias: string[] = []) {
+    const query = this.perfilesRepository
+      .createQueryBuilder('p')
+      .innerJoin(Usuario, 'u', 'u.id = p.usuario_id')
+      .innerJoin(
+        DisponibilidadTecnico,
+        'd',
+        'd.tecnico_id = p.usuario_id AND d.dia_semana = :dia',
+        { dia },
+      )
+      .select([
+        'u.id AS id',
+        'u.nombres AS nombres',
+        'u.apellidos AS apellidos',
+        'u.email AS email',
+        'p.verificado AS verificado',
+        'p.calificacion_promedio AS calificacion_promedio',
+        'p.total_servicios_completados AS total_servicios_completados',
+      ])
+      .distinct(true)
+      .where('u.estado = :activo', { activo: EstadoUsuario.ACTIVO });
+
+    if (categorias.length > 0) {
+      query
+        .innerJoin(TecnicoCategoria, 'tc', 'tc.tecnico_id = p.usuario_id')
+        .andWhere('tc.categoria_id IN (:...ids)', { ids: [...new Set(categorias)] });
+    }
+
+    const filas = await query
+      .orderBy('p.calificacion_promedio', 'DESC')
+      .addOrderBy('u.nombres', 'ASC')
+      .getRawMany<{
+        id: string;
+        nombres: string;
+        apellidos: string;
+        email: string;
+        verificado: boolean;
+        calificacion_promedio: string | number;
+        total_servicios_completados: string | number;
+      }>();
+    return this.toDirectorio(filas);
+  }
+
+  async horariosDisponibles(dia: number, categorias: string[] = [], tecnicoId?: string) {
     const query = this.disponibilidadRepository
       .createQueryBuilder('d')
       .innerJoin(PerfilTecnico, 'p', 'p.usuario_id = d.tecnico_id')
@@ -161,6 +204,10 @@ export class PerfilesTecnicoService {
       .select('d.hora_inicio', 'inicio')
       .addSelect('d.hora_fin', 'fin')
       .where('d.dia_semana = :dia', { dia });
+
+    if (tecnicoId) {
+      query.andWhere('d.tecnico_id = :tecnicoId', { tecnicoId });
+    }
 
     if (categorias.length > 0) {
       query
