@@ -92,19 +92,43 @@ export class PerfilesTecnicoController {
   }
 
   @Public()
-  @Get('disponibles/por-dia')
-  porDia(
-    @Query('dia', new DefaultValuePipe(-1), ParseIntPipe) dia: number,
+  @Get('disponibles/por-fecha')
+  porFecha(
+    @Query('fecha') fecha?: string,
     @Query('categorias') categorias?: string,
+    @Query('tecnico') tecnico?: string,
   ) {
-    if (dia < 0 || dia > 6) {
-      return [];
+    if (!fecha || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+      throw new BadRequestException('fecha debe tener formato YYYY-MM-DD');
     }
     const idsCategorias = (categorias ?? '')
       .split(',')
       .map((categoria) => categoria.trim())
       .filter(Boolean);
-    return this.perfilesTecnicoService.disponiblesPorDia(dia, idsCategorias);
+    if (tecnico && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tecnico)) {
+      throw new BadRequestException('tecnico debe ser un UUID válido');
+    }
+    return this.perfilesTecnicoService.disponiblesPorFecha(fecha, idsCategorias, tecnico);
+  }
+
+  @Public()
+  @Get('disponibles/horas/por-fecha')
+  horasPorFecha(
+    @Query('fecha') fecha?: string,
+    @Query('tecnico') tecnico?: string,
+    @Query('categorias') categorias?: string,
+  ) {
+    if (!fecha || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+      throw new BadRequestException('fecha debe tener formato YYYY-MM-DD');
+    }
+    if (!tecnico || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tecnico)) {
+      throw new BadRequestException('tecnico es requerido y debe ser un UUID válido');
+    }
+    const idsCategorias = (categorias ?? '')
+      .split(',')
+      .map((categoria) => categoria.trim())
+      .filter(Boolean);
+    return this.perfilesTecnicoService.horariosDisponiblesPorFecha(fecha, tecnico, idsCategorias);
   }
 
   @Public()

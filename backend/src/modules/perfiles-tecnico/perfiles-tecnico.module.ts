@@ -8,6 +8,7 @@ import { TarifaTecnico } from './entities/tarifa-tecnico.entity';
 import { CategoriaServicio } from '../categorias/entities/categoria-servicio.entity';
 import { PerfilesTecnicoController } from './controllers/perfiles-tecnico.controller';
 import { PerfilesTecnicoService } from './services/perfiles-tecnico.service';
+import { ReservaServicio } from '../solicitudes/entities/reserva-servicio.entity';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { PerfilesTecnicoService } from './services/perfiles-tecnico.service';
       TecnicoCategoria,
       TarifaTecnico,
       CategoriaServicio,
+      ReservaServicio,
     ]),
   ],
   controllers: [PerfilesTecnicoController],

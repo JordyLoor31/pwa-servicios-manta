@@ -51,6 +51,9 @@ export class Solicitud {
   @Column({ type: 'time', nullable: true })
   hora_propuesta: string | null;
 
+  @Column({ type: 'time', nullable: true })
+  hora_fin_estimada: string | null;
+
   @Column({ type: 'enum', enum: EstadoSolicitud, default: EstadoSolicitud.PENDIENTE })
   estado: EstadoSolicitud;
 

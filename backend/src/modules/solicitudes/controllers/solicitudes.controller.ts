@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { SolicitudesService } from '../services/solicitudes.service';
 import { CrearSolicitudDto } from '../dtos/crear-solicitud.dto';
+import { AceptarSolicitudDto } from '../dtos/aceptar-solicitud.dto';
 import { RechazarSolicitudDto } from '../dtos/rechazar-solicitud.dto';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { CurrentUser, type AuthenticatedUser } from '../../auth/decorators/current-user.decorator';
@@ -72,8 +73,12 @@ export class SolicitudesController {
 
   @Roles(RolUsuario.TECNICO, RolUsuario.ADMIN)
   @Patch(':id/aceptar')
-  aceptar(@CurrentUser() user: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string) {
-    return this.solicitudesService.aceptar(id, user);
+  aceptar(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: AceptarSolicitudDto,
+  ) {
+    return this.solicitudesService.aceptar(id, dto, user);
   }
 
   @Roles(RolUsuario.TECNICO, RolUsuario.ADMIN)

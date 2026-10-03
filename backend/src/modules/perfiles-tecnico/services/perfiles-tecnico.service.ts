@@ -15,6 +15,7 @@ import { SlotDisponibilidadDto } from '../dtos/reemplazar-disponibilidad.dto';
 import { CrearCertificacionDto } from '../dtos/crear-certificacion.dto';
 import { RevisarCertificacionDto } from '../dtos/revisar-certificacion.dto';
 import { RangoPrecioDto } from '../dtos/reemplazar-tarifas.dto';
+import { ReservaServicio } from '../../solicitudes/entities/reserva-servicio.entity';
 
 function agregarSlotsDisponibles(inicio: string, fin: string, slots: Set<string>): void {
   const convertir = (hora: string): number => {
@@ -47,6 +48,8 @@ export class PerfilesTecnicoService {
     private readonly categoriasRepository: Repository<CategoriaServicio>,
     @InjectRepository(TarifaTecnico)
     private readonly tarifasRepository: Repository<TarifaTecnico>,
+    @InjectRepository(ReservaServicio)
+    private readonly reservasRepository: Repository<ReservaServicio>,
   ) {}
 
   async create(dto: CreatePerfilTecnicoDto) {
@@ -191,6 +194,54 @@ export class PerfilesTecnicoService {
     return this.toDirectorio(filas);
   }
 
+  async disponiblesPorFecha(fecha: string, categorias: string[] = [], tecnicoId?: string) {
+    const dia = new Date(`${fecha}T12:00:00`).getDay();
+    const query = this.perfilesRepository
+      .createQueryBuilder('p')
+      .innerJoin(Usuario, 'u', 'u.id = p.usuario_id')
+      .innerJoin(
+        DisponibilidadTecnico,
+        'd',
+        'd.tecnico_id = p.usuario_id AND d.dia_semana = :dia',
+        { dia },
+      )
+      .select([
+        'u.id AS id',
+        'u.nombres AS nombres',
+        'u.apellidos AS apellidos',
+        'u.email AS email',
+        'p.verificado AS verificado',
+        'p.calificacion_promedio AS calificacion_promedio',
+        'p.total_servicios_completados AS total_servicios_completados',
+      ])
+      .distinct(true)
+      .where('u.estado = :activo', { activo: EstadoUsuario.ACTIVO });
+
+    if (tecnicoId) {
+      query.andWhere('p.usuario_id = :tecnicoId', { tecnicoId });
+    }
+
+    if (categorias.length > 0) {
+      query
+        .innerJoin(TecnicoCategoria, 'tc', 'tc.tecnico_id = p.usuario_id')
+        .andWhere('tc.categoria_id IN (:...ids)', { ids: [...new Set(categorias)] });
+    }
+
+    const filas = await query
+      .orderBy('p.calificacion_promedio', 'DESC')
+      .addOrderBy('u.nombres', 'ASC')
+      .getRawMany<{
+        id: string;
+        nombres: string;
+        apellidos: string;
+        email: string;
+        verificado: boolean;
+        calificacion_promedio: string | number;
+        total_servicios_completados: string | number;
+      }>();
+    return this.toDirectorio(filas);
+  }
+
   async horariosDisponibles(dia: number, categorias: string[] = [], tecnicoId?: string) {
     const query = this.disponibilidadRepository
       .createQueryBuilder('d')
@@ -221,6 +272,31 @@ export class PerfilesTecnicoService {
       agregarSlotsDisponibles(fila.inicio, fila.fin, slots);
     }
     return [...slots].sort();
+  }
+
+  async horariosDisponiblesPorFecha(
+    fecha: string,
+    tecnicoId: string,
+    categorias: string[] = [],
+  ) {
+    const dia = new Date(`${fecha}T12:00:00`).getDay();
+    const horarios = await this.horariosDisponibles(dia, categorias, tecnicoId);
+    const reservas = await this.reservasRepository.find({
+      where: { tecnico_id: tecnicoId, fecha_servicio: fecha },
+      select: { hora_inicio: true, hora_fin: true },
+    });
+
+    const minutos = (hora: string) => {
+      const [horas, minutos] = hora.split(':').map(Number);
+      return horas * 60 + minutos;
+    };
+    return horarios.filter((hora) => {
+      const inicio = minutos(hora);
+      const fin = inicio + 30;
+      return !reservas.some(
+        (reserva) => minutos(reserva.hora_inicio) < fin && minutos(reserva.hora_fin) > inicio,
+      );
+    });
   }
 
   private toDirectorio(

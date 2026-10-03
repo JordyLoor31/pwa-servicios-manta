@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Solicitud } from './entities/solicitud.entity';
+import { ReservaServicio } from './entities/reserva-servicio.entity';
 import { Usuario } from '../usuarios/entities/usuario.entity';
 import { PerfilTecnico } from '../perfiles-tecnico/entities/perfil-tecnico.entity';
+import { DisponibilidadTecnico } from '../perfiles-tecnico/entities/disponibilidad-tecnico.entity';
 import { SolicitudesController } from './controllers/solicitudes.controller';
 import { SolicitudesService } from './services/solicitudes.service';
 import { NotificacionesModule } from '../notificaciones/notificaciones.module';
@@ -10,7 +12,13 @@ import { NotificacionesPushModule } from '../notificaciones-push/notificaciones-
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Solicitud, Usuario, PerfilTecnico]),
+    TypeOrmModule.forFeature([
+      Solicitud,
+      ReservaServicio,
+      Usuario,
+      PerfilTecnico,
+      DisponibilidadTecnico,
+    ]),
     NotificacionesModule,
     NotificacionesPushModule,
   ],

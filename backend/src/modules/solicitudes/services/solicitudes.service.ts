@@ -1,10 +1,19 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Solicitud, EstadoSolicitud } from '../entities/solicitud.entity';
+import { ReservaServicio } from '../entities/reserva-servicio.entity';
+import { DisponibilidadTecnico } from '../../perfiles-tecnico/entities/disponibilidad-tecnico.entity';
 import { Usuario, RolUsuario } from '../../usuarios/entities/usuario.entity';
 import { PerfilTecnico } from '../../perfiles-tecnico/entities/perfil-tecnico.entity';
 import { CrearSolicitudDto } from '../dtos/crear-solicitud.dto';
+import { AceptarSolicitudDto } from '../dtos/aceptar-solicitud.dto';
 import { RechazarSolicitudDto } from '../dtos/rechazar-solicitud.dto';
 import type { AuthenticatedUser } from '../../auth/decorators/current-user.decorator';
 import { NotificacionesGateway } from '../../notificaciones/notificaciones.gateway';
@@ -25,6 +34,10 @@ export class SolicitudesService {
     private readonly usuariosRepository: Repository<Usuario>,
     @InjectRepository(PerfilTecnico)
     private readonly perfilesRepository: Repository<PerfilTecnico>,
+    @InjectRepository(DisponibilidadTecnico)
+    private readonly disponibilidadRepository: Repository<DisponibilidadTecnico>,
+    @InjectRepository(ReservaServicio)
+    private readonly reservasRepository: Repository<ReservaServicio>,
     private readonly notificaciones: NotificacionesGateway,
     private readonly notificacionesPush: NotificacionesPushService,
   ) {}
@@ -128,7 +141,7 @@ export class SolicitudesService {
     return this.toView(fila);
   }
 
-  async aceptar(id: string, user: AuthenticatedUser) {
+  async aceptar(id: string, dto: AceptarSolicitudDto, user: AuthenticatedUser) {
     const solicitud = await this.obtenerParaAccion(
       id,
       user,
@@ -136,9 +149,26 @@ export class SolicitudesService {
       'Solo el técnico destinatario puede aceptar la solicitud',
     );
     this.verEstado(solicitud, [EstadoSolicitud.PENDIENTE], 'Solo se puede aceptar una solicitud pendiente');
+
+    const horaInicio = dto.hora_inicio;
+    const horaFin = this.sumarHoras(horaInicio, dto.duracion_horas);
+    this.validarFechaServicio(dto.fecha_servicio);
+    await this.validarEnDisponibilidad(solicitud.tecnico_id, dto.fecha_servicio, horaInicio, horaFin);
+    await this.validarSinSolapamiento(solicitud.tecnico_id, dto.fecha_servicio, horaInicio, horaFin);
+
     await this.solicitudesRepository.update(solicitud.id, {
       estado: EstadoSolicitud.ACEPTADA,
       fecha_aceptacion: new Date(),
+      fecha_propuesta: dto.fecha_servicio,
+      hora_propuesta: horaInicio,
+      hora_fin_estimada: horaFin,
+    });
+    await this.reservasRepository.save({
+      tecnico_id: solicitud.tecnico_id,
+      solicitud_id: solicitud.id,
+      fecha_servicio: dto.fecha_servicio,
+      hora_inicio: horaInicio,
+      hora_fin: horaFin,
     });
     const vista = await this.detalle(id, user);
     this.notificaciones.notificarSolicitudActualizada(solicitud.cliente_id, {
@@ -147,7 +177,7 @@ export class SolicitudesService {
     });
     await this.notificacionesPush.enviar(solicitud.cliente_id, {
       titulo: 'Solicitud aceptada',
-      cuerpo: `${vista.tecnico.nombres} ${vista.tecnico.apellidos} aceptó tu solicitud.`,
+      cuerpo: `${vista.tecnico.nombres} ${vista.tecnico.apellidos} aceptó tu solicitud para el ${dto.fecha_servicio} a las ${horaInicio}.`,
       url: '/solicitudes',
     });
     return vista;
@@ -165,6 +195,7 @@ export class SolicitudesService {
       estado: EstadoSolicitud.RECHAZADA,
       motivo_rechazo: dto.motivo_rechazo.trim(),
     });
+    await this.liberarReserva(solicitud.id);
     const vista = await this.detalle(id, user);
     this.notificaciones.notificarSolicitudActualizada(solicitud.cliente_id, {
       evento: 'solicitud.actualizada',
@@ -193,6 +224,7 @@ export class SolicitudesService {
     await this.solicitudesRepository.update(solicitud.id, {
       estado: EstadoSolicitud.CANCELADA,
     });
+    await this.liberarReserva(solicitud.id);
     const vista = await this.detalle(id, user);
     this.notificaciones.notificarSolicitudActualizada(solicitud.tecnico_id, {
       evento: 'solicitud.actualizada',
@@ -223,6 +255,7 @@ export class SolicitudesService {
       'total_servicios_completados',
       1,
     );
+    await this.liberarReserva(solicitud.id);
     const vista = await this.detalle(id, user);
     this.notificaciones.notificarSolicitudActualizada(solicitud.cliente_id, {
       evento: 'solicitud.actualizada',
@@ -258,6 +291,71 @@ export class SolicitudesService {
     }
   }
 
+  private sumarHoras(hora: string, horas: number): string {
+    const [h, m] = hora.split(':').map(Number);
+    const total = h + horas;
+    return `${String(total).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  }
+
+  private validarFechaServicio(fecha: string) {
+    const hoy = new Date();
+    const hoyTexto = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(
+      hoy.getDate(),
+    ).padStart(2, '0')}`;
+    if (fecha < hoyTexto) {
+      throw new BadRequestException('La fecha del servicio no puede ser anterior a hoy');
+    }
+  }
+
+  private async validarEnDisponibilidad(
+    tecnicoId: string,
+    fecha: string,
+    inicio: string,
+    fin: string,
+  ) {
+    const dia = new Date(`${fecha}T12:00:00`).getDay();
+    const filas = await this.disponibilidadRepository.find({
+      where: { tecnico_id: tecnicoId, dia_semana: dia },
+    });
+    const dentro = filas.some(
+      (fila) =>
+        this.minutos(fila.hora_inicio) <= this.minutos(inicio) &&
+        this.minutos(fila.hora_fin) >= this.minutos(fin),
+    );
+    if (!dentro) {
+      throw new BadRequestException(
+        'El horario elegido supera la disponibilidad semanal del técnico para ese día',
+      );
+    }
+  }
+
+  private async validarSinSolapamiento(
+    tecnicoId: string,
+    fecha: string,
+    inicio: string,
+    fin: string,
+  ) {
+    const solapada = await this.reservasRepository
+      .createQueryBuilder('r')
+      .where('r.tecnico_id = :tecnicoId', { tecnicoId })
+      .andWhere('r.fecha_servicio = :fecha', { fecha })
+      .andWhere('this.minutos(r.hora_inicio) < :fin', { fin: this.minutos(fin) })
+      .andWhere('this.minutos(r.hora_fin) > :inicio', { inicio: this.minutos(inicio) })
+      .getExists();
+    if (solapada) {
+      throw new ConflictException('El técnico ya tiene un servicio reservado en ese horario');
+    }
+  }
+
+  private minutos(hora: string): number {
+    const [h, m] = hora.split(':').map(Number);
+    return h * 60 + (m ?? 0);
+  }
+
+  private async liberarReserva(solicitudId: string) {
+    await this.reservasRepository.delete({ solicitud_id: solicitudId });
+  }
+
   private asegurarAcceso(
     fila: { cliente_id: string; tecnico_id: string },
     user: AuthenticatedUser,
@@ -290,6 +388,7 @@ export class SolicitudesService {
       's.motivo_rechazo AS motivo_rechazo',
       's.fecha_propuesta AS fecha_propuesta',
       's.hora_propuesta AS hora_propuesta',
+      's.hora_fin_estimada AS hora_fin_estimada',
       's.fecha_solicitud AS fecha_solicitud',
       's.fecha_aceptacion AS fecha_aceptacion',
       's.fecha_completada AS fecha_completada',
@@ -311,6 +410,7 @@ export class SolicitudesService {
       motivo_rechazo: fila.motivo_rechazo,
       fecha_propuesta: fila.fecha_propuesta,
       hora_propuesta: fila.hora_propuesta,
+      hora_fin_estimada: fila.hora_fin_estimada,
       fecha_solicitud: fila.fecha_solicitud,
       fecha_aceptacion: fila.fecha_aceptacion,
       fecha_completada: fila.fecha_completada,
