@@ -26,7 +26,7 @@ import { CategoriaServicio } from './modules/categorias/entities/categoria-servi
 import { Direccion } from './modules/direcciones/entities/direccion.entity';
 import { Solicitud } from './modules/solicitudes/entities/solicitud.entity';
 import { SuscripcionPush } from './modules/notificaciones-push/entities/suscripcion-push.entity';
-
+import { ReservaServicio } from './modules/solicitudes/entities/reserva-servicio.entity'; 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -50,9 +50,9 @@ import { SuscripcionPush } from './modules/notificaciones-push/entities/suscripc
           CategoriaServicio,
           Direccion,
           Solicitud,
+          ReservaServicio,
           SuscripcionPush,
         ];
-
         if (databaseUrl) {
           return {
             type: 'postgres',
