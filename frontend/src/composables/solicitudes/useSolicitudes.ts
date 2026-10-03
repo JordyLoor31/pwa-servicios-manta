@@ -56,6 +56,9 @@ export function useSolicitudes() {
   const confirmarAccionVisible = ref(false)
   const accionPendiente = ref<'aceptar' | 'rechazar' | 'completar' | 'cancelar' | null>(null)
   const motivoRechazo = ref('')
+  const fechaAceptacion = ref<string>('')
+  const horaAceptacion = ref('08:00')
+  const duracionHorasAceptacion = ref(1)
 
   const esCliente = computed(() => hasAnyRole('cliente'))
   const esTecnico = computed(() => hasAnyRole('tecnico'))
@@ -243,6 +246,9 @@ export function useSolicitudes() {
   function confirmarAceptar(solicitud: Solicitud) {
     solicitudActiva.value = solicitud
     accionPendiente.value = 'aceptar'
+    fechaAceptacion.value = solicitud.fecha_propuesta ?? new Date().toISOString().slice(0, 10)
+    horaAceptacion.value = solicitud.hora_propuesta?.slice(0, 5) ?? '08:00'
+    duracionHorasAceptacion.value = 1
     confirmarAccionVisible.value = true
   }
 
@@ -271,7 +277,20 @@ export function useSolicitudes() {
     if (!solicitud) return
     try {
       if (accion === 'aceptar') {
-        await api.patch(`/solicitudes/${solicitud.id}/aceptar`, {})
+        if (!fechaAceptacion.value || !/^\d{2}:\d{2}$/.test(horaAceptacion.value) || duracionHorasAceptacion.value < 1 || duracionHorasAceptacion.value > 12) {
+          toast.add({
+            severity: 'warn',
+            summary: 'Faltan datos',
+            detail: 'Indica fecha, hora de inicio y duración entre 1 y 12 horas.',
+            life: 3000,
+          })
+          return
+        }
+        await api.patch(`/solicitudes/${solicitud.id}/aceptar`, {
+          fecha_servicio: fechaAceptacion.value,
+          hora_inicio: horaAceptacion.value,
+          duracion_horas: duracionHorasAceptacion.value,
+        })
         toast.add({ severity: 'success', summary: 'Solicitud aceptada', life: 3000 })
       } else if (accion === 'completar') {
         await api.patch(`/solicitudes/${solicitud.id}/completar`, {})
@@ -351,6 +370,9 @@ export function useSolicitudes() {
     confirmarAccionVisible,
     accionPendiente,
     motivoRechazo,
+    fechaAceptacion,
+    horaAceptacion,
+    duracionHorasAceptacion,
     esCliente,
     esTecnico,
     baseRuta,

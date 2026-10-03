@@ -26,6 +26,9 @@ const {
   confirmarAccionVisible,
   accionPendiente,
   motivoRechazo,
+  fechaAceptacion,
+  horaAceptacion,
+  duracionHorasAceptacion,
   verDetalle,
   cerrarDetalle,
   confirmarAceptar,
@@ -277,13 +280,21 @@ onUnmounted(() => {
         modal
         class="w-full max-w-sm"
       >
-        <p v-if="accionPendiente === 'aceptar'" class="text-sm text-ink">
-          ¿Confirmas que aceptas la solicitud de
-          <span class="font-semibold">
-            {{ solicitudActiva?.cliente.nombres }} {{ solicitudActiva?.cliente.apellidos }}
-          </span>
-          ?
-        </p>
+        <div v-if="accionPendiente === 'aceptar'" class="flex flex-col gap-3">
+          <p class="text-sm text-ink">
+            ¿Confirmas que aceptas la solicitud de
+            <span class="font-semibold">
+              {{ solicitudActiva?.cliente.nombres }} {{ solicitudActiva?.cliente.apellidos }}
+            </span>
+            ?
+          </p>
+          <label class="text-sm font-medium text-ink">Fecha del servicio *</label>
+          <input v-model="fechaAceptacion" type="date" class="rounded border p-2" />
+          <label class="text-sm font-medium text-ink">Hora de inicio *</label>
+          <input v-model="horaAceptacion" type="time" class="rounded border p-2" />
+          <label class="text-sm font-medium text-ink">Duración (horas) *</label>
+          <input v-model.number="duracionHorasAceptacion" type="number" min="1" max="12" class="rounded border p-2" />
+        </div>
         <p v-else-if="accionPendiente === 'completar'" class="text-sm text-ink">
           ¿El servicio para
           <span class="font-semibold">
