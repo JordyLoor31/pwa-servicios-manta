@@ -121,11 +121,11 @@ function aFechaISO(fecha: Date) {
 
 async function crear() {
   const descripcion = form.value.descripcion.trim()
-  if (!form.value.tecnico_id || !horaBusqueda.value || descripcion.length < 10) {
+  if (!horaBusqueda.value || descripcion.length < 10) {
     toast.add({
       severity: 'warn',
       summary: 'Faltan datos',
-      detail: 'Elige técnico, hora y describe la necesidad (mínimo 10 caracteres).',
+      detail: 'Elige hora y describe la necesidad (mínimo 10 caracteres).',
       life: 3000,
     })
     return
@@ -186,7 +186,7 @@ async function crear() {
       </div>
 
       <div class="flex flex-col gap-1.5">
-        <label for="tecnico" class="text-sm font-medium text-ink">Técnico *</label>
+        <label for="tecnico" class="text-sm font-medium text-ink">Técnico (opcional)</label>
         <Select
           id="tecnico"
           v-model="form.tecnico_id"

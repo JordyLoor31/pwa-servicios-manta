@@ -169,6 +169,10 @@ onUnmounted(() => {
                 Llegada propuesta:
                 {{ formatearPropuestaLlegada((item as Solicitud).fecha_propuesta, (item as Solicitud).hora_propuesta) }}
               </span>
+              <span v-if="(item as Solicitud).unidad_cobro" class="font-medium text-pacific">
+                <i class="pi pi-tag mr-1" />
+                {{ (item as Solicitud).unidad_cobro === 'por_hora' ? 'Cobro por hora' : 'Cobro por servicio' }}
+              </span>
               <span v-if="(item as Solicitud).motivo_rechazo" class="text-red-500">
                 <i class="pi pi-comment mr-1" />{{ (item as Solicitud).motivo_rechazo }}
               </span>

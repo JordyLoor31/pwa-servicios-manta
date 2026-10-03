@@ -192,11 +192,11 @@ export function useSolicitudes() {
 
   async function crear() {
     const descripcion = form.value.descripcion.trim()
-    if (!form.value.tecnico_id || descripcion.length < 10) {
+    if (descripcion.length < 10) {
       toast.add({
         severity: 'warn',
         summary: 'Faltan datos',
-        detail: 'Elige un técnico y describe la necesidad (mínimo 10 caracteres).',
+        detail: 'Describe la necesidad (mínimo 10 caracteres).',
         life: 3000,
       })
       return

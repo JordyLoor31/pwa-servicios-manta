@@ -28,7 +28,7 @@ function pedirCancelar() {
     <div v-if="solicitud" class="mt-2 flex flex-col gap-3 text-sm">
       <div class="flex items-center gap-2">
         <span class="font-semibold text-ink">
-          {{ solicitud.tecnico.nombres }} {{ solicitud.tecnico.apellidos }}
+          {{ solicitud.tecnico?.nombres ?? 'Técnico' }} {{ solicitud.tecnico?.apellidos ?? 'por asignar' }}
         </span>
         <Tag
           :value="estadoLabel(solicitud.estado)"
@@ -51,6 +51,10 @@ function pedirCancelar() {
           Es una hora tentativa: el técnico acordará la hora exacta de llegada contigo.
         </p>
       </div>
+      <p v-if="solicitud.unidad_cobro" class="text-xs text-muted">
+        <i class="pi pi-tag mr-1" />
+        {{ solicitud.unidad_cobro === 'por_hora' ? 'Cobra por hora' : 'Cobra por servicio' }}
+      </p>
       <p class="text-xs text-muted">
         <i class="pi pi-calendar mr-1" />
         Solicitada el {{ new Date(solicitud.fecha_solicitud).toLocaleString() }}
@@ -72,7 +76,7 @@ function pedirCancelar() {
         class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700"
       >
         ¿Seguro que deseas cancelar la solicitud a
-        <span class="font-semibold">{{ solicitud.tecnico.nombres }} {{ solicitud.tecnico.apellidos }}</span
+        <span class="font-semibold">{{ solicitud.tecnico?.nombres ?? 'Técnico' }} {{ solicitud.tecnico?.apellidos ?? 'por asignar' }}</span
         >? La cancelación no se puede deshacer.
       </div>
     </div>

@@ -23,7 +23,8 @@ export interface Solicitud {
   fecha_aceptacion: string | null
   fecha_completada: string | null
   cliente: UsuarioResumen
-  tecnico: UsuarioResumen
+  tecnico: UsuarioResumen | null
+  unidad_cobro?: 'por_hora' | 'por_servicio' | null
 }
 
 export interface SolicitudesPaginadas {
@@ -34,7 +35,7 @@ export interface SolicitudesPaginadas {
 }
 
 export interface CrearSolicitudPayload {
-  tecnico_id: string
+  tecnico_id?: string
   descripcion: string
   direccion?: string
   fecha_propuesta?: string

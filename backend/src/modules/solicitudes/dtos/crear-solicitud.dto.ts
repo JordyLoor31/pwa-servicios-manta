@@ -11,8 +11,8 @@ import {
 
 export class CrearSolicitudDto {
   @IsUUID()
-  @IsNotEmpty()
-  tecnico_id: string;
+  @IsOptional()
+  tecnico_id?: string;
 
   @IsString()
   @MinLength(10)

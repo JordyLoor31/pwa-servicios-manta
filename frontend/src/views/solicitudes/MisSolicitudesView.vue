@@ -140,7 +140,7 @@ onUnmounted(() => {
               <div class="flex items-center gap-2">
                 <i class="pi pi-wrench text-pacific" />
                 <span class="font-semibold text-ink">
-                  {{ (item as Solicitud).tecnico.nombres }} {{ (item as Solicitud).tecnico.apellidos }}
+                  {{ (item as Solicitud).tecnico?.nombres ?? 'Técnico' }} {{ (item as Solicitud).tecnico?.apellidos ?? 'por asignar' }}
                 </span>
                 <Tag
                   :value="estadoLabel((item as Solicitud).estado)"

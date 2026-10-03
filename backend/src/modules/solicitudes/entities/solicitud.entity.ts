@@ -32,12 +32,12 @@ export class Solicitud {
   cliente: Usuario;
 
   @Index('idx_solicitudes_tecnico')
-  @Column({ type: 'uuid' })
-  tecnico_id: string;
+  @Column({ type: 'uuid', nullable: true })
+  tecnico_id: string | null;
 
-  @ManyToOne(() => Usuario)
+  @ManyToOne(() => Usuario, { nullable: true })
   @JoinColumn({ name: 'tecnico_id' })
-  tecnico: Usuario;
+  tecnico: Usuario | null;
 
   @Column({ type: 'text' })
   descripcion: string;

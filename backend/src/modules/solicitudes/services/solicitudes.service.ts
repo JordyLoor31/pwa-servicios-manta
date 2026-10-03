@@ -9,8 +9,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Solicitud, EstadoSolicitud } from '../entities/solicitud.entity';
 import { ReservaServicio } from '../entities/reserva-servicio.entity';
+import { TarifaTecnico } from '../../perfiles-tecnico/entities/tarifa-tecnico.entity';
+
 import { DisponibilidadTecnico } from '../../perfiles-tecnico/entities/disponibilidad-tecnico.entity';
-import { Usuario, RolUsuario } from '../../usuarios/entities/usuario.entity';
+import { Usuario, RolUsuario, EstadoUsuario } from '../../usuarios/entities/usuario.entity';
 import { PerfilTecnico } from '../../perfiles-tecnico/entities/perfil-tecnico.entity';
 import { CrearSolicitudDto } from '../dtos/crear-solicitud.dto';
 import { AceptarSolicitudDto } from '../dtos/aceptar-solicitud.dto';
@@ -38,28 +40,32 @@ export class SolicitudesService {
     private readonly disponibilidadRepository: Repository<DisponibilidadTecnico>,
     @InjectRepository(ReservaServicio)
     private readonly reservasRepository: Repository<ReservaServicio>,
+    @InjectRepository(TarifaTecnico)
+    private readonly tarifasRepository: Repository<TarifaTecnico>,
     private readonly notificaciones: NotificacionesGateway,
     private readonly notificacionesPush: NotificacionesPushService,
   ) {}
 
   async crear(clienteId: string, dto: CrearSolicitudDto) {
-    if (clienteId === dto.tecnico_id) {
-      throw new BadRequestException('No puedes solicitar un servicio a tu propio perfil');
-    }
-    const tecnico = await this.usuariosRepository.findOneBy({ id: dto.tecnico_id });
-    if (!tecnico) {
-      throw new NotFoundException('El técnico seleccionado no existe');
-    }
-    if (tecnico.rol !== RolUsuario.TECNICO) {
-      throw new BadRequestException('El usuario seleccionado no es un técnico');
-    }
-    const perfil = await this.perfilesRepository.findOneBy({ usuario_id: dto.tecnico_id });
-    if (!perfil) {
-      throw new BadRequestException('El técnico aún no ha completado su perfil');
+    if (dto.tecnico_id) {
+      if (clienteId === dto.tecnico_id) {
+        throw new BadRequestException('No puedes solicitar un servicio a tu propio perfil');
+      }
+      const tecnico = await this.usuariosRepository.findOneBy({ id: dto.tecnico_id });
+      if (!tecnico) {
+        throw new NotFoundException('El tǸcnico seleccionado no existe');
+      }
+      if (tecnico.rol !== RolUsuario.TECNICO) {
+        throw new BadRequestException('El usuario seleccionado no es un tǸcnico');
+      }
+      const perfil = await this.perfilesRepository.findOneBy({ usuario_id: dto.tecnico_id });
+      if (!perfil) {
+        throw new BadRequestException('El tǸcnico aǧn no ha completado su perfil');
+      }
     }
     const solicitud = await this.solicitudesRepository.save({
       cliente_id: clienteId,
-      tecnico_id: dto.tecnico_id,
+      tecnico_id: dto.tecnico_id ?? null,
       descripcion: dto.descripcion.trim(),
       direccion: dto.direccion?.trim() || null,
       fecha_propuesta: dto.fecha_propuesta || null,
@@ -70,15 +76,45 @@ export class SolicitudesService {
       id: clienteId,
       rol: RolUsuario.CLIENTE,
     } as AuthenticatedUser);
-    this.notificaciones.notificarNuevaSolicitud(dto.tecnico_id, {
-      evento: 'solicitud.nueva',
-      solicitud: vista,
-    });
-    await this.notificacionesPush.enviar(dto.tecnico_id, {
-      titulo: 'Nueva solicitud de servicio',
-      cuerpo: `${vista.cliente.nombres} ${vista.cliente.apellidos} quiere un servicio.`,
-      url: '/solicitudes/recibidas',
-    });
+    const dia = dto.fecha_propuesta
+      ? new Date(`${dto.fecha_propuesta}T12:00:00`).getDay()
+      : new Date().getDay();
+    const tecnicosDisponibles = await this.usuariosRepository
+      .createQueryBuilder('u')
+      .innerJoin(PerfilTecnico, 'p', 'p.usuario_id = u.id')
+      .innerJoin(
+        DisponibilidadTecnico,
+        'd',
+        'd.tecnico_id = u.id AND d.dia_semana = :dia',
+        { dia },
+      )
+      .where('u.rol = :rol', { rol: RolUsuario.TECNICO })
+      .andWhere('u.estado = :estado', { estado: EstadoUsuario.ACTIVO })
+      .select('u.id AS id')
+      .distinct(true)
+      .getRawMany<{ id: string }>();
+    for (const tecnico of tecnicosDisponibles) {
+      this.notificaciones.notificarNuevaSolicitud(tecnico.id, {
+        evento: 'solicitud.nueva',
+        solicitud: vista,
+      });
+      await this.notificacionesPush.enviar(tecnico.id, {
+        titulo: 'Nueva solicitud de servicio',
+        cuerpo: `${vista.cliente.nombres} ${vista.cliente.apellidos} quiere un servicio.`,
+        url: '/solicitudes/recibidas',
+      });
+    }
+    if (dto.tecnico_id && !tecnicosDisponibles.some((t) => t.id === dto.tecnico_id)) {
+      this.notificaciones.notificarNuevaSolicitud(dto.tecnico_id, {
+        evento: 'solicitud.nueva',
+        solicitud: vista,
+      });
+      await this.notificacionesPush.enviar(dto.tecnico_id, {
+        titulo: 'Nueva solicitud de servicio',
+        cuerpo: `${vista.cliente.nombres} ${vista.cliente.apellidos} quiere un servicio.`,
+        url: '/solicitudes/recibidas',
+      });
+    }
     return vista;
   }
 
@@ -93,7 +129,7 @@ export class SolicitudesService {
   async listarRecibidas(tecnicoId: string, filtros: FiltrosPaginados) {
     return this.listarConJoin(
       filtros,
-      's.tecnico_id = :tecnico_id',
+      '(s.tecnico_id = :tecnico_id OR s.tecnico_id IS NULL)',
       { tecnico_id: tecnicoId },
     );
   }
@@ -110,7 +146,7 @@ export class SolicitudesService {
     const qb = this.solicitudesRepository
       .createQueryBuilder('s')
       .innerJoin(Usuario, 'cli', 'cli.id = s.cliente_id')
-      .innerJoin(Usuario, 'tec', 'tec.id = s.tecnico_id')
+      .leftJoin(Usuario, 'tec', 'tec.id = s.tecnico_id')
       .select(this.columnasBase());
     if (condicionSql) {
       qb.andWhere(condicionSql, params);
@@ -125,7 +161,7 @@ export class SolicitudesService {
       .take(filtros.limit)
       .getRawMany();
     return {
-      data: filas.map((fila) => this.toView(fila)),
+      data: await Promise.all(filas.map((fila) => this.toView(fila))),
       total,
       page: filtros.page,
       limit: filtros.limit,
@@ -138,23 +174,24 @@ export class SolicitudesService {
       throw new NotFoundException('Solicitud no encontrada');
     }
     this.asegurarAcceso(fila, user);
-    return this.toView(fila);
+    return await this.toView(fila);
   }
 
   async aceptar(id: string, dto: AceptarSolicitudDto, user: AuthenticatedUser) {
     const solicitud = await this.obtenerParaAccion(
       id,
       user,
-      (s) => s.tecnico_id === user.id,
-      'Solo el técnico destinatario puede aceptar la solicitud',
+      (s) => s.tecnico_id === user.id || s.tecnico_id === null,
+      'Solo el tǸcnico destinatario puede aceptar la solicitud',
     );
     this.verEstado(solicitud, [EstadoSolicitud.PENDIENTE], 'Solo se puede aceptar una solicitud pendiente');
 
     const horaInicio = dto.hora_inicio;
     const horaFin = this.sumarHoras(horaInicio, dto.duracion_horas);
     this.validarFechaServicio(dto.fecha_servicio);
-    await this.validarEnDisponibilidad(solicitud.tecnico_id, dto.fecha_servicio, horaInicio, horaFin);
-    await this.validarSinSolapamiento(solicitud.tecnico_id, dto.fecha_servicio, horaInicio, horaFin);
+    const tecnicoId = solicitud.tecnico_id ?? user.id;
+    await this.validarEnDisponibilidad(tecnicoId, dto.fecha_servicio, horaInicio, horaFin);
+    await this.validarSinSolapamiento(tecnicoId, dto.fecha_servicio, horaInicio, horaFin);
 
     await this.solicitudesRepository.update(solicitud.id, {
       estado: EstadoSolicitud.ACEPTADA,
@@ -162,9 +199,10 @@ export class SolicitudesService {
       fecha_propuesta: dto.fecha_servicio,
       hora_propuesta: horaInicio,
       hora_fin_estimada: horaFin,
+      tecnico_id: tecnicoId,
     });
     await this.reservasRepository.save({
-      tecnico_id: solicitud.tecnico_id,
+      tecnico_id: tecnicoId,
       solicitud_id: solicitud.id,
       fecha_servicio: dto.fecha_servicio,
       hora_inicio: horaInicio,
@@ -226,15 +264,17 @@ export class SolicitudesService {
     });
     await this.liberarReserva(solicitud.id);
     const vista = await this.detalle(id, user);
-    this.notificaciones.notificarSolicitudActualizada(solicitud.tecnico_id, {
-      evento: 'solicitud.actualizada',
-      solicitud: vista,
-    });
-    await this.notificacionesPush.enviar(solicitud.tecnico_id, {
-      titulo: 'Solicitud cancelada',
-      cuerpo: `${vista.cliente.nombres} ${vista.cliente.apellidos} canceló la solicitud.`,
-      url: '/solicitudes/recibidas',
-    });
+    if (solicitud.tecnico_id) {
+      this.notificaciones.notificarSolicitudActualizada(solicitud.tecnico_id, {
+        evento: 'solicitud.actualizada',
+        solicitud: vista,
+      });
+      await this.notificacionesPush.enviar(solicitud.tecnico_id, {
+        titulo: 'Solicitud cancelada',
+        cuerpo: `${vista.cliente.nombres} ${vista.cliente.apellidos} cancel�� la solicitud.`,
+        url: '/solicitudes/recibidas',
+      });
+    }
     return vista;
   }
 
@@ -250,11 +290,13 @@ export class SolicitudesService {
       estado: EstadoSolicitud.COMPLETADA,
       fecha_completada: new Date(),
     });
-    await this.perfilesRepository.increment(
-      { usuario_id: solicitud.tecnico_id },
-      'total_servicios_completados',
-      1,
-    );
+    if (solicitud.tecnico_id) {
+      await this.perfilesRepository.increment(
+        { usuario_id: solicitud.tecnico_id },
+        'total_servicios_completados',
+        1,
+      );
+    }
     await this.liberarReserva(solicitud.id);
     const vista = await this.detalle(id, user);
     this.notificaciones.notificarSolicitudActualizada(solicitud.cliente_id, {
@@ -373,7 +415,7 @@ export class SolicitudesService {
     return this.solicitudesRepository
       .createQueryBuilder('s')
       .innerJoin(Usuario, 'cli', 'cli.id = s.cliente_id')
-      .innerJoin(Usuario, 'tec', 'tec.id = s.tecnico_id')
+      .leftJoin(Usuario, 'tec', 'tec.id = s.tecnico_id')
       .select(this.columnasBase())
       .where('s.id = :id', { id })
       .getRawOne();
@@ -401,7 +443,18 @@ export class SolicitudesService {
     ];
   }
 
-  private toView(fila: Record<string, unknown>) {
+  private async obtenerUnidadCobroPredominante(tecnicoId: string) {
+    const tarifas = await this.tarifasRepository.find({
+      where: { tecnico_id: tecnicoId },
+      select: { unidad_cobro: true },
+    });
+    if (tarifas.length === 0) return null;
+    const tienePorHora = tarifas.some((t) => t.unidad_cobro === 'por_hora');
+    return tienePorHora ? 'por_hora' : 'por_servicio';
+  }
+
+  private async toView(fila: Record<string, unknown>) {
+    const unidad_cobro = await this.obtenerUnidadCobroPredominante(fila.tecnico_id as string);
     return {
       id: fila.id,
       estado: fila.estado,
@@ -424,6 +477,7 @@ export class SolicitudesService {
         nombres: fila.tecnico_nombres,
         apellidos: fila.tecnico_apellidos,
       },
+      unidad_cobro,
     };
   }
 }
