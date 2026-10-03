@@ -15,6 +15,8 @@ import { PerfilesTecnicoTarifasService } from './services/perfiles-tecnico-tarif
 import { PerfilesTecnicoCertificacionesService } from './services/perfiles-tecnico-certificaciones.service';
 import { ReservaServicio } from '../solicitudes/entities/reserva-servicio.entity';
 
+// ReservaServicio se registra solo para consultas de disponibilidad; no expone entidades propias.
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([

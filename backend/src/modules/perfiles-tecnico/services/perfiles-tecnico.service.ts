@@ -136,14 +136,11 @@ export class PerfilesTecnicoService {
 
   async registrarServicioCompletado(usuarioId: string) {
     await this.consultaService.findOne(usuarioId);
-    const resultado = await this.perfilesRepository.increment(
+    await this.perfilesRepository.increment(
       { usuario_id: usuarioId },
       'total_servicios_completados',
       1,
     );
-    if (resultado.affected === 0) {
-      return this.consultaService.findOne(usuarioId);
-    }
     return this.consultaService.findOne(usuarioId);
   }
 

@@ -5,7 +5,7 @@ import { PerfilTecnico } from '../entities/perfil-tecnico.entity';
 import { DisponibilidadTecnico } from '../entities/disponibilidad-tecnico.entity';
 import { TecnicoCategoria } from '../entities/tecnico-categoria.entity';
 import { Usuario, EstadoUsuario } from '../../usuarios/entities/usuario.entity';
-import { ReservaServicio } from '../../solicitudes/entities/reserva-servicio.entity';
+import { ReservaServicio } from '../../solicitudes/entities/reserva-servicio.entity'; // solo lectura para disponibilidad
 import { SlotDisponibilidadDto } from '../dtos/reemplazar-disponibilidad.dto';
 import { asegurarPerfil, toDirectorio } from './perfiles-tecnico.helpers';
 
@@ -17,7 +17,7 @@ function agregarSlotsDisponibles(inicio: string, fin: string, slots: Set<string>
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
   };
   const finMin = convertir(fin);
-  for (let t = convertir(inicio); t < finMin; t += 30) {
+  for (let t = convertir(inicio); t + 30 <= finMin; t += 30) {
     slots.add(formatear(t));
   }
 }
