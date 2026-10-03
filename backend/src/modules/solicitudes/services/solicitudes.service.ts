@@ -1,14 +1,12 @@
 import {
   BadRequestException,
-  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { Solicitud, EstadoSolicitud } from '../entities/solicitud.entity';
-import { ReservaServicio } from '../entities/reserva-servicio.entity';
 import { TarifaTecnico } from '../../perfiles-tecnico/entities/tarifa-tecnico.entity';
 
 import { DisponibilidadTecnico } from '../../perfiles-tecnico/entities/disponibilidad-tecnico.entity';
@@ -18,8 +16,8 @@ import { CrearSolicitudDto } from '../dtos/crear-solicitud.dto';
 import { AceptarSolicitudDto } from '../dtos/aceptar-solicitud.dto';
 import { RechazarSolicitudDto } from '../dtos/rechazar-solicitud.dto';
 import type { AuthenticatedUser } from '../../auth/decorators/current-user.decorator';
-import { NotificacionesGateway } from '../../notificaciones/notificaciones.gateway';
-import { NotificacionesPushService } from '../../notificaciones-push/services/notificaciones-push.service';
+import { SolicitudesDisponibilidadService } from './solicitudes-disponibilidad.service';
+import { SolicitudesNotificacionesService } from './solicitudes-notificaciones.service';
 
 interface FiltrosPaginados {
   page: number;
@@ -38,12 +36,11 @@ export class SolicitudesService {
     private readonly perfilesRepository: Repository<PerfilTecnico>,
     @InjectRepository(DisponibilidadTecnico)
     private readonly disponibilidadRepository: Repository<DisponibilidadTecnico>,
-    @InjectRepository(ReservaServicio)
-    private readonly reservasRepository: Repository<ReservaServicio>,
     @InjectRepository(TarifaTecnico)
     private readonly tarifasRepository: Repository<TarifaTecnico>,
-    private readonly notificaciones: NotificacionesGateway,
-    private readonly notificacionesPush: NotificacionesPushService,
+    private readonly dataSource: DataSource,
+    private readonly disponibilidadService: SolicitudesDisponibilidadService,
+    private readonly notificacionesService: SolicitudesNotificacionesService,
   ) {}
 
   async crear(clienteId: string, dto: CrearSolicitudDto) {
@@ -93,27 +90,11 @@ export class SolicitudesService {
       .select('u.id AS id')
       .distinct(true)
       .getRawMany<{ id: string }>();
-    for (const tecnico of tecnicosDisponibles) {
-      this.notificaciones.notificarNuevaSolicitud(tecnico.id, {
-        evento: 'solicitud.nueva',
-        solicitud: vista,
-      });
-      await this.notificacionesPush.enviar(tecnico.id, {
-        titulo: 'Nueva solicitud de servicio',
-        cuerpo: `${vista.cliente.nombres} ${vista.cliente.apellidos} quiere un servicio.`,
-        url: '/solicitudes/recibidas',
-      });
-    }
+    await Promise.all(
+      tecnicosDisponibles.map((tecnico) => this.notificacionesService.nueva(tecnico.id, vista)),
+    );
     if (dto.tecnico_id && !tecnicosDisponibles.some((t) => t.id === dto.tecnico_id)) {
-      this.notificaciones.notificarNuevaSolicitud(dto.tecnico_id, {
-        evento: 'solicitud.nueva',
-        solicitud: vista,
-      });
-      await this.notificacionesPush.enviar(dto.tecnico_id, {
-        titulo: 'Nueva solicitud de servicio',
-        cuerpo: `${vista.cliente.nombres} ${vista.cliente.apellidos} quiere un servicio.`,
-        url: '/solicitudes/recibidas',
-      });
+      await this.notificacionesService.nueva(dto.tecnico_id, vista);
     }
     return vista;
   }
@@ -160,8 +141,11 @@ export class SolicitudesService {
       .skip((filtros.page - 1) * filtros.limit)
       .take(filtros.limit)
       .getRawMany();
+    const unidadesCobro = await this.obtenerUnidadesCobro(
+      filas.map((fila) => fila.tecnico_id).filter((id): id is string => Boolean(id)),
+    );
     return {
-      data: await Promise.all(filas.map((fila) => this.toView(fila))),
+      data: await Promise.all(filas.map((fila) => this.toView(fila, unidadesCobro))),
       total,
       page: filtros.page,
       limit: filtros.limit,
@@ -174,7 +158,7 @@ export class SolicitudesService {
       throw new NotFoundException('Solicitud no encontrada');
     }
     this.asegurarAcceso(fila, user);
-    return await this.toView(fila);
+    return await this.toView(fila, await this.obtenerUnidadesCobro([fila.tecnico_id]));
   }
 
   async aceptar(id: string, dto: AceptarSolicitudDto, user: AuthenticatedUser) {
@@ -186,38 +170,35 @@ export class SolicitudesService {
     );
     this.verEstado(solicitud, [EstadoSolicitud.PENDIENTE], 'Solo se puede aceptar una solicitud pendiente');
 
-    const horaInicio = dto.hora_inicio;
-    const horaFin = this.sumarHoras(horaInicio, dto.duracion_horas);
-    this.validarFechaServicio(dto.fecha_servicio);
     const tecnicoId = solicitud.tecnico_id ?? user.id;
-    await this.validarEnDisponibilidad(tecnicoId, dto.fecha_servicio, horaInicio, horaFin);
-    await this.validarSinSolapamiento(tecnicoId, dto.fecha_servicio, horaInicio, horaFin);
-
-    await this.solicitudesRepository.update(solicitud.id, {
-      estado: EstadoSolicitud.ACEPTADA,
-      fecha_aceptacion: new Date(),
-      fecha_propuesta: dto.fecha_servicio,
-      hora_propuesta: horaInicio,
-      hora_fin_estimada: horaFin,
-      tecnico_id: tecnicoId,
-    });
-    await this.reservasRepository.save({
-      tecnico_id: tecnicoId,
-      solicitud_id: solicitud.id,
-      fecha_servicio: dto.fecha_servicio,
-      hora_inicio: horaInicio,
-      hora_fin: horaFin,
+    const horaInicio = dto.hora_inicio;
+    const horaFin = this.disponibilidadService.sumarHoras(horaInicio, dto.duracion_horas);
+    await this.dataSource.transaction(async (manager) => {
+      await manager.getRepository(Solicitud).update(solicitud.id, {
+        estado: EstadoSolicitud.ACEPTADA,
+        fecha_aceptacion: new Date(),
+        fecha_propuesta: dto.fecha_servicio,
+        hora_propuesta: horaInicio,
+        hora_fin_estimada: horaFin,
+        tecnico_id: tecnicoId,
+      });
+      await this.disponibilidadService.reservar(
+        manager,
+        tecnicoId,
+        solicitud.id,
+        dto.fecha_servicio,
+        horaInicio,
+        horaFin,
+      );
     });
     const vista = await this.detalle(id, user);
-    this.notificaciones.notificarSolicitudActualizada(solicitud.cliente_id, {
-      evento: 'solicitud.actualizada',
-      solicitud: vista,
-    });
-    await this.notificacionesPush.enviar(solicitud.cliente_id, {
-      titulo: 'Solicitud aceptada',
-      cuerpo: `${vista.tecnico.nombres} ${vista.tecnico.apellidos} aceptó tu solicitud para el ${dto.fecha_servicio} a las ${horaInicio}.`,
-      url: '/solicitudes',
-    });
+    await this.notificacionesService.actualizada(
+      solicitud.cliente_id,
+      vista,
+      'Solicitud aceptada',
+      `${this.nombreUsuario(vista, 'tecnico') || 'El técnico'} ${this.apellidoUsuario(vista, 'tecnico')} aceptó tu solicitud para el ${dto.fecha_servicio} a las ${horaInicio}.`,
+      '/solicitudes',
+    );
     return vista;
   }
 
@@ -233,17 +214,15 @@ export class SolicitudesService {
       estado: EstadoSolicitud.RECHAZADA,
       motivo_rechazo: dto.motivo_rechazo.trim(),
     });
-    await this.liberarReserva(solicitud.id);
+    await this.disponibilidadService.liberarReserva(solicitud.id);
     const vista = await this.detalle(id, user);
-    this.notificaciones.notificarSolicitudActualizada(solicitud.cliente_id, {
-      evento: 'solicitud.actualizada',
-      solicitud: vista,
-    });
-    await this.notificacionesPush.enviar(solicitud.cliente_id, {
-      titulo: 'Solicitud rechazada',
-      cuerpo: `${vista.tecnico.nombres} ${vista.tecnico.apellidos} rechazó tu solicitud.`,
-      url: '/solicitudes',
-    });
+    await this.notificacionesService.actualizada(
+      solicitud.cliente_id,
+      vista,
+      'Solicitud rechazada',
+      `${this.nombreUsuario(vista, 'tecnico') || 'El técnico'} ${this.apellidoUsuario(vista, 'tecnico')} rechazó tu solicitud.`,
+      '/solicitudes',
+    );
     return vista;
   }
 
@@ -262,18 +241,16 @@ export class SolicitudesService {
     await this.solicitudesRepository.update(solicitud.id, {
       estado: EstadoSolicitud.CANCELADA,
     });
-    await this.liberarReserva(solicitud.id);
+    await this.disponibilidadService.liberarReserva(solicitud.id);
     const vista = await this.detalle(id, user);
     if (solicitud.tecnico_id) {
-      this.notificaciones.notificarSolicitudActualizada(solicitud.tecnico_id, {
-        evento: 'solicitud.actualizada',
-        solicitud: vista,
-      });
-      await this.notificacionesPush.enviar(solicitud.tecnico_id, {
-        titulo: 'Solicitud cancelada',
-        cuerpo: `${vista.cliente.nombres} ${vista.cliente.apellidos} cancel�� la solicitud.`,
-        url: '/solicitudes/recibidas',
-      });
+      await this.notificacionesService.actualizada(
+        solicitud.tecnico_id,
+        vista,
+        'Solicitud cancelada',
+        `${this.nombreUsuario(vista, 'cliente')} ${this.apellidoUsuario(vista, 'cliente')} canceló la solicitud.`,
+        '/solicitudes/recibidas',
+      );
     }
     return vista;
   }
@@ -297,17 +274,15 @@ export class SolicitudesService {
         1,
       );
     }
-    await this.liberarReserva(solicitud.id);
+    await this.disponibilidadService.liberarReserva(solicitud.id);
     const vista = await this.detalle(id, user);
-    this.notificaciones.notificarSolicitudActualizada(solicitud.cliente_id, {
-      evento: 'solicitud.actualizada',
-      solicitud: vista,
-    });
-    await this.notificacionesPush.enviar(solicitud.cliente_id, {
-      titulo: 'Servicio completado',
-      cuerpo: `${vista.tecnico.nombres} ${vista.tecnico.apellidos} completó tu servicio.`,
-      url: '/solicitudes',
-    });
+    await this.notificacionesService.actualizada(
+      solicitud.cliente_id,
+      vista,
+      'Servicio completado',
+      `${this.nombreUsuario(vista, 'tecnico') || 'El técnico'} ${this.apellidoUsuario(vista, 'tecnico')} completó tu servicio.`,
+      '/solicitudes',
+    );
     return vista;
   }
 
@@ -333,71 +308,6 @@ export class SolicitudesService {
     }
   }
 
-  private sumarHoras(hora: string, horas: number): string {
-    const [h, m] = hora.split(':').map(Number);
-    const total = h + horas;
-    return `${String(total).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-  }
-
-  private validarFechaServicio(fecha: string) {
-    const hoy = new Date();
-    const hoyTexto = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(
-      hoy.getDate(),
-    ).padStart(2, '0')}`;
-    if (fecha < hoyTexto) {
-      throw new BadRequestException('La fecha del servicio no puede ser anterior a hoy');
-    }
-  }
-
-  private async validarEnDisponibilidad(
-    tecnicoId: string,
-    fecha: string,
-    inicio: string,
-    fin: string,
-  ) {
-    const dia = new Date(`${fecha}T12:00:00`).getDay();
-    const filas = await this.disponibilidadRepository.find({
-      where: { tecnico_id: tecnicoId, dia_semana: dia },
-    });
-    const dentro = filas.some(
-      (fila) =>
-        this.minutos(fila.hora_inicio) <= this.minutos(inicio) &&
-        this.minutos(fila.hora_fin) >= this.minutos(fin),
-    );
-    if (!dentro) {
-      throw new BadRequestException(
-        'El horario elegido supera la disponibilidad semanal del técnico para ese día',
-      );
-    }
-  }
-
-  private async validarSinSolapamiento(
-    tecnicoId: string,
-    fecha: string,
-    inicio: string,
-    fin: string,
-  ) {
-    const solapada = await this.reservasRepository
-      .createQueryBuilder('r')
-      .where('r.tecnico_id = :tecnicoId', { tecnicoId })
-      .andWhere('r.fecha_servicio = :fecha', { fecha })
-      .andWhere('this.minutos(r.hora_inicio) < :fin', { fin: this.minutos(fin) })
-      .andWhere('this.minutos(r.hora_fin) > :inicio', { inicio: this.minutos(inicio) })
-      .getExists();
-    if (solapada) {
-      throw new ConflictException('El técnico ya tiene un servicio reservado en ese horario');
-    }
-  }
-
-  private minutos(hora: string): number {
-    const [h, m] = hora.split(':').map(Number);
-    return h * 60 + (m ?? 0);
-  }
-
-  private async liberarReserva(solicitudId: string) {
-    await this.reservasRepository.delete({ solicitud_id: solicitudId });
-  }
-
   private asegurarAcceso(
     fila: { cliente_id: string; tecnico_id: string },
     user: AuthenticatedUser,
@@ -409,6 +319,20 @@ export class SolicitudesService {
     ) {
       throw new ForbiddenException('No tienes acceso a esta solicitud');
     }
+  }
+
+  private nombreUsuario(vista: Record<string, unknown>, tipo: 'cliente' | 'tecnico') {
+    const usuario = vista[tipo];
+    if (!usuario || typeof usuario !== 'object') return '';
+    const nombre = (usuario as Record<string, unknown>).nombres;
+    return typeof nombre === 'string' ? nombre : '';
+  }
+
+  private apellidoUsuario(vista: Record<string, unknown>, tipo: 'cliente' | 'tecnico') {
+    const usuario = vista[tipo];
+    if (!usuario || typeof usuario !== 'object') return '';
+    const apellido = (usuario as Record<string, unknown>).apellidos;
+    return typeof apellido === 'string' ? apellido : '';
   }
 
   private async buscarFila(id: string) {
@@ -443,18 +367,31 @@ export class SolicitudesService {
     ];
   }
 
-  private async obtenerUnidadCobroPredominante(tecnicoId: string) {
+  private async obtenerUnidadesCobro(tecnicoIds: string[]) {
+    const ids = [...new Set(tecnicoIds.filter(Boolean))];
+    if (ids.length === 0) {
+      return new Map<string, 'por_hora' | 'por_servicio'>();
+    }
     const tarifas = await this.tarifasRepository.find({
-      where: { tecnico_id: tecnicoId },
+      where: { tecnico_id: In(ids) },
       select: { unidad_cobro: true },
     });
-    if (tarifas.length === 0) return null;
-    const tienePorHora = tarifas.some((t) => t.unidad_cobro === 'por_hora');
-    return tienePorHora ? 'por_hora' : 'por_servicio';
+    const unidades = new Map<string, 'por_hora' | 'por_servicio'>();
+    for (const tarifa of tarifas) {
+      if (tarifa.unidad_cobro === 'por_hora') {
+        unidades.set(tarifa.tecnico_id, 'por_hora');
+      } else if (!unidades.has(tarifa.tecnico_id)) {
+        unidades.set(tarifa.tecnico_id, 'por_servicio');
+      }
+    }
+    return unidades;
   }
 
-  private async toView(fila: Record<string, unknown>) {
-    const unidad_cobro = await this.obtenerUnidadCobroPredominante(fila.tecnico_id as string);
+  private async toView(
+    fila: Record<string, unknown>,
+    unidadesCobro: Map<string, 'por_hora' | 'por_servicio'>,
+  ): Promise<Record<string, unknown>> {
+    const unidad_cobro = unidadesCobro.get(fila.tecnico_id as string) ?? null;
     return {
       id: fila.id,
       estado: fila.estado,

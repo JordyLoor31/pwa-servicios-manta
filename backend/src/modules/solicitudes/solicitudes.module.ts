@@ -8,6 +8,8 @@ import { PerfilTecnico } from '../perfiles-tecnico/entities/perfil-tecnico.entit
 import { DisponibilidadTecnico } from '../perfiles-tecnico/entities/disponibilidad-tecnico.entity';
 import { SolicitudesController } from './controllers/solicitudes.controller';
 import { SolicitudesService } from './services/solicitudes.service';
+import { SolicitudesDisponibilidadService } from './services/solicitudes-disponibilidad.service';
+import { SolicitudesNotificacionesService } from './services/solicitudes-notificaciones.service';
 import { NotificacionesModule } from '../notificaciones/notificaciones.module';
 import { NotificacionesPushModule } from '../notificaciones-push/notificaciones-push.module';
 
@@ -25,6 +27,6 @@ import { NotificacionesPushModule } from '../notificaciones-push/notificaciones-
     NotificacionesPushModule,
   ],
   controllers: [SolicitudesController],
-  providers: [SolicitudesService],
+  providers: [SolicitudesService, SolicitudesDisponibilidadService, SolicitudesNotificacionesService],
 })
 export class SolicitudesModule {}
