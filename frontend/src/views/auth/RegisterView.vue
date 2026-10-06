@@ -73,7 +73,7 @@ function goToLogin() {
             <InputText id="email" v-model="email" type="email" />
           </div>
           <div class="flex flex-col gap-2">
-            <PasswordInput id="password" v-model="password" label="Contraseña" autocomplete="new-password" />
+            <PasswordInput id="password" v-model="password" label="Contraseña" autocomplete="new-password" :show-rules="true" />
           </div>
           <div class="flex flex-col gap-2">
             <Label for="telefono">Teléfono</Label>

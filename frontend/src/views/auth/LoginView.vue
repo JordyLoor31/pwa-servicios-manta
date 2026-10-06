@@ -69,7 +69,7 @@ function goToRecuperar() {
               <label for="password" class="flex-1 text-sm font-medium text-ink">Contraseña</label>
               <Button variant="link" class="p-0" @click="goToRecuperar">¿Olvidaste tu contraseña?</Button>
             </div>
-            <PasswordInput id="password" v-model="password" autocomplete="current-password" />
+            <PasswordInput id="password" v-model="password" autocomplete="current-password" :show-rules="false" />
           </div>
         </form>
       </template>

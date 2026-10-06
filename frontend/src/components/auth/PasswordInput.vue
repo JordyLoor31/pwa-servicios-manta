@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import InputPassword from 'primevue/inputpassword'
 import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
@@ -19,6 +19,7 @@ const props = defineProps<{
   disabled?: boolean
   required?: boolean
   autocomplete?: string
+  showRules?: boolean
 }>();
 
 const emit = defineEmits<{
@@ -28,6 +29,19 @@ const emit = defineEmits<{
 
 const mask = ref(true)
 
+function onBlur() {
+  emit('blur')
+}
+
+const localValue = computed({
+  get() {
+    return props.modelValue
+  },
+  set(value: string) {
+    emit('update:modelValue', value)
+  },
+})
+
 const defaultRules: Rule[] = [
   { label: '8+ caracteres', test: (v: string) => v.length >= 8 },
   { label: 'Número', test: (v: string) => /\d/.test(v) },
@@ -36,15 +50,7 @@ const defaultRules: Rule[] = [
 ]
 
 const activeRules = props.rules ?? defaultRules
-
-function onInput(event: Event) {
-  const target = event.target as HTMLInputElement
-  emit('update:modelValue', target.value)
-}
-
-function onBlur() {
-  emit('blur')
-}
+const showRules = props.showRules ?? true
 
 function toggleMask() {
   mask.value = !mask.value
@@ -58,8 +64,8 @@ function toggleMask() {
       <InputIcon class="text-muted"><i class="pi pi-lock" /></InputIcon>
       <InputPassword
         :id="id"
-        :value="modelValue"
-        @input="onInput"
+        v-model="localValue"
+        :mask="mask"
         @blur="onBlur"
         :placeholder="placeholder"
         :disabled="disabled"
@@ -78,22 +84,22 @@ function toggleMask() {
         <i :class="mask ? 'pi pi-eye' : 'pi pi-eye-slash'" :size="16" />
       </InputIcon>
     </IconField>
-    <div v-if="activeRules.length" class="flex flex-wrap gap-1.5">
+    <div v-if="showRules && activeRules.length" class="flex flex-wrap gap-1.5">
       <Chip
         v-for="rule in activeRules"
         :key="rule.label"
         class="py-1! px-2! text-xs! gap-1.5! bg-transparent! border border-surface-200 dark:border-surface-700"
-        :class="rule.test(modelValue) ? 'text-green-600! dark:text-green-400!' : 'text-surface-500! dark:text-surface-400!'"
+        :class="rule.test(localValue) ? 'text-green-600! dark:text-green-400!' : 'text-surface-500! dark:text-surface-400!'"
       >
         <span
           :class="
             'size-4 inline-flex items-center justify-center rounded-full ' +
-            (rule.test(modelValue)
+            (rule.test(localValue)
               ? 'bg-green-600 text-surface-0 dark:bg-green-400 dark:text-surface-900'
               : 'bg-surface-200 dark:bg-surface-700 text-surface-500 dark:text-surface-400')
           "
         >
-          <i :class="rule.test(modelValue) ? 'pi pi-check' : 'pi pi-times'" :size="12" />
+          <i :class="rule.test(localValue) ? 'pi pi-check' : 'pi pi-times'" :size="12" />
         </span>
         {{ rule.label }}
       </Chip>

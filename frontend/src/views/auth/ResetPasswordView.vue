@@ -77,8 +77,8 @@ onUnmounted(() => {
             <p class="text-sm text-muted">Elige una contraseña nueva para tu cuenta.</p>
           </div>
           <form class="mt-5 space-y-6" @submit.prevent="onRestablecer">
-            <PasswordInput id="password" v-model="password" label="Nueva contraseña" autocomplete="new-password" />
-            <PasswordInput id="confirmacion" v-model="confirmacion" label="Confirmar contraseña" autocomplete="new-password" />
+            <PasswordInput id="password" v-model="password" label="Nueva contraseña" autocomplete="new-password" :show-rules="true" />
+            <PasswordInput id="confirmacion" v-model="confirmacion" label="Confirmar contraseña" autocomplete="new-password" :show-rules="true" />
             <small v-if="confirmacion && password !== confirmacion" class="text-red-600 block">
               Las contraseñas no coinciden.
             </small>
