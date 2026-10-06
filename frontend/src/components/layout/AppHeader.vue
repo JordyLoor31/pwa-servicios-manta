@@ -39,14 +39,13 @@ const menu = computed(() => {
     { label: 'Inicio', icon: 'pi pi-home', ruta: '/' },
   ]
   if (hasAnyRole('cliente', 'tecnico', 'admin')) {
-    filas.push({ label: 'Mi cuenta', icon: 'pi pi-user-cog', ruta: '/cuenta' })
+    filas.push({ label: 'Mi cuenta', icon: 'pi pi-user', ruta: '/cuenta' })
   }
   if (hasAnyRole('cliente')) {
     filas.push({ label: 'Mis solicitudes', icon: 'pi pi-list-check', ruta: '/solicitudes' })
   }
   if (hasAnyRole('tecnico')) {
     filas.push({ label: 'Solicitudes recibidas', icon: 'pi pi-inbox', ruta: '/solicitudes/recibidas' })
-    filas.push({ label: 'Mi perfil', icon: 'pi pi-user', ruta: '/perfil' })
     filas.push({ label: 'Mi disponibilidad', icon: 'pi pi-clock', ruta: '/disponibilidad' })
     filas.push({ label: 'Mis certificaciones', icon: 'pi pi-id-card', ruta: '/certificaciones' })
   }

@@ -5,11 +5,14 @@ import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import Label from 'primevue/label'
 import Toast from 'primevue/toast'
+import AppHeader from '../../components/layout/AppHeader.vue'
+import { useRouter } from 'vue-router'
 import { useAuthz } from '../../composables/auth/useAuthz'
 import { useAuth } from '../../composables/auth/useAuth'
 
 const { usuario } = useAuthz()
 const { cargando, actualizarMisDatos } = useAuth()
+const router = useRouter()
 
 const nombres = ref(usuario.value?.nombres ?? '')
 const apellidos = ref(usuario.value?.apellidos ?? '')
@@ -38,8 +41,10 @@ async function onGuardar() {
 </script>
 
 <template>
-  <div class="flex min-h-screen items-start justify-center p-4">
-    <Card class="w-full max-w-lg">
+  <div class="flex min-h-screen flex-col bg-cloud">
+    <AppHeader />
+    <section class="mx-auto flex w-full max-w-5xl flex-1 items-start justify-center px-4 py-8">
+      <Card class="w-full max-w-lg">
       <template #title>Mi cuenta</template>
       <template #subtitle>Completa o actualiza tus datos personales.</template>
       <template #content>
@@ -69,7 +74,16 @@ async function onGuardar() {
             Guardar cambios
           </Button>
         </form>
+
+        <div v-if="usuario?.rol === 'tecnico'" class="mt-6 rounded-lg border border-pacific/10 bg-pacific/5 p-4">
+          <p class="text-sm font-semibold text-ink">Perfil de técnico</p>
+          <p class="mt-1 text-xs text-muted">Completa o actualiza tu perfil público, disponibilidad y certificaciones.</p>
+          <Button severity="secondary" class="mt-3 w-full" @click="router.push('/perfil')">
+            Ir a mi perfil de técnico
+          </Button>
+        </div>
       </template>
     </Card>
+    </section>
   </div>
 </template>
