@@ -7,6 +7,7 @@ import Textarea from 'primevue/textarea'
 import Toast from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import AppHeader from '../../components/layout/AppHeader.vue'
+import SolicitudRecibidaCard from '../../components/solicitudes/SolicitudRecibidaCard.vue'
 import { useSolicitudes } from '../../composables/solicitudes/useSolicitudes'
 import { limpiarNotificacionesNuevas } from '../../composables/notificaciones/useNotificaciones'
 import { useSolicitudEvents, type EventoSolicitud } from '../../composables/solicitudes/useSolicitudEvents'
@@ -94,78 +95,14 @@ limpiarNotificacionesNuevas()
             <Skeleton width="100%" height="0.9rem" class="mt-3" />
             <Skeleton width="45%" height="0.8rem" class="mt-2" />
           </template>
-          <template v-else>
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <div class="flex items-center gap-2">
-                <i class="pi pi-user text-pacific" />
-                <span class="font-semibold text-ink">
-                  {{ (item as Solicitud).cliente.nombres }} {{ (item as Solicitud).cliente.apellidos }}
-                </span>
-                <Tag
-                  :value="estadoLabel((item as Solicitud).estado)"
-                  :severity="estadoSeveridad((item as Solicitud).estado)"
-                />
-              </div>
-              <div class="flex gap-2">
-                <Button
-                  v-if="(item as Solicitud).estado === 'pendiente'"
-                  label="Aceptar"
-                  icon="pi pi-check"
-                  size="small"
-                  @click="confirmarAceptar(item as Solicitud)"
-                />
-                <Button
-                  v-if="(item as Solicitud).estado === 'aceptada'"
-                  label="Completar"
-                  icon="pi pi-flag"
-                  size="small"
-                  @click="confirmarCompletar(item as Solicitud)"
-                />
-                <Button
-                  v-if="(item as Solicitud).estado === 'pendiente'"
-                  label="Rechazar"
-                  icon="pi pi-times"
-                  severity="warn"
-                  variant="outlined"
-                  size="small"
-                  @click="confirmarRechazar(item as Solicitud)"
-                />
-                <Button
-                  label="Ver detalle"
-                  icon="pi pi-eye"
-                  severity="secondary"
-                  variant="outlined"
-                  size="small"
-                  @click="verDetalle(item as Solicitud)"
-                />
-              </div>
-            </div>
-            <p class="mt-3 text-sm text-ink">{{ (item as Solicitud).descripcion }}</p>
-            <p class="mt-1 text-sm text-muted">
-              <i class="pi pi-map-marker mr-1" />{{ (item as Solicitud).direccion || 'Dirección no indicada' }}
-            </p>
-            <div class="mt-2 flex flex-wrap gap-3 text-xs text-muted">
-              <span>
-                <i class="pi pi-calendar mr-1" />
-                {{ new Date((item as Solicitud).fecha_solicitud).toLocaleString() }}
-              </span>
-              <span
-                v-if="formatearPropuestaLlegada((item as Solicitud).fecha_propuesta, (item as Solicitud).hora_propuesta)"
-                class="font-medium text-pacific"
-              >
-                <i class="pi pi-clock mr-1" />
-                Llegada propuesta:
-                {{ formatearPropuestaLlegada((item as Solicitud).fecha_propuesta, (item as Solicitud).hora_propuesta) }}
-              </span>
-              <span v-if="(item as Solicitud).unidad_cobro" class="font-medium text-pacific">
-                <i class="pi pi-tag mr-1" />
-                {{ (item as Solicitud).unidad_cobro === 'por_hora' ? 'Cobro por hora' : 'Cobro por servicio' }}
-              </span>
-              <span v-if="(item as Solicitud).motivo_rechazo" class="text-red-500">
-                <i class="pi pi-comment mr-1" />{{ (item as Solicitud).motivo_rechazo }}
-              </span>
-            </div>
-          </template>
+          <SolicitudRecibidaCard
+            v-else
+            :solicitud="item as Solicitud"
+            @aceptar="confirmarAceptar(item as Solicitud)"
+            @completar="confirmarCompletar(item as Solicitud)"
+            @rechazar="confirmarRechazar(item as Solicitud)"
+            @ver-detalle="verDetalle(item as Solicitud)"
+          />
         </div>
 
         <div v-if="total > 0" class="mt-4 flex items-center justify-center gap-3">

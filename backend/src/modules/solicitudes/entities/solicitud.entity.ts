@@ -45,6 +45,30 @@ export class Solicitud {
   @Column({ type: 'text', nullable: true })
   direccion: string | null;
 
+  @Column({
+    type: 'numeric',
+    precision: 9,
+    scale: 6,
+    nullable: true,
+    transformer: {
+      to: (value: number | null) => value,
+      from: (value: string | null) => (value === null ? null : Number(value)),
+    },
+  })
+  direccion_latitud: number | null;
+
+  @Column({
+    type: 'numeric',
+    precision: 9,
+    scale: 6,
+    nullable: true,
+    transformer: {
+      to: (value: number | null) => value,
+      from: (value: string | null) => (value === null ? null : Number(value)),
+    },
+  })
+  direccion_longitud: number | null;
+
   @Column({ type: 'date', nullable: true })
   fecha_propuesta: string | null;
 

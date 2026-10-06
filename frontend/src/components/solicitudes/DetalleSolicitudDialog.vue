@@ -14,6 +14,15 @@ const emit = defineEmits<{ cerrar: []; cancelar: [solicitud: Solicitud] }>()
 
 const confirmando = ref(false)
 
+function urlOpenStreetMap(direccion: string | null | undefined, latitud?: number | null, longitud?: number | null) {
+  if (latitud != null && longitud != null) {
+    return `https://www.openstreetmap.org/?mlat=${latitud}&mlon=${longitud}#map=16/${latitud}/${longitud}`
+  }
+  return direccion
+    ? `https://www.openstreetmap.org/search?query=${encodeURIComponent(direccion)}`
+    : '#'
+}
+
 watch(visible, (abierto) => {
   if (!abierto) confirmando.value = false
 })
@@ -38,6 +47,13 @@ function pedirCancelar() {
       <p class="text-ink">{{ solicitud.descripcion }}</p>
       <p class="text-muted">
         <i class="pi pi-map-marker mr-1" />{{ solicitud.direccion || 'Dirección no indicada' }}
+        <a
+          v-if="solicitud.direccion"
+          :href="urlOpenStreetMap(solicitud.direccion, solicitud.direccion_latitud, solicitud.direccion_longitud)"
+          target="_blank"
+          rel="noopener"
+          class="ml-2 text-pacific"
+        >Abrir en OpenStreetMap</a>
       </p>
       <div
         v-if="formatearPropuestaLlegada(solicitud.fecha_propuesta, solicitud.hora_propuesta)"

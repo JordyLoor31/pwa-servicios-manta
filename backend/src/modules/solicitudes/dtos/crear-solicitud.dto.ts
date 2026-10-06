@@ -1,5 +1,6 @@
 import {
   IsDateString,
+  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
@@ -22,6 +23,14 @@ export class CrearSolicitudDto {
   @IsString()
   @MaxLength(500)
   direccion?: string;
+
+  @IsOptional()
+  @IsNumber()
+  direccion_latitud?: number;
+
+  @IsOptional()
+  @IsNumber()
+  direccion_longitud?: number;
 
   @IsOptional()
   @IsDateString()

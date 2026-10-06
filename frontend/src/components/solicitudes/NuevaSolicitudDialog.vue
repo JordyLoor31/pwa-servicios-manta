@@ -1,159 +1,44 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { watch } from 'vue'
 import Button from 'primevue/button'
 import DatePicker from 'primevue/datepicker'
 import Dialog from 'primevue/dialog'
-import FloatLabel from 'primevue/floatlabel'
-import InputText from 'primevue/inputtext'
 import Listbox from 'primevue/listbox'
 import Select from 'primevue/select'
 import Tag from 'primevue/tag'
 import Textarea from 'primevue/textarea'
-import { useToast } from 'primevue/usetoast'
-import { categoriasApi } from '../../services/categorias'
-import { solicitudesApi } from '../../services/solicitudes'
 import { nombreDia } from '../../composables/disponibilidad/useDisponibilidad'
-import type { CategoriaServicio } from '../../types/categorias'
-import type { Solicitud, TecnicoDirectorio } from '../../types/solicitudes'
+import { useNuevaSolicitud } from '../../composables/solicitudes/useNuevaSolicitud'
+import type { Solicitud } from '../../types/solicitudes'
 
 const visible = defineModel<boolean>('visible', { required: true })
-
 const emit = defineEmits<{ creada: [solicitud: Solicitud] }>()
 
-const toast = useToast()
-
-const categorias = ref<CategoriaServicio[]>([])
-const categoriasSeleccionadas = ref<string[]>([])
-const fechaServicio = ref<Date>(new Date())
-const tecnicos = ref<TecnicoDirectorio[]>([])
-const cargandoTecnicos = ref(false)
-const horas = ref<string[]>([])
-const horaBusqueda = ref('')
-const enviando = ref(false)
-const form = ref({ tecnico_id: '', descripcion: '', direccion: '' })
-
-async function cargarCategorias() {
-  if (categorias.value.length > 0) return
-  try {
-    categorias.value = await categoriasApi.listarActivas()
-  } catch {
-    categorias.value = []
-  }
-}
-
-async function cargarTecnicos() {
-  cargandoTecnicos.value = true
-  try {
-    tecnicos.value = await solicitudesApi.tecnicosDisponiblesPorDia(
-      fechaServicio.value.getDay(),
-      categoriasSeleccionadas.value,
-    )
-    horas.value = []
-    horaBusqueda.value = ''
-    if (form.value.tecnico_id && !tecnicos.value.some((t) => t.id === form.value.tecnico_id)) {
-      form.value.tecnico_id = ''
-    }
-  } catch {
-    tecnicos.value = []
-    horas.value = []
-    horaBusqueda.value = ''
-  } finally {
-    cargandoTecnicos.value = false
-  }
-}
-
-async function cargarHoras() {
-  const tecnicoId = form.value.tecnico_id
-  if (!tecnicoId) {
-    horas.value = []
-    horaBusqueda.value = ''
-    return
-  }
-  try {
-    horas.value = await solicitudesApi.horariosDisponiblesParaTecnico(
-      fechaServicio.value.getDay(),
-      tecnicoId,
-      categoriasSeleccionadas.value,
-    )
-    horaBusqueda.value = horas.value[0] ?? ''
-  } catch {
-    horas.value = []
-    horaBusqueda.value = ''
-  }
-}
+const {
+  categorias,
+  categoriasSeleccionadas,
+  fechaServicio,
+  tecnicos,
+  cargandoTecnicos,
+  horas,
+  horaBusqueda,
+  enviando,
+  form,
+  direcciones,
+  direccionSeleccionadaId,
+  iniciar,
+  crear: crearSolicitud,
+} = useNuevaSolicitud()
 
 watch(visible, (abierto) => {
-  if (!abierto) return
-  form.value = { tecnico_id: '', descripcion: '', direccion: '' }
-  categoriasSeleccionadas.value = []
-  fechaServicio.value = new Date()
-  horas.value = []
-  horaBusqueda.value = ''
-  void cargarCategorias()
-  void cargarTecnicos()
+  if (abierto) iniciar()
 })
 
-watch(fechaServicio, () => {
-  void cargarTecnicos()
-})
-
-watch(categoriasSeleccionadas, () => {
-  void cargarTecnicos()
-})
-
-watch(
-  () => form.value.tecnico_id,
-  () => {
-    void cargarHoras()
-  },
-)
-
-function aFechaISO(fecha: Date) {
-  const anio = fecha.getFullYear()
-  const mes = String(fecha.getMonth() + 1).padStart(2, '0')
-  const dia = String(fecha.getDate()).padStart(2, '0')
-  return `${anio}-${mes}-${dia}`
-}
-
-async function crear() {
-  const descripcion = form.value.descripcion.trim()
-  if (!horaBusqueda.value || descripcion.length < 10) {
-    toast.add({
-      severity: 'warn',
-      summary: 'Faltan datos',
-      detail: 'Elige hora y describe la necesidad (mínimo 10 caracteres).',
-      life: 3000,
-    })
-    return
-  }
-  enviando.value = true
-  try {
-    const payload: {
-      tecnico_id?: string
-      descripcion: string
-      direccion?: string
-      fecha_propuesta: string
-      hora_propuesta: string
-    } = {
-      descripcion,
-      direccion: form.value.direccion.trim() || undefined,
-      fecha_propuesta: aFechaISO(fechaServicio.value),
-      hora_propuesta: horaBusqueda.value,
-    }
-    if (form.value.tecnico_id) payload.tecnico_id = form.value.tecnico_id
-    const creada = await solicitudesApi.crear(payload)
-    toast.add({ severity: 'success', summary: 'Solicitud enviada', life: 3000 })
+async function submit() {
+  const creada = await crearSolicitud()
+  if (creada) {
     visible.value = false
     emit('creada', creada)
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: error instanceof Error ? error.message : 'No se pudo enviar la solicitud',
-      life: 4000,
-    })
-  } finally {
-    enviando.value = false
   }
 }
 </script>
@@ -249,15 +134,36 @@ async function crear() {
         />
       </div>
 
-      <FloatLabel variant="on">
-        <InputText id="direccion" v-model="form.direccion" class="w-full" />
-        <label for="direccion">Dirección del servicio (opcional)</label>
-      </FloatLabel>
+      <div class="flex flex-col gap-1.5">
+        <label for="direccion" class="text-sm font-medium text-ink">Dirección del servicio *</label>
+        <Select
+          id="direccion"
+          v-model="direccionSeleccionadaId"
+          :options="direcciones"
+          option-label="etiqueta"
+          option-value="id"
+          :placeholder="direcciones.length ? 'Elige una dirección' : 'No tienes direcciones guardadas'"
+          class="w-full"
+        >
+          <template #option="{ option }">
+            <div class="flex flex-col">
+              <span>{{ option.etiqueta || 'Dirección' }}</span>
+              <span class="text-xs text-muted">{{ option.direccion_texto }}</span>
+            </div>
+          </template>
+        </Select>
+        <p v-if="direcciones.length > 0 && !direccionSeleccionadaId" class="text-xs text-muted">
+          Selecciona una dirección para que al técnico le aparezca.
+        </p>
+        <p v-if="direcciones.length === 0" class="text-xs text-muted">
+          Puedes agregar direcciones en "Mis direcciones" para seleccionarlas aquí.
+        </p>
+      </div>
     </div>
     <template #footer>
       <div class="flex justify-end gap-2">
         <Button label="Cancelar" severity="secondary" @click="visible = false" />
-        <Button label="Enviar solicitud" icon="pi pi-send" :loading="enviando" @click="crear" />
+        <Button label="Enviar solicitud" icon="pi pi-send" :loading="enviando" @click="submit" />
       </div>
     </template>
   </Dialog>

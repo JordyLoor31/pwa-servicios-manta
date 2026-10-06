@@ -16,6 +16,8 @@ export interface Solicitud {
   estado: EstadoSolicitud
   descripcion: string
   direccion: string | null
+  direccion_latitud?: number | null
+  direccion_longitud?: number | null
   motivo_rechazo: string | null
   fecha_propuesta: string | null
   hora_propuesta: string | null
@@ -38,6 +40,8 @@ export interface CrearSolicitudPayload {
   tecnico_id?: string
   descripcion: string
   direccion?: string
+  direccion_latitud?: number
+  direccion_longitud?: number
   fecha_propuesta?: string
   hora_propuesta?: string
 }
