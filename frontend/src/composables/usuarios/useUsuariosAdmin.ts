@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { useToast } from 'primevue/usetoast'
-import { api } from '../../services/api'
-import type { UsuarioLista, UsuariosPaginados } from '../../types/usuarios'
+import { usuariosApi } from '../../services/usuarios'
+import type { UsuarioLista } from '../../types/usuarios'
 
 export function useUsuariosAdmin() {
   const toast = useToast()
@@ -20,9 +20,7 @@ export function useUsuariosAdmin() {
   async function cargar() {
     cargando.value = true
     try {
-      const q = busqueda.value.trim()
-      const ruta = `/usuarios?page=${page.value}&limit=${limit.value}${q ? `&q=${encodeURIComponent(q)}` : ''}`
-      const respuesta = await api.get<UsuariosPaginados>(ruta)
+      const respuesta = await usuariosApi.listar(page.value, limit.value, busqueda.value.trim())
       usuarios.value = respuesta.data
       total.value = respuesta.total
     } catch (error) {
@@ -76,9 +74,7 @@ export function useUsuariosAdmin() {
     cambiandoEstado.value = true
     const nuevoEstado = usuario.estado === 'suspendido' ? 'activo' : 'suspendido'
     try {
-      const actualizado = await api.patch<UsuarioLista>(`/usuarios/${usuario.id}/estado`, {
-        estado: nuevoEstado,
-      })
+      const actualizado = await usuariosApi.cambiarEstado(usuario.id, nuevoEstado)
       const indice = usuarios.value.findIndex((u) => u.id === usuario.id)
       if (indice >= 0) usuarios.value[indice] = actualizado
       toast.add({

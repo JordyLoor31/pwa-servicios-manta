@@ -1,8 +1,8 @@
 import { computed, ref } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useAuthz } from '../auth/useAuthz'
-import { api } from '../../services/api'
-import type { DisponibilidadSlot, EditableSlot, SlotDisponibilidad } from '../../types/disponibilidad'
+import { disponibilidadApi } from '../../services/disponibilidad'
+import type { EditableSlot, SlotDisponibilidad } from '../../types/disponibilidad'
 
 export const DIAS_SEMANA: { valor: number; nombre: string }[] = [
   { valor: 1, nombre: 'Lunes' },
@@ -41,7 +41,7 @@ export function useDisponibilidad() {
     if (!id) return
     cargando.value = true
     try {
-      const datos = await api.get<DisponibilidadSlot[]>(`/perfiles-tecnico/${id}/disponibilidad`)
+      const datos = await disponibilidadApi.listar(id)
       slots.value = datos.map((s) => ({
         id: s.id,
         dia_semana: s.dia_semana,
@@ -103,7 +103,7 @@ export function useDisponibilidad() {
         hora_inicio,
         hora_fin,
       }))
-      await api.put<DisponibilidadSlot[]>(`/perfiles-tecnico/${id}/disponibilidad`, {
+      await disponibilidadApi.reemplazar(id, {
         disponibilidad: payload,
       })
       toast.add({ severity: 'success', summary: 'Disponibilidad guardada', life: 3000 })

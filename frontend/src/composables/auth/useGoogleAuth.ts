@@ -1,14 +1,9 @@
 import { onBeforeUnmount, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
-import { api } from '../../services/api'
-import { iniciarSesion, type RolUsuario, type UsuarioSesion } from './useAuthz'
+import { authApi } from '../../services/auth'
+import { iniciarSesion, type RolUsuario } from './useAuthz'
 import { useTheme } from '../useTheme'
-
-interface LoginResponse {
-  access_token: string
-  user: UsuarioSesion
-}
 
 interface CredencialGoogle {
   credential?: string
@@ -68,10 +63,7 @@ export function useGoogleAuth() {
     if (!credencial) return
     cargando.value = true
     try {
-      const data = await api.post<LoginResponse>('/auth/google', {
-        id_token: credencial,
-        ...(rol ? { rol } : {}),
-      })
+      const data = await authApi.loginGoogle(credencial, rol)
       iniciarSesion(data.access_token, data.user)
       router.push('/')
     } catch (error) {

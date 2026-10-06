@@ -1,7 +1,8 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useAuthz } from '../auth/useAuthz'
-import { api } from '../../services/api'
+import { categoriasApi } from '../../services/categorias'
+import { perfilTecnicoApi } from '../../services/perfil-tecnico'
 import type { CategoriaServicio, RangoPrecio, TarifaTecnico, UnidadCobro } from '../../types/perfil-tecnico'
 
 export function useCategoriasTecnico() {
@@ -17,7 +18,7 @@ export function useCategoriasTecnico() {
 
   async function cargarCatalogo() {
     try {
-      const cats = await api.get<CategoriaServicio[]>('/categorias-servicio?soloActivas=true')
+      const cats = await categoriasApi.listarActivas()
       categorias.value = cats
     } catch {
       categorias.value = []
@@ -28,7 +29,7 @@ export function useCategoriasTecnico() {
     const id = usuarioId.value
     if (!id) return
     try {
-      const tarifas = await api.get<TarifaTecnico[]>(`/perfiles-tecnico/${id}/tarifas`)
+      const tarifas = await perfilTecnicoApi.obtenerTarifas(id)
       for (const tarifa of tarifas) {
         tarifasPorCategoria[tarifa.categoria_id] = {
           min: String(tarifa.precio_min),
@@ -44,7 +45,7 @@ export function useCategoriasTecnico() {
   async function cargarSeleccion() {
     if (!usuarioId.value) return
     try {
-      const seleccion = await api.get<CategoriaServicio[]>(`/perfiles-tecnico/${usuarioId.value}/categorias`)
+      const seleccion = await perfilTecnicoApi.obtenerCategorias(usuarioId.value)
       categoriasSeleccionadas.value = seleccion.map((categoria) => categoria.id)
       for (const categoria of seleccion) {
         asegurarEntrada(categoria.id)
@@ -92,9 +93,7 @@ export function useCategoriasTecnico() {
 
     guardandoCategorias.value = true
     try {
-      await api.put(`/perfiles-tecnico/${id}/categorias`, {
-        categoria_ids: categoriasSeleccionadas.value,
-      })
+      await perfilTecnicoApi.actualizarCategorias(id, categoriasSeleccionadas.value)
       const tarifas = categoriasSeleccionadas.value.map((categoriaId): TarifaTecnico => {
         const rango = tarifasPorCategoria[categoriaId]
         return {
@@ -105,7 +104,7 @@ export function useCategoriasTecnico() {
           unidad_cobro: (rango.unidad || 'por_servicio') as UnidadCobro,
         }
       })
-      await api.put(`/perfiles-tecnico/${id}/tarifas`, { tarifas })
+      await perfilTecnicoApi.actualizarTarifas(id, tarifas)
       toast.add({
         severity: 'success',
         summary: 'Guardado',

@@ -1,6 +1,6 @@
 import { reactive, ref } from 'vue'
 import { useToast } from 'primevue/usetoast'
-import { api } from '../../services/api'
+import { direccionesApi } from '../../services/direcciones'
 import type { Direccion, DireccionPayload } from '../../types/direcciones'
 
 export function useDirecciones() {
@@ -37,7 +37,7 @@ export function useDirecciones() {
   async function cargar() {
     cargando.value = true
     try {
-      direcciones.value = await api.get<Direccion[]>('/direcciones')
+      direcciones.value = await direccionesApi.listar()
     } catch (error) {
       toast.add({
         severity: 'error',
@@ -94,10 +94,10 @@ export function useDirecciones() {
     guardando.value = true
     try {
       if (direccionActiva.value) {
-        await api.put<Direccion>(`/direcciones/${direccionActiva.value.id}`, payload)
+        await direccionesApi.actualizar(direccionActiva.value.id, payload)
         toast.add({ severity: 'success', summary: 'Dirección actualizada', life: 3000 })
       } else {
-        await api.post<Direccion>('/direcciones', payload)
+        await direccionesApi.crear(payload)
         toast.add({ severity: 'success', summary: 'Dirección agregada', life: 3000 })
       }
       formVisible.value = false
@@ -123,7 +123,7 @@ export function useDirecciones() {
     const direccion = direccionActiva.value
     if (!direccion) return
     try {
-      await api.put<Direccion>(`/direcciones/${direccion.id}/principal`, {})
+      await direccionesApi.establecerPrincipal(direccion.id)
       toast.add({ severity: 'success', summary: 'Dirección principal actualizada', life: 3000 })
       confirmarPrincipalVisible.value = false
       await cargar()
@@ -147,7 +147,7 @@ export function useDirecciones() {
     if (!direccion) return
     eliminando.value = true
     try {
-      await api.delete<{ eliminada: boolean }>(`/direcciones/${direccion.id}`)
+      await direccionesApi.eliminar(direccion.id)
       toast.add({ severity: 'success', summary: 'Dirección eliminada', life: 3000 })
       confirmarEliminarVisible.value = false
       await cargar()

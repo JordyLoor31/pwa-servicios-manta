@@ -1,4 +1,4 @@
-import { api } from '../../services/api'
+import { notificacionesApi } from '../../services/notificaciones'
 
 function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
   const relleno = '='.repeat((4 - (base64.length % 4)) % 4)
@@ -40,7 +40,7 @@ export async function registrarSuscripcionPush(): Promise<boolean> {
     if (!claves) {
       return false
     }
-    await api.post('/notificaciones-push/suscripcion', {
+    await notificacionesApi.registrarSuscripcion({
       endpoint: suscripcion.endpoint,
       p256dh: claves.p256dh,
       auth: claves.auth,

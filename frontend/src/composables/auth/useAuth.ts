@@ -1,18 +1,13 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
-import { api } from '../../services/api'
+import { authApi } from '../../services/auth'
+import { usuariosApi } from '../../services/usuarios'
 import {
   actualizarSesionUsuario,
   iniciarSesion,
   type RolUsuario,
-  type UsuarioSesion,
 } from './useAuthz'
-
-interface LoginResponse {
-  access_token: string
-  user: UsuarioSesion
-}
 
 export interface DatosRegistro {
   nombres: string
@@ -40,7 +35,7 @@ export function useAuth() {
   async function login(email: string, password: string): Promise<boolean> {
     cargando.value = true
     try {
-      const data = await api.post<LoginResponse>('/auth/login', { email, password })
+      const data = await authApi.login(email, password)
       iniciarSesion(data.access_token, data.user)
       router.push('/')
       return true
@@ -55,7 +50,7 @@ export function useAuth() {
   async function registro(datos: DatosRegistro): Promise<boolean> {
     cargando.value = true
     try {
-      await api.post('/usuarios', datos)
+      await usuariosApi.registrar(datos)
       toast.add({
         severity: 'success',
         summary: 'Cuenta creada',
@@ -75,7 +70,7 @@ export function useAuth() {
   async function solicitarRecuperacion(email: string): Promise<{ ok: boolean; mensaje: string }> {
     cargando.value = true
     try {
-      const data = await api.post<{ mensaje: string }>('/auth/recuperar', { email })
+      const data = await authApi.recuperar(email)
       toast.add({
         severity: 'success',
         summary: 'Solicitud enviada',
@@ -96,9 +91,7 @@ export function useAuth() {
     motivo: 'expirado' | 'invalido' | null
   }> {
     try {
-      const data = await api.get<{ valido: boolean; motivo: 'expirado' | 'invalido' }>(
-        `/auth/reset-token/validar?token=${encodeURIComponent(token)}`,
-      )
+      const data = await authApi.validarTokenRestablecer(token)
       return { valido: data.valido, motivo: data.valido ? null : data.motivo }
     } catch {
       return { valido: false, motivo: 'invalido' }
@@ -108,10 +101,7 @@ export function useAuth() {
   async function restablecerContrasena(token: string, nuevaPassword: string): Promise<boolean> {
     cargando.value = true
     try {
-      const data = await api.post<{ mensaje: string }>('/auth/restablecer', {
-        token,
-        nueva_password: nuevaPassword,
-      })
+      const data = await authApi.restablecer(token, nuevaPassword)
       toast.add({
         severity: 'success',
         summary: 'Contraseña actualizada',
@@ -135,7 +125,7 @@ export function useAuth() {
   }): Promise<boolean> {
     cargando.value = true
     try {
-      const usuario = await api.patch<UsuarioSesion>('/usuarios/me', datos)
+      const usuario = await usuariosApi.actualizarPerfil(datos)
       actualizarSesionUsuario(usuario)
       toast.add({
         severity: 'success',

@@ -10,7 +10,8 @@ import Select from 'primevue/select'
 import Tag from 'primevue/tag'
 import Textarea from 'primevue/textarea'
 import { useToast } from 'primevue/usetoast'
-import { api } from '../../services/api'
+import { categoriasApi } from '../../services/categorias'
+import { solicitudesApi } from '../../services/solicitudes'
 import { nombreDia } from '../../composables/disponibilidad/useDisponibilidad'
 import type { CategoriaServicio } from '../../types/categorias'
 import type { Solicitud, TecnicoDirectorio } from '../../types/solicitudes'
@@ -34,7 +35,7 @@ const form = ref({ tecnico_id: '', descripcion: '', direccion: '' })
 async function cargarCategorias() {
   if (categorias.value.length > 0) return
   try {
-    categorias.value = await api.get<CategoriaServicio[]>('/categorias-servicio?soloActivas=true')
+    categorias.value = await categoriasApi.listarActivas()
   } catch {
     categorias.value = []
   }
@@ -43,12 +44,9 @@ async function cargarCategorias() {
 async function cargarTecnicos() {
   cargandoTecnicos.value = true
   try {
-    const parametros = new URLSearchParams({ dia: String(fechaServicio.value.getDay()) })
-    if (categoriasSeleccionadas.value.length > 0) {
-      parametros.set('categorias', categoriasSeleccionadas.value.join(','))
-    }
-    tecnicos.value = await api.get<TecnicoDirectorio[]>(
-      `/perfiles-tecnico/disponibles/por-dia?${parametros.toString()}`,
+    tecnicos.value = await solicitudesApi.tecnicosDisponiblesPorDia(
+      fechaServicio.value.getDay(),
+      categoriasSeleccionadas.value,
     )
     horas.value = []
     horaBusqueda.value = ''
@@ -72,12 +70,10 @@ async function cargarHoras() {
     return
   }
   try {
-    const parametros = new URLSearchParams({ dia: String(fechaServicio.value.getDay()) })
-    if (categoriasSeleccionadas.value.length > 0) {
-      parametros.set('categorias', categoriasSeleccionadas.value.join(','))
-    }
-    horas.value = await api.get<string[]>(
-      `/perfiles-tecnico/disponibles/horas?tecnico=${tecnicoId}&${parametros.toString()}`,
+    horas.value = await solicitudesApi.horariosDisponiblesParaTecnico(
+      fechaServicio.value.getDay(),
+      tecnicoId,
+      categoriasSeleccionadas.value,
     )
     horaBusqueda.value = horas.value[0] ?? ''
   } catch {
@@ -132,13 +128,20 @@ async function crear() {
   }
   enviando.value = true
   try {
-    const creada = await api.post<Solicitud>('/solicitudes', {
-      tecnico_id: form.value.tecnico_id,
+    const payload: {
+      tecnico_id?: string
+      descripcion: string
+      direccion?: string
+      fecha_propuesta: string
+      hora_propuesta: string
+    } = {
       descripcion,
       direccion: form.value.direccion.trim() || undefined,
       fecha_propuesta: aFechaISO(fechaServicio.value),
       hora_propuesta: horaBusqueda.value,
-    })
+    }
+    if (form.value.tecnico_id) payload.tecnico_id = form.value.tecnico_id
+    const creada = await solicitudesApi.crear(payload)
     toast.add({ severity: 'success', summary: 'Solicitud enviada', life: 3000 })
     visible.value = false
     emit('creada', creada)

@@ -1,7 +1,7 @@
 import { computed, reactive, ref } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useAuthz } from '../auth/useAuthz'
-import { api } from '../../services/api'
+import { certificacionesApi } from '../../services/certificaciones'
 import type { Certificacion, CrearCertificacionPayload, EstadoCertificacion } from '../../types/certificaciones'
 
 export const ETIQUETAS_ESTADO: Record<EstadoCertificacion, string> = {
@@ -46,7 +46,7 @@ export function useCertificaciones() {
     if (!id) return
     cargando.value = true
     try {
-      certificaciones.value = await api.get<Certificacion[]>(`/perfiles-tecnico/${id}/certificaciones`)
+      certificaciones.value = await certificacionesApi.listar(id)
     } catch (error) {
       toast.add({
         severity: 'error',
@@ -82,7 +82,7 @@ export function useCertificaciones() {
     guardando.value = true
     try {
       const payload: CrearCertificacionPayload = { tipo_documento: tipo, url_documento: url }
-      await api.post<Certificacion>(`/perfiles-tecnico/${id}/certificaciones`, payload)
+      await certificacionesApi.crear(id, payload)
       toast.add({ severity: 'success', summary: 'Certificación agregada', life: 3000 })
       formVisible.value = false
       await cargar()
@@ -109,9 +109,7 @@ export function useCertificaciones() {
     if (!certificacion || !id) return
     eliminando.value = true
     try {
-      await api.delete<{ eliminado: boolean }>(
-        `/perfiles-tecnico/${id}/certificaciones/${certificacion.id}`,
-      )
+      await certificacionesApi.eliminar(id, certificacion.id)
       toast.add({ severity: 'success', summary: 'Certificación eliminada', life: 3000 })
       confirmarEliminarVisible.value = false
       await cargar()

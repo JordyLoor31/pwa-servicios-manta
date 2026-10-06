@@ -13,12 +13,11 @@ import { PerfilesTecnicoDisponibilidadService } from './services/perfiles-tecnic
 import { PerfilesTecnicoCategoriasService } from './services/perfiles-tecnico-categorias.service';
 import { PerfilesTecnicoTarifasService } from './services/perfiles-tecnico-tarifas.service';
 import { PerfilesTecnicoCertificacionesService } from './services/perfiles-tecnico-certificaciones.service';
-import { ReservaServicio } from '../solicitudes/entities/reserva-servicio.entity';
-
-// ReservaServicio se registra solo para consultas de disponibilidad; no expone entidades propias.
+import { ReservasModule } from '../solicitudes/reservas.module';
 
 @Module({
   imports: [
+    ReservasModule,
     TypeOrmModule.forFeature([
       PerfilTecnico,
       DisponibilidadTecnico,
@@ -26,7 +25,6 @@ import { ReservaServicio } from '../solicitudes/entities/reserva-servicio.entity
       TecnicoCategoria,
       TarifaTecnico,
       CategoriaServicio,
-      ReservaServicio,
     ]),
   ],
   controllers: [PerfilesTecnicoController],

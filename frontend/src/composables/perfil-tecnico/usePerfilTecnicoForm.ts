@@ -1,9 +1,8 @@
 import { computed, onMounted, ref } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useAuthz } from '../auth/useAuthz'
-import { api } from '../../services/api'
+import { perfilTecnicoApi } from '../../services/perfil-tecnico'
 import { useCategoriasTecnico } from './useCategoriasTecnico'
-import type { PerfilTecnico } from '../../types/perfil-tecnico'
 
 export function usePerfilTecnicoForm() {
   const toast = useToast()
@@ -43,7 +42,7 @@ export function usePerfilTecnicoForm() {
   async function cargarPerfil() {
     if (!usuarioId.value) return
     try {
-      const perfil = await api.get<PerfilTecnico>(`/perfiles-tecnico/${usuarioId.value}`)
+      const perfil = await perfilTecnicoApi.obtener(usuarioId.value)
       aniosExperiencia.value = perfil.anios_experiencia
       radioCobertura.value = perfil.radio_cobertura_km
       biografia.value = perfil.biografia ?? ''
@@ -72,9 +71,9 @@ export function usePerfilTecnicoForm() {
         biografia: biografia.value.trim() || undefined,
       }
       if (perfilExistente.value) {
-        await api.put(`/perfiles-tecnico/${id}`, datos)
+        await perfilTecnicoApi.actualizar(id, datos)
       } else {
-        await api.post('/perfiles-tecnico', datos)
+        await perfilTecnicoApi.crear(datos)
       }
       perfilExistente.value = true
       notificarExito('Datos del técnico guardados.')

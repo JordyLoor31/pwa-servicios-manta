@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { useToast } from 'primevue/usetoast'
-import { api } from '../../services/api'
-import type { DetalleTecnico, TecnicoAdminLista, TecnicosPaginados } from '../../types/tecnicos'
+import { tecnicosApi } from '../../services/tecnicos'
+import type { DetalleTecnico, TecnicoAdminLista } from '../../types/tecnicos'
 import type { EstadoCertificacion } from '../../types/certificaciones'
 
 export function useTecnicosAdmin() {
@@ -23,9 +23,7 @@ export function useTecnicosAdmin() {
   async function cargar() {
     cargando.value = true
     try {
-      const q = busqueda.value.trim()
-      const ruta = `/perfiles-tecnico/admin?page=${page.value}&limit=${limit.value}${q ? `&q=${encodeURIComponent(q)}` : ''}`
-      const respuesta = await api.get<TecnicosPaginados>(ruta)
+      const respuesta = await tecnicosApi.listar(page.value, limit.value, busqueda.value.trim())
       tecnicos.value = respuesta.data
       total.value = respuesta.total
     } catch (error) {
@@ -82,7 +80,7 @@ export function useTecnicosAdmin() {
     cargandoDetalle.value = true
     detalle.value = null
     try {
-      detalle.value = await api.get<DetalleTecnico>(`/perfiles-tecnico/admin/${tecnico.id}`)
+      detalle.value = await tecnicosApi.obtenerDetalle(tecnico.id)
     } catch (error) {
       notificarError(error, 'No se pudo cargar el detalle del técnico')
     } finally {
@@ -97,10 +95,10 @@ export function useTecnicosAdmin() {
     const ahoraVerificado = detalle.value?.perfil.verificado === false
     try {
       if (ahoraVerificado) {
-        await api.post(`/perfiles-tecnico/${tecnico.id}/verificar`, {})
+        await tecnicosApi.verificar(tecnico.id, ahoraVerificado)
         notificarExito(`${tecnico.nombres} fue marcado como verificado`)
       } else {
-        await api.delete(`/perfiles-tecnico/${tecnico.id}/verificar`)
+        await tecnicosApi.verificar(tecnico.id, ahoraVerificado)
         notificarExito(`Se retiró la verificación de ${tecnico.nombres}`)
       }
       if (tecnicoActivo.value) await abrirVer(tecnicoActivo.value)
@@ -117,9 +115,7 @@ export function useTecnicosAdmin() {
     if (!tecnico) return
     procesando.value = true
     try {
-      await api.put(`/perfiles-tecnico/${tecnico.id}/certificaciones/${certificacionId}/revisar`, {
-        estado,
-      })
+      await tecnicosApi.revisarCertificacion(tecnico.id, certificacionId, estado)
       notificarExito(estado === 'aprobada' ? 'Certificación aprobada' : 'Certificación rechazada')
       if (tecnicoActivo.value) await abrirVer(tecnicoActivo.value)
     } catch (error) {
@@ -140,10 +136,7 @@ export function useTecnicosAdmin() {
     procesando.value = true
     const nuevoEstado = tecnico.usuario_estado === 'suspendido' ? 'activo' : 'suspendido'
     try {
-      const actualizado = await api.patch<{ id: string; estado: string }>(
-        `/usuarios/${tecnico.id}/estado`,
-        { estado: nuevoEstado },
-      )
+      const actualizado = await tecnicosApi.cambiarEstado(tecnico.id, nuevoEstado)
       notificarExito(`${tecnico.nombres} ahora está ${nuevoEstado === 'activo' ? 'activo' : 'suspendido'}`)
       const tecnicoActualizado: TecnicoAdminLista = {
         ...tecnico,

@@ -3,7 +3,8 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Drawer from 'primevue/drawer'
 import Button from 'primevue/button'
-import ToggleSwitch from 'primevue/toggleswitch'
+import AppInstallPrompt from './AppInstallPrompt.vue'
+import AppThemeToggle from './AppThemeToggle.vue'
 import { useTheme } from '../../composables/useTheme'
 import { useAuthz, cerrarSesion } from '../../composables/auth/useAuthz'
 import { usarNotificaciones, limpiarNotificacionesNuevas } from '../../composables/notificaciones/useNotificaciones'
@@ -63,13 +64,13 @@ const menu = computed(() => {
 function navegar(ruta: string) {
   visible.value = false
   if (ruta === router.currentRoute.value.path) return
-  router.push(ruta).catch(() => {})
+  void router.push(ruta)
 }
 
 function irARecibidas() {
   limpiarNotificacionesNuevas()
   if (router.currentRoute.value.path !== '/solicitudes/recibidas') {
-    router.push('/solicitudes/recibidas').catch(() => {})
+    void router.push('/solicitudes/recibidas')
   }
 }
 
@@ -158,28 +159,13 @@ function logout() {
         </nav>
 
         <div class="mt-auto flex flex-col gap-2">
-          <div v-if="canInstall" class="rounded-xl border border-pacific/10 px-3 py-2.5">
-            <Button
-              label="Instalar la app"
-              icon="pi pi-download"
-              class="w-full"
-              severity="primary"
-              @click="promptInstall"
-            />
-            <p v-if="showIosHint" class="mt-2 text-xs leading-relaxed text-muted">
-              En {{ isIOS ? 'iOS' : 'Android' }}: toca el botón Compartir y elige
-              «{{ isIOS ? 'Añadir a pantalla de inicio' : 'Añadir a la pantalla de inicio' }}» para instalar
-              CamelloApp.
-            </p>
-          </div>
-
-          <div class="flex items-center justify-between rounded-xl border border-pacific/10 px-3 py-2.5">
-            <span class="flex items-center gap-3 text-sm font-medium text-ink">
-              <i :class="isDark ? 'pi pi-moon' : 'pi pi-sun'" class="w-5 text-pacific" />
-              {{ isDark ? 'Modo claro' : 'Modo oscuro' }}
-            </span>
-            <ToggleSwitch :model-value="isDark" @update:model-value="toggle" aria-label="Cambiar modo oscuro" />
-          </div>
+          <AppInstallPrompt
+            :can-install="canInstall"
+            :is-i-o-s="isIOS"
+            :show-ios-hint="showIosHint"
+            @install="promptInstall"
+          />
+          <AppThemeToggle :is-dark="isDark" @toggle="toggle" />
         </div>
 
         <div class="pt-4">

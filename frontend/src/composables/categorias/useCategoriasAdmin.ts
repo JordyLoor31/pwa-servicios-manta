@@ -1,6 +1,6 @@
 import { onMounted, ref } from 'vue'
 import { useToast } from 'primevue/usetoast'
-import { api } from '../../services/api'
+import { categoriasAdminApi } from '../../services/categorias-admin'
 import type { CategoriaForm, CategoriaModo, CategoriaServicio } from '../../types/categorias'
 
 const FORM_VACIO: CategoriaForm = { nombre: '', descripcion: '', icono: '', activa: true }
@@ -32,7 +32,7 @@ export function useCategoriasAdmin() {
   async function cargarCategorias() {
     cargando.value = true
     try {
-      categorias.value = await api.get<CategoriaServicio[]>('/categorias-servicio')
+      categorias.value = await categoriasAdminApi.listar()
     } catch (error) {
       notificarError(error, 'No se pudieron cargar las categorías')
     } finally {
@@ -90,10 +90,10 @@ export function useCategoriasAdmin() {
         activa: form.value.activa,
       }
       if (modo.value === 'crear') {
-        await api.post('/categorias-servicio', payload)
+        await categoriasAdminApi.crear(payload)
         toast.add({ severity: 'success', summary: 'Guardado', detail: 'Categoría creada.', life: 3000 })
       } else if (editingId.value) {
-        await api.put(`/categorias-servicio/${editingId.value}`, payload)
+        await categoriasAdminApi.actualizar(editingId.value, payload)
         toast.add({ severity: 'success', summary: 'Guardado', detail: 'Categoría actualizada.', life: 3000 })
       }
       cerrarDialogo()
@@ -115,7 +115,7 @@ export function useCategoriasAdmin() {
     if (!id) return
     eliminando.value = true
     try {
-      await api.delete(`/categorias-servicio/${id}`)
+      await categoriasAdminApi.eliminar(id)
       toast.add({ severity: 'success', summary: 'Eliminado', detail: 'Categoría eliminada.', life: 3000 })
       eliminarVisible.value = false
       await cargarCategorias()

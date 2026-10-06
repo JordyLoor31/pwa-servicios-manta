@@ -5,7 +5,7 @@ import { PerfilTecnico } from '../entities/perfil-tecnico.entity';
 import { DisponibilidadTecnico } from '../entities/disponibilidad-tecnico.entity';
 import { TecnicoCategoria } from '../entities/tecnico-categoria.entity';
 import { Usuario, EstadoUsuario } from '../../usuarios/entities/usuario.entity';
-import { ReservaServicio } from '../../solicitudes/entities/reserva-servicio.entity'; // solo lectura para disponibilidad
+import { ReservasConsultaService } from '../../solicitudes/services/reservas-consulta.service';
 import { SlotDisponibilidadDto } from '../dtos/reemplazar-disponibilidad.dto';
 import { asegurarPerfil, toDirectorio } from './perfiles-tecnico.helpers';
 
@@ -36,8 +36,7 @@ export class PerfilesTecnicoDisponibilidadService {
     private readonly disponibilidadRepository: Repository<DisponibilidadTecnico>,
     @InjectRepository(TecnicoCategoria)
     private readonly tecnicoCategoriaRepository: Repository<TecnicoCategoria>,
-    @InjectRepository(ReservaServicio)
-    private readonly reservasRepository: Repository<ReservaServicio>,
+    private readonly reservasConsultaService: ReservasConsultaService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -98,10 +97,7 @@ export class PerfilesTecnicoDisponibilidadService {
       where: { tecnico_id: In(ids), dia_semana: dia },
       select: { tecnico_id: true, hora_inicio: true, hora_fin: true },
     });
-    const reservas = await this.reservasRepository.find({
-      where: { tecnico_id: In(ids), fecha_servicio: fecha },
-      select: { tecnico_id: true, hora_inicio: true, hora_fin: true },
-    });
+    const reservas = await this.reservasConsultaService.buscarPorTecnicosYFecha(ids, fecha);
     const intervalosPorTecnico = new Map<string, { inicio: string; fin: string }[]>();
     for (const intervalo of intervalos) {
       const lista = intervalosPorTecnico.get(intervalo.tecnico_id) ?? [];
@@ -171,10 +167,7 @@ export class PerfilesTecnicoDisponibilidadService {
   ) {
     const dia = new Date(`${fecha}T12:00:00`).getDay();
     const horarios = await this.horariosDisponibles(dia, categorias, tecnicoId);
-    const reservas = await this.reservasRepository.find({
-      where: { tecnico_id: tecnicoId, fecha_servicio: fecha },
-      select: { hora_inicio: true, hora_fin: true },
-    });
+    const reservas = await this.reservasConsultaService.buscarPorTecnicoYFecha(tecnicoId, fecha);
 
     const convertir = minutosDeHora;
     return horarios.filter((hora) => {

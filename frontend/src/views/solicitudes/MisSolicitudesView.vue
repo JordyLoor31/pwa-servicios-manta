@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted } from 'vue'
 import Button from 'primevue/button'
 import Skeleton from 'primevue/skeleton'
 import Tag from 'primevue/tag'
@@ -15,7 +14,8 @@ import {
   estadoLabel,
   formatearPropuestaLlegada,
 } from '../../utils/solicitudes'
-import { api } from '../../services/api'
+import { solicitudesApi } from '../../services/solicitudes'
+import { useSolicitudEvents } from '../../composables/solicitudes/useSolicitudEvents'
 
 const {
   solicitudes,
@@ -55,7 +55,7 @@ async function onCreada(creada: Solicitud) {
 
 async function cancelarSolicitud(solicitud: Solicitud) {
   try {
-    await api.patch(`/solicitudes/${solicitud.id}/cancelar`, {})
+    await solicitudesApi.cancelar(solicitud.id)
     toast.add({ severity: 'success', summary: 'Solicitud cancelada', life: 3000 })
     cerrarDetalle()
     await cargar()
@@ -73,13 +73,7 @@ function onSolicitudActualizada() {
   cargar()
 }
 
-onMounted(() => {
-  window.addEventListener('camello:solicitud-actualizada', onSolicitudActualizada)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('camello:solicitud-actualizada', onSolicitudActualizada)
-})
+useSolicitudEvents({ actualizada: onSolicitudActualizada })
 </script>
 
 <template>

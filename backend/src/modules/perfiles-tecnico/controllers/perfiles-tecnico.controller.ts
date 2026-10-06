@@ -26,6 +26,12 @@ import { Public } from '../../auth/decorators/public.decorator';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { CurrentUser, type AuthenticatedUser } from '../../auth/decorators/current-user.decorator';
 import { RolUsuario } from '../../usuarios/entities/usuario.entity';
+import {
+  parseCategorias,
+  validarDia,
+  validarFecha,
+  validarUuidOpcional,
+} from './perfiles-tecnico.controller.helpers';
 
 @Controller('perfiles-tecnico')
 export class PerfilesTecnicoController {
@@ -37,10 +43,11 @@ export class PerfilesTecnicoController {
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: CreatePerfilTecnicoDto,
   ) {
-    if (user.rol !== RolUsuario.ADMIN) {
-      dto.usuario_id = user.id;
-    }
-    return this.perfilesTecnicoService.create(dto);
+    const datos = {
+      ...dto,
+      usuario_id: user.rol === RolUsuario.ADMIN ? dto.usuario_id : user.id,
+    };
+    return this.perfilesTecnicoService.create(datos);
   }
 
   @Roles(RolUsuario.ADMIN)
@@ -78,16 +85,11 @@ export class PerfilesTecnicoController {
     @Query('categorias') categorias?: string,
     @Query('tecnico') tecnico?: string,
   ) {
-    if (dia < 0 || dia > 6) {
+    if (!validarDia(dia)) {
       return [];
     }
-    if (tecnico && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tecnico)) {
-      return [];
-    }
-    const idsCategorias = (categorias ?? '')
-      .split(',')
-      .map((categoria) => categoria.trim())
-      .filter(Boolean);
+    validarUuidOpcional(tecnico, 'tecnico debe ser un UUID válido');
+    const idsCategorias = parseCategorias(categorias);
     return this.perfilesTecnicoService.horariosDisponibles(dia, idsCategorias, tecnico);
   }
 
@@ -97,13 +99,10 @@ export class PerfilesTecnicoController {
     @Query('dia', new DefaultValuePipe(-1), ParseIntPipe) dia: number,
     @Query('categorias') categorias?: string,
   ) {
-    if (dia < 0 || dia > 6) {
+    if (!validarDia(dia)) {
       return [];
     }
-    const idsCategorias = (categorias ?? '')
-      .split(',')
-      .map((categoria) => categoria.trim())
-      .filter(Boolean);
+    const idsCategorias = parseCategorias(categorias);
     return this.perfilesTecnicoService.disponiblesPorDia(dia, idsCategorias);
   }
 
@@ -114,16 +113,9 @@ export class PerfilesTecnicoController {
     @Query('categorias') categorias?: string,
     @Query('tecnico') tecnico?: string,
   ) {
-    if (!fecha || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
-      throw new BadRequestException('fecha debe tener formato YYYY-MM-DD');
-    }
-    const idsCategorias = (categorias ?? '')
-      .split(',')
-      .map((categoria) => categoria.trim())
-      .filter(Boolean);
-    if (tecnico && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tecnico)) {
-      throw new BadRequestException('tecnico debe ser un UUID válido');
-    }
+    validarFecha(fecha);
+    validarUuidOpcional(tecnico, 'tecnico debe ser un UUID válido');
+    const idsCategorias = parseCategorias(categorias);
     return this.perfilesTecnicoService.disponiblesPorFecha(fecha, idsCategorias, tecnico);
   }
 
@@ -134,16 +126,12 @@ export class PerfilesTecnicoController {
     @Query('tecnico') tecnico?: string,
     @Query('categorias') categorias?: string,
   ) {
-    if (!fecha || !/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
-      throw new BadRequestException('fecha debe tener formato YYYY-MM-DD');
-    }
-    if (!tecnico || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tecnico)) {
+    validarFecha(fecha);
+    if (!tecnico) {
       throw new BadRequestException('tecnico es requerido y debe ser un UUID válido');
     }
-    const idsCategorias = (categorias ?? '')
-      .split(',')
-      .map((categoria) => categoria.trim())
-      .filter(Boolean);
+    validarUuidOpcional(tecnico, 'tecnico es requerido y debe ser un UUID válido');
+    const idsCategorias = parseCategorias(categorias);
     return this.perfilesTecnicoService.horariosDisponiblesPorFecha(fecha, tecnico, idsCategorias);
   }
 
@@ -154,13 +142,10 @@ export class PerfilesTecnicoController {
     @Query('hora', new DefaultValuePipe('')) hora: string,
     @Query('categorias') categorias?: string,
   ) {
-    if (dia < 0 || dia > 6 || !/^\d{2}:\d{2}$/.test(hora) || hora > '23:59') {
+    if (!validarDia(dia) || !/^\d{2}:\d{2}$/.test(hora) || hora > '23:59') {
       return this.perfilesTecnicoService.directorioPublic();
     }
-    const idsCategorias = (categorias ?? '')
-      .split(',')
-      .map((categoria) => categoria.trim())
-      .filter(Boolean);
+    const idsCategorias = parseCategorias(categorias);
     return this.perfilesTecnicoService.disponiblesPublic(dia, hora, idsCategorias);
   }
 
