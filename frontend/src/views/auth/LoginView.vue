@@ -10,6 +10,7 @@ import Toast from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import { useAuth } from '../../composables/auth/useAuth'
 import GoogleAuthButton from '../../components/auth/GoogleAuthButton.vue'
+import AppProgressSpinner from '../../components/layout/AppProgressSpinner.vue'
 
 const router = useRouter()
 const toast = useToast()
@@ -45,6 +46,9 @@ function goToRecuperar() {
 
 <template>
   <div class="flex min-h-screen items-center justify-center p-4">
+    <div v-if="cargando" class="fixed inset-0 z-[60] flex items-center justify-center bg-white/80">
+      <AppProgressSpinner />
+    </div>
     <Toast />
     <Card class="w-full max-w-sm">
       <template #title>Bienvenido de nuevo</template>

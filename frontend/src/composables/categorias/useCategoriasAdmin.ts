@@ -36,6 +36,7 @@ export function useCategoriasAdmin() {
     } catch (error) {
       notificarError(error, 'No se pudieron cargar las categorías')
     } finally {
+      await new Promise((resolve) => setTimeout(resolve, 800))
       cargando.value = false
     }
   }

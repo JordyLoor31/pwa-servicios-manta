@@ -57,6 +57,7 @@ export function useDisponibilidad() {
       })
       slots.value = []
     } finally {
+      await new Promise((resolve) => setTimeout(resolve, 800))
       cargando.value = false
     }
   }

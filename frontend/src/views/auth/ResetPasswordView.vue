@@ -7,6 +7,7 @@ import InputText from 'primevue/inputtext'
 import Label from 'primevue/label'
 import Toast from 'primevue/toast'
 import { useAuth } from '../../composables/auth/useAuth'
+import AppProgressSpinner from '../../components/layout/AppProgressSpinner.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -66,7 +67,7 @@ onUnmounted(() => {
     <Card class="w-full max-w-sm">
       <template #content>
         <div v-if="estado === 'cargando'" class="flex flex-col items-center gap-3 py-8">
-          <span class="pi pi-spin pi-spinner text-3xl text-[#006D8F]" />
+          <AppProgressSpinner />
           <p class="text-sm text-muted">Verificando el enlace…</p>
         </div>
 

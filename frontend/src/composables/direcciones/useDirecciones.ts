@@ -47,6 +47,7 @@ export function useDirecciones() {
       })
       direcciones.value = []
     } finally {
+      await new Promise((resolve) => setTimeout(resolve, 800))
       cargando.value = false
     }
   }

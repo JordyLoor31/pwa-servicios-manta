@@ -5,6 +5,7 @@ import Drawer from 'primevue/drawer'
 import Button from 'primevue/button'
 import AppInstallPrompt from './AppInstallPrompt.vue'
 import AppThemeToggle from './AppThemeToggle.vue'
+import AppProgressSpinner from './AppProgressSpinner.vue'
 import { useTheme } from '../../composables/useTheme'
 import { useAuthz, cerrarSesion } from '../../composables/auth/useAuthz'
 import { usarNotificaciones, limpiarNotificacionesNuevas } from '../../composables/notificaciones/useNotificaciones'
@@ -12,6 +13,7 @@ import { usePWAInstall } from '../../composables/usePWAInstall'
 
 const router = useRouter()
 const visible = ref(false)
+const saliendo = ref(false)
 const { isDark, toggle } = useTheme()
 const { usuario, hasAnyRole } = useAuthz()
 const { solicitudesNuevas } = usarNotificaciones()
@@ -75,6 +77,7 @@ function irARecibidas() {
 
 function logout() {
   visible.value = false
+  saliendo.value = true
   cerrarSesion()
   router.push('/login')
 }
@@ -82,6 +85,9 @@ function logout() {
 
 <template>
   <div>
+    <div v-if="saliendo" class="fixed inset-0 z-[60] flex items-center justify-center bg-white/80">
+      <AppProgressSpinner />
+    </div>
     <header
       class="sticky top-0 z-40 flex h-15 items-center gap-3 border-b border-pacific/10 bg-card/95 px-3 py-3 backdrop-blur sm:h-16 sm:px-6"
     >

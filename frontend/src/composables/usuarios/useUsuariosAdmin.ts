@@ -33,6 +33,7 @@ export function useUsuariosAdmin() {
       usuarios.value = []
       total.value = 0
     } finally {
+      await new Promise((resolve) => setTimeout(resolve, 800))
       cargando.value = false
     }
   }

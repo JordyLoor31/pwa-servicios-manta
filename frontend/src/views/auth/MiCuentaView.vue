@@ -6,6 +6,7 @@ import InputText from 'primevue/inputtext'
 import Label from 'primevue/label'
 import Toast from 'primevue/toast'
 import AppHeader from '../../components/layout/AppHeader.vue'
+import AppProgressSpinner from '../../components/layout/AppProgressSpinner.vue'
 import { useRouter } from 'vue-router'
 import { useAuthz } from '../../composables/auth/useAuthz'
 import { useAuth } from '../../composables/auth/useAuth'
@@ -43,6 +44,9 @@ async function onGuardar() {
 <template>
   <div class="flex min-h-screen flex-col bg-cloud">
     <AppHeader />
+    <div v-if="cargando" class="fixed inset-0 z-[60] flex items-center justify-center bg-white/80">
+      <AppProgressSpinner />
+    </div>
     <section class="mx-auto flex w-full max-w-5xl flex-1 items-start justify-center px-4 py-8">
       <Card class="w-full max-w-lg">
       <template #title>Mi cuenta</template>

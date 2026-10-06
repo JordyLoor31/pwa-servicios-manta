@@ -6,6 +6,7 @@ import InputText from 'primevue/inputtext'
 import Label from 'primevue/label'
 import Select from 'primevue/select'
 import type { CategoriaServicio, RangoPrecio, UnidadCobro } from '../../types/perfil-tecnico'
+import AppProgressSpinner from '../layout/AppProgressSpinner.vue'
 
 const props = defineProps<{
   categorias: CategoriaServicio[]
@@ -58,7 +59,7 @@ function rangoTexto(id: string): string | null {
     </p>
 
     <div v-if="cargando" class="flex justify-center py-8 text-2xl text-pacific">
-      <i class="pi pi-spin pi-spinner" />
+      <AppProgressSpinner />
     </div>
 
     <div v-else-if="categorias.length === 0" class="py-8 text-center text-sm text-muted">
