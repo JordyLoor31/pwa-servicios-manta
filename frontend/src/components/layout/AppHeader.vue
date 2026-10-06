@@ -6,9 +6,11 @@ import Button from 'primevue/button'
 import AppInstallPrompt from './AppInstallPrompt.vue'
 import AppThemeToggle from './AppThemeToggle.vue'
 import AppProgressSpinner from './AppProgressSpinner.vue'
+import AppBreadcrumb from './AppBreadcrumb.vue'
+import Popover from 'primevue/popover'
 import { useTheme } from '../../composables/useTheme'
 import { useAuthz, cerrarSesion } from '../../composables/auth/useAuthz'
-import { usarNotificaciones, limpiarNotificacionesNuevas } from '../../composables/notificaciones/useNotificaciones'
+import { usarNotificaciones, limpiarNotificacionesNuevas, type Notificacion } from '../../composables/notificaciones/useNotificaciones'
 import { usePWAInstall } from '../../composables/usePWAInstall'
 
 const router = useRouter()
@@ -16,8 +18,14 @@ const visible = ref(false)
 const saliendo = ref(false)
 const { isDark, toggle } = useTheme()
 const { usuario, hasAnyRole } = useAuthz()
-const { solicitudesNuevas } = usarNotificaciones()
+const { solicitudesNuevas, notificaciones, marcarComoLeida, marcarTodasComoLeidas } = usarNotificaciones()
 const { canInstall, isIOS, showIosHint, promptInstall } = usePWAInstall()
+
+const popoverRef = ref<InstanceType<typeof Popover> | null>(null)
+
+function togglePopover(event: MouseEvent) {
+  popoverRef.value?.toggle(event)
+}
 
 const iniciales = computed(() => {
   const u = usuario.value
@@ -75,6 +83,15 @@ function irARecibidas() {
   }
 }
 
+function irANotificacion(notif: Notificacion) {
+  marcarComoLeida(notif.id)
+  if (notif.solicitudId) {
+    void router.push(`/solicitudes/${notif.solicitudId}`)
+  } else {
+    void router.push('/solicitudes/recibidas')
+  }
+}
+
 function logout() {
   visible.value = false
   saliendo.value = true
@@ -98,17 +115,17 @@ function logout() {
         <span class="hidden text-lg font-semibold tracking-tight text-pacific sm:inline">CamelloApp</span>
       </button>
 
-      <div class="flex-1" />
+      <AppBreadcrumb class="flex-1 min-w-0" />
 
       <div class="flex items-center gap-2 sm:gap-3">
         <Button
-          v-if="hasAnyRole('tecnico')"
+          v-if="hasAnyRole('cliente', 'tecnico', 'admin')"
           icon="pi pi-bell"
           text
           rounded
           aria-label="Notificaciones de solicitudes"
           class="relative"
-          @click="irARecibidas"
+          @click="togglePopover"
         >
           <span
             v-if="solicitudesNuevas > 0"
@@ -117,6 +134,70 @@ function logout() {
             {{ solicitudesNuevas > 9 ? '9+' : solicitudesNuevas }}
           </span>
         </Button>
+
+        <Popover ref="popoverRef" v-if="hasAnyRole('cliente', 'tecnico', 'admin')" appendTo="self" :dismissable="true">
+          <div class="w-80 p-2">
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-sm font-semibold text-ink">Notificaciones</h3>
+                <Button
+                  v-if="solicitudesNuevas > 0"
+                  label="Marcar todas como leídas"
+                  text
+                  size="small"
+                  class="p-0 text-xs"
+                  @click="marcarTodasComoLeidas"
+                />
+              </div>
+              <div class="max-h-60 overflow-y-auto">
+                <div
+                  v-if="notificaciones.length === 0"
+                  class="py-4 text-center text-sm text-muted"
+                >
+                  Sin notificaciones
+                </div>
+                <div
+                  v-else
+                  v-for="notif in notificaciones"
+                  :key="notif.id"
+                  class="relative p-3 hover:bg-pacific/5 rounded-lg cursor-pointer border-b border-pacific/10 last:border-0"
+                  @click="irANotificacion(notif)"
+                >
+                  <div class="flex items-start gap-2">
+                    <div
+                      :class="[
+                        'flex h-8 w-8 items-center justify-center rounded-full shrink-0',
+                        notif.tipo === 'solicitud.nueva' ? 'bg-pacific/10 text-pacific' : 'bg-amber/10 text-amber',
+                      ]"
+                    >
+                      <i
+                        :class="notif.tipo === 'solicitud.nueva' ? 'pi pi-plus' : 'pi pi-sync'"
+                        class="text-sm"
+                      />
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm font-medium text-ink" :class="{ 'line-through text-muted': notif.leida }">
+                        {{ notif.titulo }}
+                      </p>
+                      <p class="text-xs text-muted truncate">{{ notif.mensaje }}</p>
+                      <p class="mt-1 text-[10px] text-muted">{{ notif.fecha.toLocaleTimeString() }}</p>
+                    </div>
+                    <div
+                      v-if="!notif.leida"
+                      class="flex h-2 w-2 shrink-0 items-center justify-center rounded-full bg-pacific"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="mt-2 text-center">
+                <Button
+                  label="Ver todas"
+                  text
+                  size="small"
+                  @click="irARecibidas"
+                />
+              </div>
+          </div>
+        </Popover>
         <div class="hidden text-right sm:block">
           <p class="text-sm font-medium leading-tight text-ink">
             {{ usuario?.nombres }} {{ usuario?.apellidos }}
