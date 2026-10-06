@@ -2,13 +2,12 @@
 import { computed, onMounted, ref } from 'vue'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
-import FloatLabel from 'primevue/floatlabel'
-import InputText from 'primevue/inputtext'
 import Menu from 'primevue/menu'
 import Skeleton from 'primevue/skeleton'
 import Tag from 'primevue/tag'
 import Toast from 'primevue/toast'
 import AppHeader from '../../components/layout/AppHeader.vue'
+import DireccionFormDialog from '../../components/direcciones/DireccionFormDialog.vue'
 import { useDirecciones } from '../../composables/direcciones/useDirecciones'
 import type { Direccion } from '../../types/direcciones'
 
@@ -55,6 +54,11 @@ const opciones = computed(() => {
 function abrirMenu(event: Event, direccion: Direccion) {
   direccionActiva.value = direccion
   menuRef.value?.toggle(event)
+}
+
+
+function urlMapa(direccion: Direccion) {
+  return `https://www.openstreetmap.org/?mlat=${direccion.latitud}&mlon=${direccion.longitud}#map=16/${direccion.latitud}/${direccion.longitud}`
 }
 
 onMounted(cargar)
@@ -134,68 +138,28 @@ onMounted(cargar)
             <p class="mt-1 text-xs text-muted">
               {{ (item as Direccion).latitud }}, {{ (item as Direccion).longitud }}
             </p>
+            <a
+              v-if="(item as Direccion).latitud && (item as Direccion).longitud"
+              :href="urlMapa(item as Direccion)"
+              target="_blank"
+              rel="noopener"
+              class="mt-2 inline-flex items-center gap-1 text-sm font-medium text-pacific"
+            >
+              <i class="pi pi-map" /> Ver en OpenStreetMap
+            </a>
           </template>
         </div>
       </div>
 
       <Menu ref="menuRef" :model="opciones" popup />
 
-      <Dialog v-model:visible="formVisible" :header="direccionActiva ? 'Editar dirección' : 'Nueva dirección'" modal class="w-full max-w-lg">
-        <div class="mt-2 flex flex-col gap-4">
-          <FloatLabel variant="on">
-            <InputText id="etiqueta" v-model="form.etiqueta" class="w-full" />
-            <label for="etiqueta">Etiqueta (opcional)</label>
-          </FloatLabel>
-          <FloatLabel variant="on">
-            <InputText id="direccion_texto" v-model="form.direccion_texto" class="w-full" />
-            <label for="direccion_texto">Dirección *</label>
-          </FloatLabel>
-          <FloatLabel variant="on">
-            <InputText id="referencia" v-model="form.referencia" class="w-full" />
-            <label for="referencia">Referencia (opcional)</label>
-          </FloatLabel>
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <FloatLabel variant="on">
-              <InputText
-                id="latitud"
-                v-model="form.latitud"
-                inputmode="decimal"
-                class="w-full"
-              />
-              <label for="latitud">Latitud *</label>
-            </FloatLabel>
-            <FloatLabel variant="on">
-              <InputText
-                id="longitud"
-                v-model="form.longitud"
-                inputmode="decimal"
-                class="w-full"
-              />
-              <label for="longitud">Longitud *</label>
-            </FloatLabel>
-          </div>
-          <FloatLabel variant="on">
-            <InputText id="ciudad" v-model="form.ciudad" class="w-full" />
-            <label for="ciudad">Ciudad</label>
-          </FloatLabel>
-          <div class="flex items-center gap-3">
-            <Button
-              label="Principal"
-              :icon="form.es_principal ? 'pi pi-star' : 'pi pi-star-o'"
-              :severity="form.es_principal ? 'success' : 'secondary'"
-              variant="outlined"
-              @click="form.es_principal = !form.es_principal"
-            />
-            <span class="text-sm text-muted">Marcar como dirección principal</span>
-          </div>
-        </div>
-        <template #footer>
-          <div class="flex justify-end gap-2">
-            <Button label="Cancelar" severity="secondary" @click="formVisible = false" />
-            <Button label="Guardar" icon="pi pi-check" :loading="guardando" @click="guardar" />
-          </div>
-        </template>
-      </Dialog>
+      <DireccionFormDialog
+        v-model:visible="formVisible"
+        :form="form"
+        :direccion="direccionActiva"
+        :guardando="guardando"
+        @guardar="guardar"
+      />
 
       <Dialog
         v-model:visible="confirmarPrincipalVisible"
