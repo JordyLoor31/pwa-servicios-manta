@@ -23,9 +23,15 @@ function goToLogin() {
 </script>
 
 <template>
-  <div class="flex min-h-screen items-center justify-center p-4">
+  <div class="auth-page flex min-h-screen items-center justify-center p-4">
     <Toast />
-    <Card class="w-full max-w-sm">
+    <Card class="auth-card w-full max-w-sm">
+      <template #header>
+        <div class="auth-brand">
+          <img src="/faviconcamello.png" alt="CamelloApp" class="auth-logo" />
+          <span class="auth-brand-name">CamelloApp</span>
+        </div>
+      </template>
       <template #title>¿Olvidaste tu contraseña?</template>
       <template #subtitle>Te enviaremos un enlace para restablecerla.</template>
       <template #content>

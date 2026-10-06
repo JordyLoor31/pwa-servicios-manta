@@ -166,6 +166,102 @@ body {
   width: 20rem;
 }
 
+.auth-page,
+.system-page {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 12% 16%, rgb(82 212 212 / 35%), transparent 30%),
+    radial-gradient(circle at 88% 84%, rgb(242 140 40 / 28%), transparent 32%),
+    linear-gradient(135deg, var(--color-pacific-900), var(--color-pacific-600) 52%, var(--color-turquoise-500));
+}
+
+.auth-page::before,
+.auth-page::after,
+.system-page::before,
+.system-page::after {
+  position: absolute;
+  width: 18rem;
+  height: 18rem;
+  border-radius: 9999px;
+  content: '';
+  pointer-events: none;
+}
+
+.auth-page::before,
+.system-page::before {
+  top: -8rem;
+  right: -5rem;
+  background: rgb(242 140 40 / 25%);
+}
+
+.auth-page::after,
+.system-page::after {
+  bottom: -10rem;
+  left: -6rem;
+  background: rgb(0 166 166 / 28%);
+}
+
+.auth-card {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 30%);
+  box-shadow: 0 1.5rem 4rem rgb(5 39 51 / 30%);
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  padding: 1.5rem 1.5rem 0.25rem;
+}
+
+.auth-logo {
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 0.85rem;
+  box-shadow: 0 0.35rem 1rem rgb(5 39 51 / 22%);
+}
+
+.auth-brand-name {
+  color: var(--color-pacific-800);
+  font-size: 1.35rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.auth-google-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.auth-google-divider::before,
+.auth-google-divider::after {
+  height: 1px;
+  flex: 1;
+  background: var(--p-content-border-color);
+  content: '';
+}
+
+.google-btn-container {
+  min-height: 2.5rem;
+}
+
+html.dark .auth-brand-name {
+  color: var(--color-turquoise-200);
+}
+
+html.dark .auth-card {
+  background: rgb(23 42 53 / 96%);
+}
+
 @media (max-width: 640px) {
   .p-drawer-left .p-drawer {
     width: 85vw;

@@ -46,18 +46,23 @@ function goToLogin() {
 </script>
 
 <template>
-  <div class="flex min-h-screen items-center justify-center p-4">
-    <div v-if="cargando" class="fixed inset-0 z-[60] flex items-center justify-center bg-white/80">
+  <div class="auth-page flex min-h-screen items-center justify-center p-4">
+    <div v-if="cargando" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm">
       <AppProgressSpinner />
     </div>
     <Toast />
-    <Card class="w-full max-w-md">
+    <Card class="auth-card w-full max-w-md">
+      <template #header>
+        <div class="auth-brand">
+          <img src="/faviconcamello.png" alt="CamelloApp" class="auth-logo" />
+          <span class="auth-brand-name">CamelloApp</span>
+        </div>
+      </template>
       <template #title>Crea tu cuenta</template>
       <template #subtitle>Únete a Servicios Manta para empezar.</template>
       <template #content>
-        <GoogleAuthButton :rol="rol" />
         <Divider align="center" class="my-4">
-          <span class="text-sm text-muted">o regístrate con tu correo</span>
+          <span class="text-sm text-muted">Datos de tu cuenta</span>
         </Divider>
         <form class="mt-3 space-y-4" @submit.prevent="onRegister">
           <div class="flex flex-col gap-2">
@@ -88,6 +93,10 @@ function goToLogin() {
       <template #footer>
         <div class="flex flex-col gap-4">
           <Button severity="warn" class="w-full" :loading="cargando" @click="onRegister">Crear cuenta</Button>
+          <div class="auth-google-divider">
+            <span>O regístrate con</span>
+          </div>
+          <GoogleAuthButton :rol="rol" />
           <div class="mt-2 text-center text-sm text-muted">
             ¿Ya tienes cuenta?
             <Button variant="link" class="p-0" @click="goToLogin">Inicia sesión</Button>

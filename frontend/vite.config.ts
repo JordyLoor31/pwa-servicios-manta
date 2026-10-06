@@ -16,7 +16,7 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2,ttf,woff,eot,webmanifest}'],
         maximumFileSizeToCacheInBytes: 5_000_000,
       },
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      includeAssets: ['favicon.ico', 'faviconcamello.png', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
         name: 'CamelloApp',
         short_name: 'CamelloApp',
@@ -31,13 +31,13 @@ export default defineConfig({
         id: '/',
         icons: [
           {
-            src: 'pwa-192x192.png',
-            sizes: '192x192',
+            src: 'faviconcamello.png',
+            sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'
           },
           {
-            src: 'pwa-512x512.png',
+            src: 'faviconcamello.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'

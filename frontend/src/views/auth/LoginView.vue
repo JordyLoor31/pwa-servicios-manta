@@ -46,18 +46,23 @@ function goToRecuperar() {
 </script>
 
 <template>
-  <div class="flex min-h-screen items-center justify-center p-4">
-    <div v-if="cargando" class="fixed inset-0 z-[60] flex items-center justify-center bg-white/80">
+  <div class="auth-page flex min-h-screen items-center justify-center p-4">
+    <div v-if="cargando" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-sm">
       <AppProgressSpinner />
     </div>
     <Toast />
-    <Card class="w-full max-w-sm">
+    <Card class="auth-card w-full max-w-sm">
+      <template #header>
+        <div class="auth-brand">
+          <img src="/faviconcamello.png" alt="CamelloApp" class="auth-logo" />
+          <span class="auth-brand-name">CamelloApp</span>
+        </div>
+      </template>
       <template #title>Bienvenido de nuevo</template>
       <template #subtitle>Inicia sesión con tu correo para continuar.</template>
       <template #content>
-        <GoogleAuthButton />
         <Divider align="center" class="my-4">
-          <span class="text-sm text-muted">o continúa con tu correo</span>
+          <span class="text-sm text-muted">Correo electrónico</span>
         </Divider>
         <form class="mt-3 space-y-6" @submit.prevent="onLogin">
           <div class="flex flex-col gap-2">
@@ -76,6 +81,10 @@ function goToRecuperar() {
       <template #footer>
         <div class="flex flex-col gap-4">
           <Button severity="warn" class="w-full" :loading="cargando" @click="onLogin">Iniciar sesión</Button>
+          <div class="auth-google-divider">
+            <span>O continúa con</span>
+          </div>
+          <GoogleAuthButton />
           <div class="mt-2 text-center text-sm text-muted">
             ¿No tienes cuenta?
             <Button variant="link" class="p-0" @click="goToRegister">Regístrate</Button>
