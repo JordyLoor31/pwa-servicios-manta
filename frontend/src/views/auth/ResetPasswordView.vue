@@ -3,11 +3,10 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Card from 'primevue/card'
 import Button from 'primevue/button'
-import InputText from 'primevue/inputtext'
-import Label from 'primevue/label'
 import Toast from 'primevue/toast'
 import { useAuth } from '../../composables/auth/useAuth'
 import AppProgressSpinner from '../../components/layout/AppProgressSpinner.vue'
+import PasswordInput from '../../components/auth/PasswordInput.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -78,18 +77,11 @@ onUnmounted(() => {
             <p class="text-sm text-muted">Elige una contraseña nueva para tu cuenta.</p>
           </div>
           <form class="mt-5 space-y-6" @submit.prevent="onRestablecer">
-            <div class="flex flex-col gap-2">
-              <Label for="password">Nueva contraseña</Label>
-              <InputText id="password" v-model="password" type="password" required minlength="8" />
-              <small class="text-muted">Mínimo 8 caracteres.</small>
-            </div>
-            <div class="flex flex-col gap-2">
-              <Label for="confirmacion">Confirmar contraseña</Label>
-              <InputText id="confirmacion" v-model="confirmacion" type="password" required minlength="8" />
-              <small v-if="confirmacion && password !== confirmacion" class="text-red-600">
-                Las contraseñas no coinciden.
-              </small>
-            </div>
+            <PasswordInput id="password" v-model="password" label="Nueva contraseña" autocomplete="new-password" />
+            <PasswordInput id="confirmacion" v-model="confirmacion" label="Confirmar contraseña" autocomplete="new-password" />
+            <small v-if="confirmacion && password !== confirmacion" class="text-red-600 block">
+              Las contraseñas no coinciden.
+            </small>
             <Button severity="warn" class="w-full" :loading="cargando" type="submit">
               Restablecer contraseña
             </Button>

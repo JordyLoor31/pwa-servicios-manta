@@ -11,6 +11,7 @@ import { useToast } from 'primevue/usetoast'
 import { useAuth } from '../../composables/auth/useAuth'
 import GoogleAuthButton from '../../components/auth/GoogleAuthButton.vue'
 import AppProgressSpinner from '../../components/layout/AppProgressSpinner.vue'
+import PasswordInput from '../../components/auth/PasswordInput.vue'
 
 const router = useRouter()
 const toast = useToast()
@@ -65,10 +66,10 @@ function goToRecuperar() {
           </div>
           <div class="flex flex-col gap-2">
             <div class="flex items-center justify-between">
-              <Label for="password" class="flex-1">Contraseña</Label>
+              <label for="password" class="flex-1 text-sm font-medium text-ink">Contraseña</label>
               <Button variant="link" class="p-0" @click="goToRecuperar">¿Olvidaste tu contraseña?</Button>
             </div>
-            <InputText id="password" v-model="password" type="password" />
+            <PasswordInput id="password" v-model="password" autocomplete="current-password" />
           </div>
         </form>
       </template>

@@ -11,6 +11,7 @@ import Toast from 'primevue/toast'
 import { useAuth } from '../../composables/auth/useAuth'
 import GoogleAuthButton from '../../components/auth/GoogleAuthButton.vue'
 import AppProgressSpinner from '../../components/layout/AppProgressSpinner.vue'
+import PasswordInput from '../../components/auth/PasswordInput.vue'
 import type { RolUsuario } from '../../composables/auth/useAuthz'
 
 const router = useRouter()
@@ -72,8 +73,7 @@ function goToLogin() {
             <InputText id="email" v-model="email" type="email" />
           </div>
           <div class="flex flex-col gap-2">
-            <Label for="password">Contraseña</Label>
-            <InputText id="password" v-model="password" type="password" />
+            <PasswordInput id="password" v-model="password" label="Contraseña" autocomplete="new-password" />
           </div>
           <div class="flex flex-col gap-2">
             <Label for="telefono">Teléfono</Label>
