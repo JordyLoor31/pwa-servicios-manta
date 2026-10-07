@@ -12,6 +12,8 @@ import { SolicitudesController } from './controllers/solicitudes.controller';
 import { SolicitudesService } from './services/solicitudes.service';
 import { SolicitudesDisponibilidadService } from './services/solicitudes-disponibilidad.service';
 import { SolicitudesNotificacionesService } from './services/solicitudes-notificaciones.service';
+import { SolicitudesConsultaService } from './services/solicitudes-consulta.service';
+import { SolicitudesPostulacionesService } from './services/solicitudes-postulaciones.service';
 import { NotificacionesModule } from '../notificaciones/notificaciones.module';
 import { NotificacionesPushModule } from '../notificaciones-push/notificaciones-push.module';
 
@@ -31,6 +33,12 @@ import { NotificacionesPushModule } from '../notificaciones-push/notificaciones-
     NotificacionesPushModule,
   ],
   controllers: [SolicitudesController],
-  providers: [SolicitudesService, SolicitudesDisponibilidadService, SolicitudesNotificacionesService],
+  providers: [
+    SolicitudesService,
+    SolicitudesConsultaService,
+    SolicitudesPostulacionesService,
+    SolicitudesDisponibilidadService,
+    SolicitudesNotificacionesService,
+  ],
 })
 export class SolicitudesModule {}
