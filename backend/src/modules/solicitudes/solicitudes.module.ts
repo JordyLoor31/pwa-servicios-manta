@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Solicitud } from './entities/solicitud.entity';
+import { PostulacionSolicitud } from './entities/postulacion-solicitud.entity';
+import { SolicitudCategoria } from './entities/solicitud-categoria.entity';
 import { ReservaServicio } from './entities/reserva-servicio.entity';
 import { TarifaTecnico } from '../perfiles-tecnico/entities/tarifa-tecnico.entity';
 import { Usuario } from '../usuarios/entities/usuario.entity';
@@ -17,6 +19,8 @@ import { NotificacionesPushModule } from '../notificaciones-push/notificaciones-
   imports: [
     TypeOrmModule.forFeature([
       Solicitud,
+      PostulacionSolicitud,
+      SolicitudCategoria,
       ReservaServicio,
       TarifaTecnico,
       Usuario,

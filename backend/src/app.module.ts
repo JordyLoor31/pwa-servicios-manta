@@ -25,6 +25,8 @@ import { TarifaTecnico } from './modules/perfiles-tecnico/entities/tarifa-tecnic
 import { CategoriaServicio } from './modules/categorias/entities/categoria-servicio.entity';
 import { Direccion } from './modules/direcciones/entities/direccion.entity';
 import { Solicitud } from './modules/solicitudes/entities/solicitud.entity';
+import { PostulacionSolicitud } from './modules/solicitudes/entities/postulacion-solicitud.entity';
+import { SolicitudCategoria } from './modules/solicitudes/entities/solicitud-categoria.entity';
 import { SuscripcionPush } from './modules/notificaciones-push/entities/suscripcion-push.entity';
 import { ReservaServicio } from './modules/solicitudes/entities/reserva-servicio.entity'; 
 @Module({
@@ -50,6 +52,8 @@ import { ReservaServicio } from './modules/solicitudes/entities/reserva-servicio
           CategoriaServicio,
           Direccion,
           Solicitud,
+          PostulacionSolicitud,
+          SolicitudCategoria,
           ReservaServicio,
           SuscripcionPush,
         ];

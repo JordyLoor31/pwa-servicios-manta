@@ -1,5 +1,7 @@
 import {
   IsDateString,
+  IsIn,
+  IsArray,
   IsNumber,
   IsOptional,
   IsString,
@@ -39,4 +41,13 @@ export class CrearSolicitudDto {
   @IsOptional()
   @Matches(/^([01]\d|2[0-3]):[0-5]\d$/)
   hora_propuesta?: string;
+
+  @IsArray()
+  @IsUUID('4', { each: true })
+  categoria_ids: string[];
+
+  @IsNumber()
+  @IsOptional()
+  @IsIn([30, 60])
+  duracion_oferta_minutos?: 30 | 60;
 }

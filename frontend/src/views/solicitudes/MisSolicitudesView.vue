@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref, watch } from 'vue'
 import Button from 'primevue/button'
 import Skeleton from 'primevue/skeleton'
 import Tag from 'primevue/tag'
@@ -8,7 +9,7 @@ import AppHeader from '../../components/layout/AppHeader.vue'
 import NuevaSolicitudDialog from '../../components/solicitudes/NuevaSolicitudDialog.vue'
 import DetalleSolicitudDialog from '../../components/solicitudes/DetalleSolicitudDialog.vue'
 import { useSolicitudes } from '../../composables/solicitudes/useSolicitudes'
-import type { EstadoSolicitud, Solicitud } from '../../types/solicitudes'
+import type { EstadoSolicitud, PostulacionSolicitud, Solicitud } from '../../types/solicitudes'
 import {
   estadoSeveridad,
   estadoLabel,
@@ -36,6 +37,7 @@ const {
 } = useSolicitudes()
 
 const toast = useToast()
+const postulaciones = ref<PostulacionSolicitud[]>([])
 
 const FRECUENCIAS: { valor: 'todos' | EstadoSolicitud; label: string }[] = [
   { valor: 'todos', label: 'Todos' },
@@ -48,9 +50,56 @@ const FRECUENCIAS: { valor: 'todos' | EstadoSolicitud; label: string }[] = [
 
 const placeholders = Array.from({ length: 3 }, (_, i) => ({ id: `skeleton-${i}` }))
 
+watch(solicitudActiva, (solicitud) => {
+  void cargarPostulaciones(solicitud)
+})
+
 async function onCreada(creada: Solicitud) {
   await cargar()
   verDetalle(creada)
+  await cargarPostulaciones(creada)
+}
+
+async function cargarPostulaciones(solicitud: Solicitud | null) {
+  if (!solicitud || solicitud.estado !== 'pendiente') {
+    postulaciones.value = []
+    return
+  }
+  try {
+    postulaciones.value = await solicitudesApi.postulaciones(solicitud.id)
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: error instanceof Error ? error.message : 'No se pudieron cargar las postulaciones',
+      life: 4000,
+    })
+  }
+}
+
+async function aceptarPostulacion(postulacion: PostulacionSolicitud) {
+  if (!solicitudActiva.value) return
+  try {
+    const actualizada = await solicitudesApi.aceptarPostulacion(solicitudActiva.value.id, postulacion.id)
+    solicitudActiva.value = actualizada
+    postulaciones.value = []
+    toast.add({ severity: 'success', summary: 'Técnico elegido', detail: 'La postulación fue aceptada.', life: 3000 })
+    await cargar()
+  } catch (error) {
+    toast.add({ severity: 'error', summary: 'Error', detail: error instanceof Error ? error.message : 'No se pudo aceptar la postulación', life: 4000 })
+  }
+}
+
+async function rechazarPostulacion(postulacion: PostulacionSolicitud) {
+  if (!solicitudActiva.value) return
+  try {
+    await solicitudesApi.rechazarPostulacion(solicitudActiva.value.id, postulacion.id)
+    postulaciones.value = postulaciones.value.map((item) =>
+      item.id === postulacion.id ? { ...item, estado: 'rechazada' } : item,
+    )
+  } catch (error) {
+    toast.add({ severity: 'error', summary: 'Error', detail: error instanceof Error ? error.message : 'No se pudo rechazar la postulación', life: 4000 })
+  }
 }
 
 async function cancelarSolicitud(solicitud: Solicitud) {
@@ -70,7 +119,8 @@ async function cancelarSolicitud(solicitud: Solicitud) {
 }
 
 function onSolicitudActualizada() {
-  cargar()
+  void cargar()
+  void cargarPostulaciones(solicitudActiva.value)
 }
 
 useSolicitudEvents({ actualizada: onSolicitudActualizada })
@@ -196,8 +246,11 @@ useSolicitudEvents({ actualizada: onSolicitudActualizada })
       <DetalleSolicitudDialog
         v-model:visible="detalleVisible"
         :solicitud="solicitudActiva"
+        :postulaciones="postulaciones"
         @cerrar="cerrarDetalle"
         @cancelar="cancelarSolicitud"
+        @aceptar-postulacion="aceptarPostulacion"
+        @rechazar-postulacion="rechazarPostulacion"
       />
     </section>
   </div>

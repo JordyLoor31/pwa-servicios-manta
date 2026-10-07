@@ -2,6 +2,7 @@ import { api } from './api'
 import type {
   CrearSolicitudPayload,
   Solicitud,
+  PostulacionSolicitud,
   SolicitudesPaginadas,
   TecnicoDirectorio,
 } from '../types/solicitudes'
@@ -23,6 +24,22 @@ export const solicitudesApi = {
 
   cancelar(id: string) {
     return api.patch(`/solicitudes/${id}/cancelar`, {})
+  },
+
+  postulaciones(id: string) {
+    return api.get<PostulacionSolicitud[]>(`/solicitudes/${id}/postulaciones`)
+  },
+
+  postular(id: string, payload: { unidad_cobro: 'por_hora' | 'por_servicio'; precio: number; mensaje?: string }) {
+    return api.post<PostulacionSolicitud>(`/solicitudes/${id}/postulaciones`, payload)
+  },
+
+  aceptarPostulacion(id: string, postulacionId: string) {
+    return api.patch<Solicitud>(`/solicitudes/${id}/postulaciones/${postulacionId}/aceptar`, {})
+  },
+
+  rechazarPostulacion(id: string, postulacionId: string) {
+    return api.patch(`/solicitudes/${id}/postulaciones/${postulacionId}/rechazar`, {})
   },
 
   aceptar(id: string, payload: { fecha_servicio: string; hora_inicio: string; duracion_horas: number }) {

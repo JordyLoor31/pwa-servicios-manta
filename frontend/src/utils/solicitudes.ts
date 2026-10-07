@@ -2,6 +2,7 @@ import type { EstadoSolicitud } from '../types/solicitudes'
 
 const SEVERIDADES: Record<EstadoSolicitud, 'warn' | 'info' | 'danger' | 'secondary' | 'success'> = {
   pendiente: 'warn',
+  expirada: 'secondary',
   aceptada: 'info',
   rechazada: 'danger',
   cancelada: 'secondary',
@@ -10,6 +11,7 @@ const SEVERIDADES: Record<EstadoSolicitud, 'warn' | 'info' | 'danger' | 'seconda
 
 const LABELES: Record<EstadoSolicitud, string> = {
   pendiente: 'Pendiente',
+  expirada: 'Oferta expirada',
   aceptada: 'Aceptada',
   rechazada: 'Rechazada',
   cancelada: 'Cancelada',

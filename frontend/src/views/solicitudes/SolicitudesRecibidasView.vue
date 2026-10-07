@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
+import InputNumber from 'primevue/inputnumber'
+import Select from 'primevue/select'
 import Skeleton from 'primevue/skeleton'
 import Tag from 'primevue/tag'
 import Textarea from 'primevue/textarea'
@@ -12,9 +15,16 @@ import { useSolicitudes } from '../../composables/solicitudes/useSolicitudes'
 import { limpiarNotificacionesNuevas } from '../../composables/notificaciones/useNotificaciones'
 import { useSolicitudEvents, type EventoSolicitud } from '../../composables/solicitudes/useSolicitudEvents'
 import type { Solicitud } from '../../types/solicitudes'
+import { solicitudesApi } from '../../services/solicitudes'
 import { estadoSeveridad, estadoLabel, formatearPropuestaLlegada } from '../../utils/solicitudes'
 
 const toast = useToast()
+const propuestaVisible = ref(false)
+const ofertaPostular = ref<Solicitud | null>(null)
+const unidadCobro = ref<'por_hora' | 'por_servicio'>('por_servicio')
+const precio = ref<number | null>(null)
+const mensaje = ref('')
+const enviandoPropuesta = ref(false)
 
 const {
   solicitudes,
@@ -32,7 +42,6 @@ const {
   duracionHorasAceptacion,
   verDetalle,
   cerrarDetalle,
-  confirmarAceptar,
   confirmarCompletar,
   confirmarRechazar,
   ejecutarAccion,
@@ -53,6 +62,36 @@ function onSolicitudNueva(event: CustomEvent<EventoSolicitud>) {
     life: 6000,
   })
   void cargar()
+}
+
+function abrirPostulacion(solicitud: Solicitud) {
+  ofertaPostular.value = solicitud
+  unidadCobro.value = 'por_servicio'
+  precio.value = null
+  mensaje.value = ''
+  propuestaVisible.value = true
+}
+
+async function enviarPostulacion() {
+  if (!ofertaPostular.value || !precio.value || precio.value <= 0) {
+    toast.add({ severity: 'warn', summary: 'Indica una tarifa', detail: 'Escribe un precio mayor que cero.', life: 3000 })
+    return
+  }
+  enviandoPropuesta.value = true
+  try {
+    await solicitudesApi.postular(ofertaPostular.value.id, {
+      unidad_cobro: unidadCobro.value,
+      precio: precio.value,
+      mensaje: mensaje.value.trim() || undefined,
+    })
+    propuestaVisible.value = false
+    toast.add({ severity: 'success', summary: 'Propuesta enviada', detail: 'El cliente podrá revisarla en tiempo real.', life: 4000 })
+    await cargar()
+  } catch (error) {
+    toast.add({ severity: 'error', summary: 'Error', detail: error instanceof Error ? error.message : 'No se pudo enviar la propuesta', life: 4000 })
+  } finally {
+    enviandoPropuesta.value = false
+  }
 }
 
 useSolicitudEvents({
@@ -98,7 +137,7 @@ limpiarNotificacionesNuevas()
           <SolicitudRecibidaCard
             v-else
             :solicitud="item as Solicitud"
-            @aceptar="confirmarAceptar(item as Solicitud)"
+            @postular="abrirPostulacion(item as Solicitud)"
             @completar="confirmarCompletar(item as Solicitud)"
             @rechazar="confirmarRechazar(item as Solicitud)"
             @ver-detalle="verDetalle(item as Solicitud)"
@@ -125,6 +164,43 @@ limpiarNotificacionesNuevas()
           />
         </div>
       </div>
+
+      <Dialog v-model:visible="propuestaVisible" header="Enviar propuesta" modal class="w-full max-w-md">
+        <div v-if="ofertaPostular" class="flex flex-col gap-4">
+          <p class="text-sm text-muted">{{ ofertaPostular.descripcion }}</p>
+          <div class="flex flex-col gap-1.5">
+            <label for="unidad-cobro" class="text-sm font-medium text-ink">Forma de cobro</label>
+            <Select
+              id="unidad-cobro"
+              v-model="unidadCobro"
+              :options="[{ label: 'Por servicio', value: 'por_servicio' }, { label: 'Por hora', value: 'por_hora' }]"
+              option-label="label"
+              option-value="value"
+              class="w-full"
+            />
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label for="precio-propuesta" class="text-sm font-medium text-ink">Tu tarifa</label>
+            <InputNumber
+              id="precio-propuesta"
+              v-model="precio"
+              mode="currency"
+              currency="USD"
+              locale="en-US"
+              :min="0.01"
+              class="w-full"
+            />
+          </div>
+          <div class="flex flex-col gap-1.5">
+            <label for="mensaje-propuesta" class="text-sm font-medium text-ink">Mensaje (opcional)</label>
+            <Textarea id="mensaje-propuesta" v-model="mensaje" rows="3" auto-resize class="w-full" />
+          </div>
+        </div>
+        <template #footer>
+          <Button label="Cancelar" severity="secondary" @click="propuestaVisible = false" />
+          <Button label="Enviar propuesta" icon="pi pi-send" :loading="enviandoPropuesta" @click="enviarPostulacion" />
+        </template>
+      </Dialog>
 
       <Dialog v-model:visible="detalleVisible" header="Detalle de la solicitud" modal class="w-full max-w-lg">
         <div v-if="solicitudActiva" class="mt-2 flex flex-col gap-3 text-sm">
@@ -178,12 +254,6 @@ limpiarNotificacionesNuevas()
               severity="warn"
               variant="outlined"
               @click="confirmarRechazar(solicitudActiva)"
-            />
-            <Button
-              v-if="solicitudActiva?.estado === 'pendiente'"
-              label="Aceptar"
-              icon="pi pi-check"
-              @click="confirmarAceptar(solicitudActiva)"
             />
             <Button
               v-if="solicitudActiva?.estado === 'aceptada'"

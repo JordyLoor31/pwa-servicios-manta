@@ -61,6 +61,9 @@ export function useSolicitudes() {
     const payload: CrearSolicitudPayload = {
       descripcion,
       direccion: form.value.direccion.trim() || undefined,
+      categoria_ids: [],
+      fecha_propuesta: new Date().toISOString().slice(0, 10),
+      hora_propuesta: horaActualAproximada(),
     }
     if (form.value.tecnico_id) payload.tecnico_id = form.value.tecnico_id
     enviando.value = true

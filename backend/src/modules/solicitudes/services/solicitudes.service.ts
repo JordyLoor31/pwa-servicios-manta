@@ -7,6 +7,11 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository } from 'typeorm';
 import { Solicitud, EstadoSolicitud } from '../entities/solicitud.entity';
+import {
+  EstadoPostulacion,
+  PostulacionSolicitud,
+} from '../entities/postulacion-solicitud.entity';
+import { SolicitudCategoria } from '../entities/solicitud-categoria.entity';
 import { TarifaTecnico } from '../../perfiles-tecnico/entities/tarifa-tecnico.entity';
 
 import { DisponibilidadTecnico } from '../../perfiles-tecnico/entities/disponibilidad-tecnico.entity';
@@ -15,6 +20,7 @@ import { PerfilTecnico } from '../../perfiles-tecnico/entities/perfil-tecnico.en
 import { CrearSolicitudDto } from '../dtos/crear-solicitud.dto';
 import { AceptarSolicitudDto } from '../dtos/aceptar-solicitud.dto';
 import { RechazarSolicitudDto } from '../dtos/rechazar-solicitud.dto';
+import { CrearPostulacionDto } from '../dtos/crear-postulacion.dto';
 import type { AuthenticatedUser } from '../../auth/decorators/current-user.decorator';
 import { SolicitudesDisponibilidadService } from './solicitudes-disponibilidad.service';
 import { SolicitudesNotificacionesService } from './solicitudes-notificaciones.service';
@@ -30,6 +36,10 @@ export class SolicitudesService {
   constructor(
     @InjectRepository(Solicitud)
     private readonly solicitudesRepository: Repository<Solicitud>,
+    @InjectRepository(PostulacionSolicitud)
+    private readonly postulacionesRepository: Repository<PostulacionSolicitud>,
+    @InjectRepository(SolicitudCategoria)
+    private readonly solicitudCategoriasRepository: Repository<SolicitudCategoria>,
     @InjectRepository(Usuario)
     private readonly usuariosRepository: Repository<Usuario>,
     @InjectRepository(PerfilTecnico)
@@ -70,7 +80,16 @@ export class SolicitudesService {
       fecha_propuesta: dto.fecha_propuesta || null,
       hora_propuesta: dto.hora_propuesta || null,
       estado: EstadoSolicitud.PENDIENTE,
+      duracion_oferta_minutos: dto.tecnico_id ? null : (dto.duracion_oferta_minutos ?? 30),
+      fecha_expiracion_oferta: dto.tecnico_id
+        ? null
+        : new Date(Date.now() + (dto.duracion_oferta_minutos ?? 30) * 60_000),
     });
+    if (dto.categoria_ids.length > 0) {
+      await this.solicitudCategoriasRepository.insert(
+        dto.categoria_ids.map((categoria_id) => ({ solicitud_id: solicitud.id, categoria_id })),
+      );
+    }
     const vista = await this.detalle(solicitud.id, {
       id: clienteId,
       rol: RolUsuario.CLIENTE,
@@ -98,7 +117,126 @@ export class SolicitudesService {
     if (dto.tecnico_id && !tecnicosDisponibles.some((t) => t.id === dto.tecnico_id)) {
       await this.notificacionesService.nueva(dto.tecnico_id, vista);
     }
+
     return vista;
+  }
+
+  async listarPostulaciones(id: string, user: AuthenticatedUser) {
+    const solicitud = await this.solicitudesRepository.findOneBy({ id });
+    if (!solicitud || solicitud.cliente_id !== user.id) {
+      throw new NotFoundException('Solicitud no encontrada');
+    }
+    if (
+      solicitud.estado === EstadoSolicitud.PENDIENTE &&
+      solicitud.fecha_expiracion_oferta &&
+      solicitud.fecha_expiracion_oferta.getTime() <= Date.now()
+    ) {
+      await this.solicitudesRepository.update(id, { estado: EstadoSolicitud.EXPIRADA });
+    }
+    return this.postulacionesRepository
+      .createQueryBuilder('postulacion')
+      .innerJoin(Usuario, 'tecnico', 'tecnico.id = postulacion.tecnico_id')
+      .innerJoin(PerfilTecnico, 'perfil', 'perfil.usuario_id = postulacion.tecnico_id')
+      .where('postulacion.solicitud_id = :id', { id })
+      .select([
+        'postulacion.id AS id',
+        'postulacion.solicitud_id AS solicitud_id',
+        'postulacion.tecnico_id AS tecnico_id',
+        'postulacion.unidad_cobro AS unidad_cobro',
+        'postulacion.precio AS precio',
+        'postulacion.mensaje AS mensaje',
+        'postulacion.estado AS estado',
+        'postulacion.fecha_postulacion AS fecha_postulacion',
+        'tecnico.nombres AS tecnico_nombres',
+        'tecnico.apellidos AS tecnico_apellidos',
+        'tecnico.avatar_url AS tecnico_avatar_url',
+        'perfil.verificado AS tecnico_verificado',
+        'perfil.calificacion_promedio AS tecnico_calificacion',
+        'perfil.total_servicios_completados AS tecnico_servicios_completados',
+      ])
+      .orderBy('postulacion.fecha_postulacion', 'ASC')
+      .getRawMany();
+  }
+
+  async postular(id: string, dto: CrearPostulacionDto, user: AuthenticatedUser) {
+    const solicitud = await this.solicitudesRepository.findOneBy({ id });
+    if (!solicitud || solicitud.estado !== EstadoSolicitud.PENDIENTE) {
+      throw new BadRequestException('La oferta ya no está activa');
+    }
+    if (solicitud.fecha_expiracion_oferta && solicitud.fecha_expiracion_oferta.getTime() <= Date.now()) {
+      await this.solicitudesRepository.update(id, { estado: EstadoSolicitud.EXPIRADA });
+      throw new BadRequestException('La oferta ya expiró');
+    }
+    if (solicitud.cliente_id === user.id) {
+      throw new BadRequestException('No puedes postularte a tu propia oferta');
+    }
+    const existente = await this.postulacionesRepository.findOneBy({ solicitud_id: id, tecnico_id: user.id });
+    if (existente) {
+      throw new BadRequestException('Ya enviaste una postulación para esta oferta');
+    }
+    const postulacion = await this.postulacionesRepository.save({
+      solicitud_id: id,
+      tecnico_id: user.id,
+      unidad_cobro: dto.unidad_cobro,
+      precio: dto.precio,
+      mensaje: dto.mensaje?.trim() || null,
+      estado: EstadoPostulacion.PENDIENTE,
+    });
+    const vista = await this.detalle(id, { id: solicitud.cliente_id, rol: RolUsuario.CLIENTE } as AuthenticatedUser);
+    await this.notificacionesService.actualizada(
+      solicitud.cliente_id,
+      { ...vista, postulacion },
+      'Nueva postulación',
+      'Un técnico ha enviado una propuesta para tu oferta.',
+      '/solicitudes',
+    );
+    return postulacion;
+  }
+
+  async aceptarPostulacion(id: string, postulacionId: string, user: AuthenticatedUser) {
+    const solicitud = await this.solicitudesRepository.findOneBy({ id });
+    if (!solicitud || solicitud.cliente_id !== user.id) throw new NotFoundException('Solicitud no encontrada');
+    this.verEstado(solicitud, [EstadoSolicitud.PENDIENTE], 'La oferta ya no está activa');
+    const postulacion = await this.postulacionesRepository.findOneBy({ id: postulacionId, solicitud_id: id });
+    if (!postulacion || postulacion.estado !== EstadoPostulacion.PENDIENTE) {
+      throw new NotFoundException('Postulación no disponible');
+    }
+    await this.dataSource.transaction(async (manager) => {
+      await manager.getRepository(Solicitud).update(id, {
+        estado: EstadoSolicitud.ACEPTADA,
+        tecnico_id: postulacion.tecnico_id,
+        fecha_aceptacion: new Date(),
+        fecha_expiracion_oferta: null,
+      });
+      await manager.getRepository(PostulacionSolicitud).update(
+        { solicitud_id: id, id: postulacionId },
+        { estado: EstadoPostulacion.ACEPTADA },
+      );
+      await manager.getRepository(PostulacionSolicitud).update(
+        { solicitud_id: id, estado: EstadoPostulacion.PENDIENTE },
+        { estado: EstadoPostulacion.RECHAZADA },
+      );
+    });
+    const vista = await this.detalle(id, user);
+    await this.notificacionesService.actualizada(
+      postulacion.tecnico_id,
+      vista,
+      'Postulación aceptada',
+      'El cliente aceptó tu propuesta.',
+      '/solicitudes/recibidas',
+    );
+    return vista;
+  }
+
+  async rechazarPostulacion(id: string, postulacionId: string, user: AuthenticatedUser) {
+    const solicitud = await this.solicitudesRepository.findOneBy({ id });
+    if (!solicitud || solicitud.cliente_id !== user.id) throw new NotFoundException('Solicitud no encontrada');
+    const postulacion = await this.postulacionesRepository.findOneBy({ id: postulacionId, solicitud_id: id });
+    if (!postulacion || postulacion.estado !== EstadoPostulacion.PENDIENTE) {
+      throw new NotFoundException('Postulación no disponible');
+    }
+    await this.postulacionesRepository.update(postulacionId, { estado: EstadoPostulacion.RECHAZADA });
+    return { ok: true };
   }
 
   async listarMis(clienteId: string, filtros: FiltrosPaginados) {
@@ -110,11 +248,32 @@ export class SolicitudesService {
   }
 
   async listarRecibidas(tecnicoId: string, filtros: FiltrosPaginados) {
-    return this.listarConJoin(
+    const resultado = await this.listarConJoin(
       filtros,
       '(s.tecnico_id = :tecnico_id OR s.tecnico_id IS NULL)',
       { tecnico_id: tecnicoId },
     );
+    const ids = resultado.data.map((solicitud: Record<string, unknown>) => solicitud.id);
+    const postulaciones = ids.length
+      ? await this.postulacionesRepository.find({
+          where: {
+            tecnico_id: tecnicoId,
+            solicitud_id: In(ids),
+          },
+          select: { solicitud_id: true, estado: true },
+        })
+      : [];
+    const estadosPorSolicitud = new Map(
+      postulaciones.map((postulacion) => [postulacion.solicitud_id, postulacion.estado]),
+    );
+    return {
+      ...resultado,
+      data: resultado.data.map((solicitud: Record<string, unknown>) => ({
+        ...solicitud,
+        postulado_por_mi: estadosPorSolicitud.has(solicitud.id as string),
+        estado_mi_postulacion: estadosPorSolicitud.get(solicitud.id as string) ?? null,
+      })),
+    };
   }
 
   async listarAdmin(filtros: FiltrosPaginados) {
@@ -146,8 +305,11 @@ export class SolicitudesService {
     const unidadesCobro = await this.obtenerUnidadesCobro(
       filas.map((fila) => fila.tecnico_id).filter((id): id is string => Boolean(id)),
     );
+    const categoriasPorSolicitud = await this.obtenerCategorias(filas.map((fila) => fila.id as string));
     return {
-      data: await Promise.all(filas.map((fila) => this.toView(fila, unidadesCobro))),
+      data: await Promise.all(
+        filas.map((fila) => this.toView(fila, unidadesCobro, categoriasPorSolicitud)),
+      ),
       total,
       page: filtros.page,
       limit: filtros.limit,
@@ -160,48 +322,20 @@ export class SolicitudesService {
       throw new NotFoundException('Solicitud no encontrada');
     }
     this.asegurarAcceso(fila, user);
-    return await this.toView(fila, await this.obtenerUnidadesCobro([fila.tecnico_id]));
+    return await this.toView(
+      fila,
+      await this.obtenerUnidadesCobro([fila.tecnico_id]),
+      await this.obtenerCategorias([id]),
+    );
   }
 
   async aceptar(id: string, dto: AceptarSolicitudDto, user: AuthenticatedUser) {
-    const solicitud = await this.obtenerParaAccion(
-      id,
-      user,
-      (s) => s.tecnico_id === user.id || s.tecnico_id === null,
-      'Solo el tǸcnico destinatario puede aceptar la solicitud',
+    void id;
+    void dto;
+    void user;
+    throw new BadRequestException(
+      'Debes enviar una postulación; el cliente debe elegir tu propuesta',
     );
-    this.verEstado(solicitud, [EstadoSolicitud.PENDIENTE], 'Solo se puede aceptar una solicitud pendiente');
-
-    const tecnicoId = solicitud.tecnico_id ?? user.id;
-    const horaInicio = dto.hora_inicio;
-    const horaFin = this.disponibilidadService.sumarHoras(horaInicio, dto.duracion_horas);
-    await this.dataSource.transaction(async (manager) => {
-      await manager.getRepository(Solicitud).update(solicitud.id, {
-        estado: EstadoSolicitud.ACEPTADA,
-        fecha_aceptacion: new Date(),
-        fecha_propuesta: dto.fecha_servicio,
-        hora_propuesta: horaInicio,
-        hora_fin_estimada: horaFin,
-        tecnico_id: tecnicoId,
-      });
-      await this.disponibilidadService.reservar(
-        manager,
-        tecnicoId,
-        solicitud.id,
-        dto.fecha_servicio,
-        horaInicio,
-        horaFin,
-      );
-    });
-    const vista = await this.detalle(id, user);
-    await this.notificacionesService.actualizada(
-      solicitud.cliente_id,
-      vista,
-      'Solicitud aceptada',
-      `${this.nombreUsuario(vista, 'tecnico') || 'El técnico'} ${this.apellidoUsuario(vista, 'tecnico')} aceptó tu solicitud para el ${dto.fecha_servicio} a las ${horaInicio}.`,
-      '/solicitudes',
-    );
-    return vista;
   }
 
   async rechazar(id: string, dto: RechazarSolicitudDto, user: AuthenticatedUser) {
@@ -362,6 +496,8 @@ export class SolicitudesService {
       's.fecha_solicitud AS fecha_solicitud',
       's.fecha_aceptacion AS fecha_aceptacion',
       's.fecha_completada AS fecha_completada',
+      's.duracion_oferta_minutos AS duracion_oferta_minutos',
+      's.fecha_expiracion_oferta AS fecha_expiracion_oferta',
       'cli.id AS cliente_id',
       'cli.nombres AS cliente_nombres',
       'cli.apellidos AS cliente_apellidos',
@@ -376,6 +512,7 @@ export class SolicitudesService {
     if (ids.length === 0) {
       return new Map<string, 'por_hora' | 'por_servicio'>();
     }
+
     const tarifas = await this.tarifasRepository.find({
       where: { tecnico_id: In(ids) },
       select: { unidad_cobro: true },
@@ -391,9 +528,34 @@ export class SolicitudesService {
     return unidades;
   }
 
+  private async obtenerCategorias(solicitudIds: string[]) {
+    const ids = [...new Set(solicitudIds.filter(Boolean))];
+    const categoriasPorSolicitud = new Map<string, Array<{ id: string; nombre: string; icono: string | null }>>();
+    if (ids.length === 0) return categoriasPorSolicitud;
+    const filas = await this.solicitudCategoriasRepository
+      .createQueryBuilder('sc')
+      .innerJoin('categorias_servicio', 'categoria', 'categoria.id = sc.categoria_id')
+      .where('sc.solicitud_id IN (:...ids)', { ids })
+      .select([
+        'sc.solicitud_id AS solicitud_id',
+        'categoria.id AS id',
+        'categoria.nombre AS nombre',
+        'categoria.icono AS icono',
+      ])
+      .orderBy('categoria.nombre', 'ASC')
+      .getRawMany<{ solicitud_id: string; id: string; nombre: string; icono: string | null }>();
+    for (const fila of filas) {
+      const lista = categoriasPorSolicitud.get(fila.solicitud_id) ?? [];
+      lista.push({ id: fila.id, nombre: fila.nombre, icono: fila.icono });
+      categoriasPorSolicitud.set(fila.solicitud_id, lista);
+    }
+    return categoriasPorSolicitud;
+  }
+
   private async toView(
     fila: Record<string, unknown>,
     unidadesCobro: Map<string, 'por_hora' | 'por_servicio'>,
+    categoriasPorSolicitud: Map<string, Array<{ id: string; nombre: string; icono: string | null }>>,
   ): Promise<Record<string, unknown>> {
     const unidad_cobro = unidadesCobro.get(fila.tecnico_id as string) ?? null;
     return {
@@ -410,17 +572,22 @@ export class SolicitudesService {
       fecha_solicitud: fila.fecha_solicitud,
       fecha_aceptacion: fila.fecha_aceptacion,
       fecha_completada: fila.fecha_completada,
+      duracion_oferta_minutos: fila.duracion_oferta_minutos ?? null,
+      fecha_expiracion_oferta: fila.fecha_expiracion_oferta ?? null,
       cliente: {
         id: fila.cliente_id,
         nombres: fila.cliente_nombres,
         apellidos: fila.cliente_apellidos,
       },
-      tecnico: {
-        id: fila.tecnico_id,
-        nombres: fila.tecnico_nombres,
-        apellidos: fila.tecnico_apellidos,
-      },
+      tecnico: fila.tecnico_id
+        ? {
+            id: fila.tecnico_id,
+            nombres: fila.tecnico_nombres,
+            apellidos: fila.tecnico_apellidos,
+          }
+        : null,
       unidad_cobro,
+      categorias: categoriasPorSolicitud.get(fila.id as string) ?? [],
     };
   }
 }

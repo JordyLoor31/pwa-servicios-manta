@@ -5,9 +5,7 @@ import DatePicker from 'primevue/datepicker'
 import Dialog from 'primevue/dialog'
 import Listbox from 'primevue/listbox'
 import Select from 'primevue/select'
-import Tag from 'primevue/tag'
 import Textarea from 'primevue/textarea'
-import { nombreDia } from '../../composables/disponibilidad/useDisponibilidad'
 import { useNuevaSolicitud } from '../../composables/solicitudes/useNuevaSolicitud'
 import type { Solicitud } from '../../types/solicitudes'
 
@@ -18,8 +16,7 @@ const {
   categorias,
   categoriasSeleccionadas,
   fechaServicio,
-  tecnicos,
-  cargandoTecnicos,
+  duracionOferta,
   horas,
   horaBusqueda,
   enviando,
@@ -74,52 +71,27 @@ async function submit() {
       </div>
 
       <div class="flex flex-col gap-1.5">
-        <label for="tecnico" class="text-sm font-medium text-ink">Técnico (opcional)</label>
+        <label for="duracion-oferta" class="text-sm font-medium text-ink">¿Cuánto tiempo publicar la oferta?</label>
         <Select
-          id="tecnico"
-          v-model="form.tecnico_id"
-          :options="tecnicos"
-          option-label="nombres"
-          option-value="id"
-          :loading="cargandoTecnicos"
-          :placeholder="tecnicos.length ? 'Elige un técnico' : 'Sin técnicos este día'"
+          id="duracion-oferta"
+          v-model="duracionOferta"
+          :options="[{ label: '30 minutos', value: 30 }, { label: '1 hora', value: 60 }]"
+          option-label="label"
+          option-value="value"
           class="w-full"
-        >
-          <template #option="{ option }">
-            <div class="flex items-center gap-2">
-              <i class="pi pi-user text-pacific" />
-              <span>{{ option.nombres }} {{ option.apellidos }}</span>
-              <Tag
-                v-if="option.verificado"
-                value="Verificado"
-                icon="pi pi-shield-check"
-                severity="success"
-                class="ml-auto"
-              />
-            </div>
-          </template>
-        </Select>
-        <p v-if="!cargandoTecnicos && tecnicos.length === 0" class="text-xs text-muted">
-          Ningún técnico trabaja el {{ nombreDia(fechaServicio.getDay()) }} con la categoría elegida.
-        </p>
+        />
+        <p class="text-xs text-muted">Durante este tiempo los técnicos podrán enviarte sus propuestas.</p>
       </div>
 
       <div class="flex flex-col gap-1.5">
-        <label for="hora" class="text-sm font-medium text-ink">Hora aproximada de llegada *</label>
+        <label for="hora" class="text-sm font-medium text-ink">Hora en que deseas el servicio *</label>
         <Select
           id="hora"
           v-model="horaBusqueda"
           :options="horas"
-          :disabled="!form.tecnico_id"
-          :placeholder="form.tecnico_id ? 'Elige una hora' : 'Primero elige un técnico'"
+          placeholder="Selecciona una hora"
           class="w-full"
         />
-        <p v-if="form.tecnico_id && horas.length === 0" class="text-xs text-muted">
-          Ese técnico no tiene horarios ese día.
-        </p>
-        <p class="text-xs text-muted">
-          Es una hora tentativa: el técnico acordará la hora exacta de llegada contigo.
-        </p>
       </div>
 
       <div class="flex flex-col gap-1.5">

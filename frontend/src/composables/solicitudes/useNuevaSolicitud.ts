@@ -8,15 +8,20 @@ import type { Solicitud, TecnicoDirectorio } from '../../types/solicitudes'
 
 export function useNuevaSolicitud() {
   const toast = useToast()
+  const horasBase = Array.from({ length: 48 }, (_, indice) => {
+    const hora = Math.floor(indice / 2)
+    return `${String(hora).padStart(2, '0')}:${indice % 2 === 0 ? '00' : '30'}`
+  })
 
   const categorias = ref<CategoriaServicio[]>([])
   const categoriasSeleccionadas = ref<string[]>([])
   const fechaServicio = ref<Date>(new Date())
   const tecnicos = ref<TecnicoDirectorio[]>([])
   const cargandoTecnicos = ref(false)
-  const horas = ref<string[]>([])
-  const horaBusqueda = ref('')
+  const horas = ref<string[]>([...horasBase])
+  const horaBusqueda = ref(horasBase[0])
   const enviando = ref(false)
+  const duracionOferta = ref<30 | 60>(30)
 
   const form = ref({ tecnico_id: '', descripcion: '', direccion: '' })
   const { direcciones, cargar: cargarDirecciones } = useDirecciones()
@@ -40,15 +45,12 @@ export function useNuevaSolicitud() {
         fechaServicio.value.getDay(),
         categoriasSeleccionadas.value,
       )
-      horas.value = []
-      horaBusqueda.value = ''
       if (form.value.tecnico_id && !tecnicos.value.some((t) => t.id === form.value.tecnico_id)) {
         form.value.tecnico_id = ''
       }
     } catch {
       tecnicos.value = []
-      horas.value = []
-      horaBusqueda.value = ''
+      horaBusqueda.value = horas.value[0] ?? ''
     } finally {
       cargandoTecnicos.value = false
     }
@@ -57,20 +59,24 @@ export function useNuevaSolicitud() {
   async function cargarHoras() {
     const tecnicoId = form.value.tecnico_id
     if (!tecnicoId) {
-      horas.value = []
-      horaBusqueda.value = ''
+      horaBusqueda.value = horas.value[0] ?? ''
       return
     }
     try {
-      horas.value = await solicitudesApi.horariosDisponiblesParaTecnico(
+      const horasDisponibles = await solicitudesApi.horariosDisponiblesParaTecnico(
         fechaServicio.value.getDay(),
         tecnicoId,
         categoriasSeleccionadas.value,
       )
-      horaBusqueda.value = horas.value[0] ?? ''
+      horas.value = horasDisponibles.length > 0 ? horasDisponibles : [...horasBase]
+      if (!horas.value.includes(horaBusqueda.value)) {
+        horaBusqueda.value = horas.value[0] ?? ''
+      }
     } catch {
-      horas.value = []
-      horaBusqueda.value = ''
+      horas.value = [...horasBase]
+      if (!horas.value.includes(horaBusqueda.value)) {
+        horaBusqueda.value = horas.value[0] ?? ''
+      }
     }
   }
 
@@ -102,9 +108,10 @@ export function useNuevaSolicitud() {
     form.value = { tecnico_id: '', descripcion: '', direccion: '' }
     categoriasSeleccionadas.value = []
     fechaServicio.value = new Date()
-    horas.value = []
-    horaBusqueda.value = ''
+    horas.value = [...horasBase]
+    horaBusqueda.value = horasBase[0]
     direccionSeleccionadaId.value = ''
+    duracionOferta.value = 30
     direccionLatitud.value = undefined
     direccionLongitud.value = undefined
     void cargarCategorias()
@@ -121,11 +128,11 @@ export function useNuevaSolicitud() {
 
   async function crear(): Promise<Solicitud | null> {
     const descripcion = form.value.descripcion.trim()
-    if (!horaBusqueda.value || descripcion.length < 10) {
+    if (descripcion.length < 10 || !horaBusqueda.value || categoriasSeleccionadas.value.length === 0) {
       toast.add({
         severity: 'warn',
         summary: 'Faltan datos',
-        detail: 'Elige hora y describe la necesidad (mínimo 10 caracteres).',
+        detail: 'Selecciona al menos una categoría, una hora y describe la necesidad (mínimo 10 caracteres).',
         life: 3000,
       })
       return null
@@ -149,6 +156,8 @@ export function useNuevaSolicitud() {
         direccion_longitud?: number
         fecha_propuesta: string
         hora_propuesta: string
+        duracion_oferta_minutos: 30 | 60
+        categoria_ids: string[]
       } = {
         descripcion,
         direccion: form.value.direccion.trim() || undefined,
@@ -156,6 +165,8 @@ export function useNuevaSolicitud() {
         direccion_longitud: direccionLongitud.value,
         fecha_propuesta: aFechaISO(fechaServicio.value),
         hora_propuesta: horaBusqueda.value,
+        duracion_oferta_minutos: duracionOferta.value,
+        categoria_ids: categoriasSeleccionadas.value,
       }
       if (form.value.tecnico_id) payload.tecnico_id = form.value.tecnico_id
       const creada = await solicitudesApi.crear(payload)
@@ -182,6 +193,7 @@ export function useNuevaSolicitud() {
     cargandoTecnicos,
     horas,
     horaBusqueda,
+    duracionOferta,
     enviando,
     form,
     direcciones,

@@ -12,6 +12,7 @@ import { Usuario } from '../../usuarios/entities/usuario.entity';
 
 export enum EstadoSolicitud {
   PENDIENTE = 'pendiente',
+  EXPIRADA = 'expirada',
   ACEPTADA = 'aceptada',
   RECHAZADA = 'rechazada',
   CANCELADA = 'cancelada',
@@ -89,6 +90,12 @@ export class Solicitud {
 
   @Column({ type: 'timestamptz', nullable: true })
   fecha_completada: Date | null;
+
+  @Column({ type: 'smallint', nullable: true })
+  duracion_oferta_minutos: number | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  fecha_expiracion_oferta: Date | null;
 
   @CreateDateColumn({ type: 'timestamptz' })
   fecha_solicitud: Date;

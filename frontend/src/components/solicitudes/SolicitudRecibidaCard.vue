@@ -8,7 +8,7 @@ import { urlOpenStreetMap } from '../../utils/openStreetMap'
 const props = defineProps<{ solicitud: Solicitud }>()
 
 const emit = defineEmits<{
-  aceptar: []
+  postular: []
   completar: []
   rechazar: []
   verDetalle: []
@@ -26,11 +26,20 @@ const emit = defineEmits<{
     </div>
     <div class="flex gap-2">
       <Button
-        v-if="solicitud.estado === 'pendiente'"
-        label="Aceptar"
-        icon="pi pi-check"
+        v-if="solicitud.estado === 'pendiente' && !solicitud.tecnico && !solicitud.postulado_por_mi"
+        label="Postular a este trabajo"
+        icon="pi pi-send"
         size="small"
-        @click="emit('aceptar')"
+        @click="emit('postular')"
+      />
+      <Button
+        v-if="solicitud.estado === 'pendiente' && solicitud.postulado_por_mi"
+        label="Ya postulaste"
+        icon="pi pi-clock"
+        severity="secondary"
+        variant="outlined"
+        size="small"
+        disabled
       />
       <Button
         v-if="solicitud.estado === 'aceptada'"
@@ -59,6 +68,14 @@ const emit = defineEmits<{
     </div>
   </div>
   <p class="mt-3 text-sm text-ink">{{ solicitud.descripcion }}</p>
+  <div v-if="solicitud.categorias?.length" class="mt-2 flex flex-wrap gap-1.5">
+    <Tag
+      v-for="categoria in solicitud.categorias"
+      :key="categoria.id"
+      :value="categoria.nombre"
+      severity="info"
+    />
+  </div>
   <p class="mt-1 text-sm text-muted">
     <i class="pi pi-map-marker mr-1" />{{ solicitud.direccion || 'Dirección no indicada' }}
     <a

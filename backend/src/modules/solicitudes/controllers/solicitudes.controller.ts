@@ -14,6 +14,7 @@ import { SolicitudesService } from '../services/solicitudes.service';
 import { CrearSolicitudDto } from '../dtos/crear-solicitud.dto';
 import { AceptarSolicitudDto } from '../dtos/aceptar-solicitud.dto';
 import { RechazarSolicitudDto } from '../dtos/rechazar-solicitud.dto';
+import { CrearPostulacionDto } from '../dtos/crear-postulacion.dto';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { CurrentUser, type AuthenticatedUser } from '../../auth/decorators/current-user.decorator';
 import { RolUsuario } from '../../usuarios/entities/usuario.entity';
@@ -69,6 +70,42 @@ export class SolicitudesController {
   @Patch(':id/cancelar')
   cancelar(@CurrentUser() user: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.solicitudesService.cancelar(id, user);
+  }
+
+  @Roles(RolUsuario.CLIENTE)
+  @Get(':id/postulaciones')
+  postulaciones(@CurrentUser() user: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.solicitudesService.listarPostulaciones(id, user);
+  }
+
+  @Roles(RolUsuario.TECNICO)
+  @Post(':id/postulaciones')
+  postular(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CrearPostulacionDto,
+  ) {
+    return this.solicitudesService.postular(id, dto, user);
+  }
+
+  @Roles(RolUsuario.CLIENTE)
+  @Patch(':id/postulaciones/:postulacionId/aceptar')
+  aceptarPostulacion(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('postulacionId', ParseUUIDPipe) postulacionId: string,
+  ) {
+    return this.solicitudesService.aceptarPostulacion(id, postulacionId, user);
+  }
+
+  @Roles(RolUsuario.CLIENTE)
+  @Patch(':id/postulaciones/:postulacionId/rechazar')
+  rechazarPostulacion(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('postulacionId', ParseUUIDPipe) postulacionId: string,
+  ) {
+    return this.solicitudesService.rechazarPostulacion(id, postulacionId, user);
   }
 
   @Roles(RolUsuario.TECNICO, RolUsuario.ADMIN)
