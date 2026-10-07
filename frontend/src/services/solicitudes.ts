@@ -50,6 +50,14 @@ export const solicitudesApi = {
     return api.patch(`/solicitudes/${id}/completar`, {})
   },
 
+  iniciarCompletacion(id: string) {
+    return api.post<{ expiracion: string }>(`/solicitudes/${id}/iniciar-completacion`, {})
+  },
+
+  confirmarCompletacion(id: string, codigo: string) {
+    return api.post(`/solicitudes/${id}/confirmar-completacion`, { codigo })
+  },
+
   rechazar(id: string, motivo_rechazo: string) {
     return api.patch(`/solicitudes/${id}/rechazar`, { motivo_rechazo })
   },

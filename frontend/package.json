@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@primeuix/themes": "^3.0.0",
+    "@primevue/forms": "^5.0.2",
     "primeicons": "^8.0.0",
     "primevue": "^5.0.1",
     "socket.io-client": "^4.8.4",
@@ -18,7 +19,8 @@
     "workbox-build": "^7.4.1",
     "workbox-core": "^7.4.1",
     "workbox-precaching": "^7.4.1",
-    "workbox-window": "^7.4.1"
+    "workbox-window": "^7.4.1",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",

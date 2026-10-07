@@ -107,6 +107,8 @@ export function useSolicitudes() {
     form,
     abrirFormulario,
     crear,
+    iniciarCompletacion: solicitudesApi.iniciarCompletacion,
+    confirmarCompletacion: solicitudesApi.confirmarCompletacion,
   }
 }
 

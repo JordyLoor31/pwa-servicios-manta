@@ -11,6 +11,7 @@ import Toast from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import AppHeader from '../../components/layout/AppHeader.vue'
 import SolicitudRecibidaCard from '../../components/solicitudes/SolicitudRecibidaCard.vue'
+import ConfirmarCompletacionDialog from '../../components/solicitudes/ConfirmarCompletacionDialog.vue'
 import { useSolicitudes } from '../../composables/solicitudes/useSolicitudes'
 import { limpiarNotificacionesNuevas } from '../../composables/notificaciones/useNotificaciones'
 import { useSolicitudEvents, type EventoSolicitud } from '../../composables/solicitudes/useSolicitudEvents'
@@ -42,13 +43,23 @@ const {
   duracionHorasAceptacion,
   verDetalle,
   cerrarDetalle,
-  confirmarCompletar,
   confirmarRechazar,
   ejecutarAccion,
   cerrarConfirmacion,
   cargar,
   irPagina,
 } = useSolicitudes()
+
+const confirmarCompletacionVisible = ref(false)
+
+function abrirConfirmarCompletacion(solicitud: Solicitud) {
+  solicitudActiva.value = solicitud
+  confirmarCompletacionVisible.value = true
+}
+
+function cerrarConfirmarCompletacion() {
+  confirmarCompletacionVisible.value = false
+}
 
 const placeholders = Array.from({ length: 3 }, (_, i) => ({ id: `skeleton-${i}` }))
 
@@ -138,7 +149,7 @@ limpiarNotificacionesNuevas()
             v-else
             :solicitud="item as Solicitud"
             @postular="abrirPostulacion(item as Solicitud)"
-            @completar="confirmarCompletar(item as Solicitud)"
+            @completar="abrirConfirmarCompletacion(item as Solicitud)"
             @rechazar="confirmarRechazar(item as Solicitud)"
             @ver-detalle="verDetalle(item as Solicitud)"
           />
@@ -259,7 +270,7 @@ limpiarNotificacionesNuevas()
               v-if="solicitudActiva?.estado === 'aceptada'"
               label="Marcar como completada"
               icon="pi pi-flag"
-              @click="confirmarCompletar(solicitudActiva)"
+              @click="abrirConfirmarCompletacion(solicitudActiva)"
             />
             <Button label="Cerrar" severity="secondary" @click="cerrarDetalle" />
           </div>
@@ -287,13 +298,6 @@ limpiarNotificacionesNuevas()
           <label class="text-sm font-medium text-ink">Duración (horas) *</label>
           <input v-model.number="duracionHorasAceptacion" type="number" min="1" max="12" class="rounded border p-2" />
         </div>
-        <p v-else-if="accionPendiente === 'completar'" class="text-sm text-ink">
-          ¿El servicio para
-          <span class="font-semibold">
-            {{ solicitudActiva?.cliente.nombres }} {{ solicitudActiva?.cliente.apellidos }}
-          </span>
-          ya se entregó? Al confirmar, sumará un servicio completado a tu perfil.
-        </p>
         <div v-else class="flex flex-col gap-2">
           <label for="motivo" class="text-sm font-medium text-ink">Motivo del rechazo *</label>
           <Textarea
@@ -316,6 +320,13 @@ limpiarNotificacionesNuevas()
           </div>
         </template>
       </Dialog>
+
+      <ConfirmarCompletacionDialog
+        :visible="confirmarCompletacionVisible"
+        :solicitud-id="solicitudActiva?.id ?? ''"
+        @close="cerrarConfirmarCompletacion"
+        @confirmado="cerrarConfirmarCompletacion"
+      />
     </section>
   </div>
 </template>

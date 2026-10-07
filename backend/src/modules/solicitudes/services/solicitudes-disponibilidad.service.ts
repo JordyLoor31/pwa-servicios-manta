@@ -105,4 +105,18 @@ export class SolicitudesDisponibilidadService {
     const [h, m] = hora.split(':').map(Number);
     return h * 60 + (m ?? 0);
   }
+
+  async bloquearTecnicoPorDia(tecnicoId: string, fecha: Date) {
+    const fechaTexto = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(
+      fecha.getDate(),
+    ).padStart(2, '0')}`;
+    await this.reservasRepository.delete({ tecnico_id: tecnicoId, fecha_servicio: fechaTexto });
+    await this.reservasRepository.save({
+      tecnico_id: tecnicoId,
+      solicitud_id: 'bloqueo-seguridad',
+      fecha_servicio: fechaTexto,
+      hora_inicio: '00:00',
+      hora_fin: '23:59',
+    });
+  }
 }

@@ -3,7 +3,7 @@ import { useToast } from 'primevue/usetoast'
 import { solicitudesApi } from '../../services/solicitudes'
 import type { Solicitud } from '../../types/solicitudes'
 
-type AccionSolicitud = 'aceptar' | 'rechazar' | 'completar' | 'cancelar'
+type AccionSolicitud = 'aceptar' | 'rechazar' | 'cancelar'
 
 export function useSolicitudAcciones(
   solicitudActiva: Ref<Solicitud | null>,
@@ -46,9 +46,6 @@ export function useSolicitudAcciones(
           duracion_horas: duracionHorasAceptacion.value,
         })
         toast.add({ severity: 'success', summary: 'Solicitud aceptada', life: 3000 })
-      } else if (accion === 'completar') {
-        await solicitudesApi.completar(solicitud.id)
-        toast.add({ severity: 'success', summary: 'Servicio completado', life: 3000 })
       } else if (accion === 'cancelar') {
         await solicitudesApi.cancelar(solicitud.id)
         toast.add({ severity: 'success', summary: 'Solicitud cancelada', life: 3000 })
@@ -81,7 +78,6 @@ export function useSolicitudAcciones(
     horaAceptacion,
     duracionHorasAceptacion,
     confirmarAceptar: (solicitud: Solicitud) => preparar(solicitud, 'aceptar'),
-    confirmarCompletar: (solicitud: Solicitud) => preparar(solicitud, 'completar'),
     confirmarCancelar: (solicitud: Solicitud) => preparar(solicitud, 'cancelar'),
     confirmarRechazar: (solicitud: Solicitud) => preparar(solicitud, 'rechazar'),
     ejecutarAccion,

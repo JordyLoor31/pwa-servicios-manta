@@ -19,6 +19,10 @@ import { Roles } from '../../auth/decorators/roles.decorator';
 import { CurrentUser, type AuthenticatedUser } from '../../auth/decorators/current-user.decorator';
 import { RolUsuario } from '../../usuarios/entities/usuario.entity';
 
+class ConfirmarCodigoDto {
+  codigo: string;
+}
+
 @Controller('solicitudes')
 export class SolicitudesController {
   constructor(private readonly solicitudesService: SolicitudesService) {}
@@ -132,5 +136,21 @@ export class SolicitudesController {
   @Patch(':id/completar')
   completar(@CurrentUser() user: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.solicitudesService.completar(id, user);
+  }
+
+  @Roles(RolUsuario.TECNICO)
+  @Post(':id/iniciar-completacion')
+  iniciarCompletacion(@CurrentUser() user: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string) {
+    return this.solicitudesService.iniciarCompletacion(id, user);
+  }
+
+  @Roles(RolUsuario.CLIENTE)
+  @Post(':id/confirmar-completacion')
+  confirmarCompletacion(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ConfirmarCodigoDto,
+  ) {
+    return this.solicitudesService.confirmarCompletacion(id, dto.codigo, user);
   }
 }

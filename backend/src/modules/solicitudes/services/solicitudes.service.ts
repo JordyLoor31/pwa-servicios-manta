@@ -392,6 +392,14 @@ export class SolicitudesService {
   }
 
   async completar(id: string, user: AuthenticatedUser) {
+    return this.iniciarCompletacion(id, user);
+  }
+
+  private generarCodigo(): string {
+    return Math.floor(1000 + Math.random() * 9000).toString();
+  }
+
+  async iniciarCompletacion(id: string, user: AuthenticatedUser) {
     const solicitud = await this.obtenerParaAccion(
       id,
       user,
@@ -399,9 +407,65 @@ export class SolicitudesService {
       'Solo el técnico destinatario puede completar la solicitud',
     );
     this.verEstado(solicitud, [EstadoSolicitud.ACEPTADA], 'Solo se puede completar una solicitud aceptada');
+
+    const codigo = this.generarCodigo();
+    const expiracion = new Date(Date.now() + 10 * 60 * 1000);
+
+    await this.solicitudesRepository.update(solicitud.id, {
+      codigo_completacion: codigo,
+      fecha_expiracion_codigo: expiracion,
+      codigo_fallido: false,
+    });
+
+    const vista = await this.detalle(id, user);
+    await this.notificacionesService.actualizada(
+      solicitud.cliente_id,
+      vista,
+      'Código de confirmación',
+      `Tu técnico ha finalizado el trabajo. Código de confirmación: ${codigo} (válido 10 min).`,
+      '/solicitudes',
+    );
+
+    return { ok: true, expiracion: expiracion.toISOString() };
+  }
+
+  async confirmarCompletacion(id: string, codigo: string, user: AuthenticatedUser) {
+    const solicitud = await this.solicitudesRepository.findOneBy({ id });
+    if (!solicitud) {
+      throw new NotFoundException('Solicitud no encontrada');
+    }
+    if (solicitud.cliente_id !== user.id) {
+      throw new ForbiddenException('Solo el cliente puede confirmar la completación');
+    }
+    if (solicitud.estado !== EstadoSolicitud.ACEPTADA) {
+      throw new BadRequestException('La solicitud no está en estado aceptada');
+    }
+    if (!solicitud.codigo_completacion || !solicitud.fecha_expiracion_codigo) {
+      throw new BadRequestException('No hay código de completación pendiente');
+    }
+    if (solicitud.fecha_expiracion_codigo.getTime() <= Date.now()) {
+      await this.solicitudesRepository.update(solicitud.id, {
+        codigo_completacion: null,
+        fecha_expiracion_codigo: null,
+      });
+      throw new BadRequestException('El código ha expirado');
+    }
+    if (solicitud.codigo_completacion !== codigo) {
+      await this.solicitudesRepository.update(solicitud.id, {
+        codigo_fallido: true,
+      });
+      if (solicitud.tecnico_id) {
+        await this.disponibilidadService.bloquearTecnicoPorDia(solicitud.tecnico_id, new Date());
+      }
+      throw new BadRequestException('Código incorrecto. El técnico ha sido bloqueado por hoy.');
+    }
+
     await this.solicitudesRepository.update(solicitud.id, {
       estado: EstadoSolicitud.COMPLETADA,
       fecha_completada: new Date(),
+      codigo_completacion: null,
+      fecha_expiracion_codigo: null,
+      codigo_fallido: false,
     });
     if (solicitud.tecnico_id) {
       await this.perfilesRepository.increment(
@@ -411,13 +475,14 @@ export class SolicitudesService {
       );
     }
     await this.disponibilidadService.liberarReserva(solicitud.id);
+
     const vista = await this.detalle(id, user);
     await this.notificacionesService.actualizada(
-      solicitud.cliente_id,
+      solicitud.tecnico_id!,
       vista,
-      'Servicio completado',
-      `${this.nombreUsuario(vista, 'tecnico') || 'El técnico'} ${this.apellidoUsuario(vista, 'tecnico')} completó tu servicio.`,
-      '/solicitudes',
+      'Servicio confirmado',
+      'El cliente confirmó la completación del servicio.',
+      '/solicitudes/recibidas',
     );
     return vista;
   }

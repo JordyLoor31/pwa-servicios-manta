@@ -97,6 +97,15 @@ export class Solicitud {
   @Column({ type: 'timestamptz', nullable: true })
   fecha_expiracion_oferta: Date | null;
 
+  @Column({ type: 'varchar', length: 4, nullable: true })
+  codigo_completacion: string | null;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  fecha_expiracion_codigo: Date | null;
+
+  @Column({ type: 'boolean', default: false })
+  codigo_fallido: boolean;
+
   @CreateDateColumn({ type: 'timestamptz' })
   fecha_solicitud: Date;
 
