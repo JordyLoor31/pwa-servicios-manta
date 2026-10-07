@@ -32,6 +32,8 @@ export class SolicitudesNotificacionesService {
     this.notificaciones.notificarSolicitudActualizada(usuarioId, {
       evento: 'solicitud.actualizada',
       solicitud,
+      titulo,
+      mensaje: cuerpo,
     });
     await this.notificacionesPush.enviar(usuarioId, { titulo, cuerpo, url });
   }

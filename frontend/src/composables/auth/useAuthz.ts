@@ -1,5 +1,5 @@
 import { computed } from 'vue'
-import { desconectarNotificaciones } from '../notificaciones/useNotificaciones'
+import { conectarNotificaciones, desconectarNotificaciones } from '../notificaciones/useNotificaciones'
 
 export type RolUsuario = 'cliente' | 'tecnico' | 'admin'
 
@@ -58,6 +58,7 @@ export function iniciarSesion(token: string, usuario: UsuarioSesion) {
   localStorage.setItem(TOKEN_KEY, token)
   localStorage.setItem(USER_KEY, JSON.stringify(usuario))
   localStorage.setItem(SESION_KEY, String(Date.now()))
+  conectarNotificaciones(token)
 }
 
 export function actualizarSesionUsuario(usuario: UsuarioSesion) {

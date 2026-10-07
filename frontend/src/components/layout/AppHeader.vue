@@ -8,6 +8,7 @@ import AppThemeToggle from './AppThemeToggle.vue'
 import AppProgressSpinner from './AppProgressSpinner.vue'
 import AppBreadcrumb from './AppBreadcrumb.vue'
 import Popover from 'primevue/popover'
+import Dialog from 'primevue/dialog'
 import { useTheme } from '../../composables/useTheme'
 import { useAuthz, cerrarSesion } from '../../composables/auth/useAuthz'
 import { usarNotificaciones, limpiarNotificacionesNuevas, type Notificacion } from '../../composables/notificaciones/useNotificaciones'
@@ -22,6 +23,8 @@ const { solicitudesNuevas, notificaciones, marcarComoLeida, marcarTodasComoLeida
 const { canInstall, isIOS, showIosHint, promptInstall } = usePWAInstall()
 
 const popoverRef = ref<InstanceType<typeof Popover> | null>(null)
+const notificacionSeleccionada = ref<Notificacion | null>(null)
+const detalleNotificacionVisible = ref(false)
 
 function togglePopover(event: MouseEvent) {
   popoverRef.value?.toggle(event)
@@ -85,11 +88,9 @@ function irARecibidas() {
 
 function irANotificacion(notif: Notificacion) {
   marcarComoLeida(notif.id)
-  if (notif.solicitudId) {
-    void router.push(`/solicitudes/${notif.solicitudId}`)
-  } else {
-    void router.push('/solicitudes/recibidas')
-  }
+  notificacionSeleccionada.value = notif
+  detalleNotificacionVisible.value = true
+  popoverRef.value?.hide()
 }
 
 function logout() {
@@ -266,5 +267,36 @@ function logout() {
         </div>
       </div>
     </Drawer>
+
+    <Dialog
+      v-model:visible="detalleNotificacionVisible"
+      modal
+      header="Detalle de notificación"
+      :style="{ width: 'min(32rem, calc(100vw - 2rem))' }"
+    >
+      <div v-if="notificacionSeleccionada" class="flex flex-col gap-4">
+        <div class="flex items-start gap-3">
+          <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-amber/10 text-amber">
+            <i class="pi pi-bell text-lg" />
+          </div>
+          <div class="min-w-0">
+            <h2 class="text-lg font-semibold text-ink">{{ notificacionSeleccionada.titulo }}</h2>
+            <p class="mt-1 text-xs text-muted">{{ notificacionSeleccionada.fecha.toLocaleString() }}</p>
+          </div>
+        </div>
+        <div class="rounded-xl border border-pacific/15 bg-pacific/5 p-4">
+          <p class="whitespace-pre-wrap break-words text-sm leading-6 text-ink">
+            {{ notificacionSeleccionada.mensaje }}
+          </p>
+        </div>
+        <Button
+          v-if="notificacionSeleccionada.solicitudId"
+          label="Ver solicitud"
+          icon="pi pi-arrow-right"
+          class="self-end"
+          @click="detalleNotificacionVisible = false; void router.push(`/solicitudes/${notificacionSeleccionada?.solicitudId}`)"
+        />
+      </div>
+    </Dialog>
   </div>
 </template>

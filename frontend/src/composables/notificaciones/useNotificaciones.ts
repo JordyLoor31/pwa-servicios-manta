@@ -9,9 +9,12 @@ const conectado = ref(false)
 const solicitudesNuevas = ref(0)
 const notificaciones = ref<Notificacion[]>([])
 let socket: Socket | null = null
+let almacenamientoKey: string | null = null
 
 interface EventoSolicitud {
   evento?: 'solicitud.nueva' | 'solicitud.actualizada'
+  titulo?: string
+  mensaje?: string
   solicitud?: {
     id?: string
     estado?: string
@@ -36,6 +39,30 @@ const ETIQUETAS_ESTADO: Record<string, string> = {
   rechazada: 'rechazada',
   cancelada: 'cancelada',
   completada: 'completada',
+}
+
+function prepararAlmacenamiento() {
+  try {
+    const usuario = JSON.parse(localStorage.getItem('user') ?? '{}') as { id?: string }
+    almacenamientoKey = usuario.id ? `camello:notificaciones:${usuario.id}` : null
+    if (!almacenamientoKey) return
+    const guardadas = JSON.parse(localStorage.getItem(almacenamientoKey) ?? '[]') as Array<
+      Omit<Notificacion, 'fecha'> & { fecha: string }
+    >
+    notificaciones.value = guardadas.map((notificacion) => ({
+      ...notificacion,
+      fecha: new Date(notificacion.fecha),
+    }))
+    solicitudesNuevas.value = notificaciones.value.filter((notificacion) => !notificacion.leida).length
+  } catch {
+    notificaciones.value = []
+    solicitudesNuevas.value = 0
+  }
+}
+
+function guardarNotificaciones() {
+  if (!almacenamientoKey) return
+  localStorage.setItem(almacenamientoKey, JSON.stringify(notificaciones.value.slice(0, 50)))
 }
 
 function notificarSistema(titulo: string, cuerpo: string) {
@@ -68,6 +95,7 @@ export async function solicitarPermisoNotificaciones() {
 }
 
 export function conectarNotificaciones(token: string) {
+  prepararAlmacenamiento()
   if (socket) {
     socket.disconnect()
     socket = null
@@ -97,6 +125,7 @@ export function conectarNotificaciones(token: string) {
       fecha: new Date(),
     }
     notificaciones.value.unshift(notif)
+    guardarNotificaciones()
     notificarSistema('Nueva solicitud de servicio', `${cliente} quiere un servicio. Ábrela para responder.`)
     window.dispatchEvent(new CustomEvent('camello:solicitud-nueva', { detail: payload }))
   })
@@ -104,17 +133,21 @@ export function conectarNotificaciones(token: string) {
     const ev = payload as EventoSolicitud
     const solicitud = ev?.solicitud
     const estado = ETIQUETAS_ESTADO[solicitud?.estado ?? ''] ?? 'actualizada'
+    const titulo = ev?.titulo ?? 'Solicitud actualizada'
+    const mensaje = ev?.mensaje ?? `Tu solicitud quedó ${estado}.`
     const notif: Notificacion = {
       id: crypto.randomUUID(),
       tipo: 'solicitud.actualizada',
       solicitudId: solicitud?.id ?? '',
-      titulo: 'Solicitud actualizada',
-      mensaje: `Tu solicitud quedó ${estado}.`,
+      titulo,
+      mensaje,
       leida: false,
       fecha: new Date(),
     }
     notificaciones.value.unshift(notif)
-    notificarSistema('Solicitud actualizada', `Tu solicitud quedó ${estado}.`)
+    solicitudesNuevas.value += 1
+    guardarNotificaciones()
+    notificarSistema(titulo, mensaje)
     window.dispatchEvent(new CustomEvent('camello:solicitud-actualizada', { detail: payload }))
   })
 }
@@ -131,12 +164,17 @@ export function limpiarNotificacionesNuevas() {
 
 export function marcarComoLeida(id: string) {
   const n = notificaciones.value.find((x) => x.id === id)
-  if (n) n.leida = true
+  if (n && !n.leida) {
+    n.leida = true
+    solicitudesNuevas.value = Math.max(0, solicitudesNuevas.value - 1)
+    guardarNotificaciones()
+  }
 }
 
 export function marcarTodasComoLeidas() {
   notificaciones.value.forEach((n) => (n.leida = true))
   solicitudesNuevas.value = 0
+  guardarNotificaciones()
 }
 
 export function usarNotificaciones() {

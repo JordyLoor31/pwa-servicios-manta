@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import Dialog from 'primevue/dialog'
 import InputOtp from 'primevue/inputotp'
 import Button from 'primevue/button'
 import { useToast } from 'primevue/usetoast'
@@ -109,7 +110,7 @@ watch(() => props.visible, (val) => {
       <div class="flex flex-col gap-4">
         <div v-if="paso === 'esperando'" class="text-center">
           <p class="text-muted mb-4">Al presionar "Finalizar trabajo", se generará un código de 4 dígitos que se enviará al cliente.</p>
-          <p class="text-muted mb-4">El técnico deberá ingresar ese código para confirmar la completación.</p>
+          <p class="text-muted mb-4">Pide al cliente el código y escríbelo para confirmar la completación.</p>
           <Button label="Finalizar trabajo" icon="pi pi-check" @click="onIniciarCompletacion" :loading="cargando" severity="warn" class="w-full" />
         </div>
 
@@ -117,7 +118,7 @@ watch(() => props.visible, (val) => {
           <div class="text-center">
             <p class="text-sm text-muted mb-2">Código enviado al cliente. Válido por:</p>
             <div class="text-3xl font-mono font-bold text-pacific mb-4">{{ formatearTiempo(tiempoRestante) }}</div>
-            <p class="text-sm text-muted">El técnico debe ingresar el código que recibió el cliente.</p>
+            <p class="text-sm text-muted">Ingresa el código de 4 dígitos que te entregó el cliente.</p>
           </div>
           <div class="flex flex-col gap-3">
             <InputOtp v-model="codigo" :length="4" :mask="false" fluid />

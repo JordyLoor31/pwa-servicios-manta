@@ -429,16 +429,20 @@ export class SolicitudesService {
     return { ok: true, expiracion: expiracion.toISOString() };
   }
 
-  async confirmarCompletacion(id: string, codigo: string, user: AuthenticatedUser) {
+  async confirmarCompletacion(id: string, codigo: string | undefined, user: AuthenticatedUser) {
     const solicitud = await this.solicitudesRepository.findOneBy({ id });
     if (!solicitud) {
       throw new NotFoundException('Solicitud no encontrada');
     }
-    if (solicitud.cliente_id !== user.id) {
-      throw new ForbiddenException('Solo el cliente puede confirmar la completación');
+    if (solicitud.tecnico_id !== user.id) {
+      throw new ForbiddenException('Solo el técnico asignado puede confirmar la completación');
     }
     if (solicitud.estado !== EstadoSolicitud.ACEPTADA) {
       throw new BadRequestException('La solicitud no está en estado aceptada');
+    }
+    const codigoNormalizado = typeof codigo === 'string' ? codigo.trim() : '';
+    if (!/^\d{4}$/.test(codigoNormalizado)) {
+      throw new BadRequestException('Debes ingresar un código válido de 4 dígitos');
     }
     if (!solicitud.codigo_completacion || !solicitud.fecha_expiracion_codigo) {
       throw new BadRequestException('No hay código de completación pendiente');
@@ -450,14 +454,11 @@ export class SolicitudesService {
       });
       throw new BadRequestException('El código ha expirado');
     }
-    if (solicitud.codigo_completacion !== codigo) {
+    if (solicitud.codigo_completacion !== codigoNormalizado) {
       await this.solicitudesRepository.update(solicitud.id, {
         codigo_fallido: true,
       });
-      if (solicitud.tecnico_id) {
-        await this.disponibilidadService.bloquearTecnicoPorDia(solicitud.tecnico_id, new Date());
-      }
-      throw new BadRequestException('Código incorrecto. El técnico ha sido bloqueado por hoy.');
+      throw new BadRequestException('Código incorrecto. Verifica el código entregado por el cliente.');
     }
 
     await this.solicitudesRepository.update(solicitud.id, {
@@ -478,11 +479,11 @@ export class SolicitudesService {
 
     const vista = await this.detalle(id, user);
     await this.notificacionesService.actualizada(
-      solicitud.tecnico_id!,
+      solicitud.cliente_id,
       vista,
       'Servicio confirmado',
-      'El cliente confirmó la completación del servicio.',
-      '/solicitudes/recibidas',
+      'El técnico confirmó la completación del servicio con el código recibido.',
+      '/solicitudes',
     );
     return vista;
   }
@@ -546,7 +547,7 @@ export class SolicitudesService {
       .getRawOne();
   }
 
-  private columnasBase() {
+private columnasBase() {
     return [
       's.id AS id',
       's.estado AS estado',

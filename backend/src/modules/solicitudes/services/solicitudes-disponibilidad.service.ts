@@ -111,12 +111,5 @@ export class SolicitudesDisponibilidadService {
       fecha.getDate(),
     ).padStart(2, '0')}`;
     await this.reservasRepository.delete({ tecnico_id: tecnicoId, fecha_servicio: fechaTexto });
-    await this.reservasRepository.save({
-      tecnico_id: tecnicoId,
-      solicitud_id: 'bloqueo-seguridad',
-      fecha_servicio: fechaTexto,
-      hora_inicio: '00:00',
-      hora_fin: '23:59',
-    });
   }
 }

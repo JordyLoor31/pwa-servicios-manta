@@ -144,13 +144,13 @@ export class SolicitudesController {
     return this.solicitudesService.iniciarCompletacion(id, user);
   }
 
-  @Roles(RolUsuario.CLIENTE)
+  @Roles(RolUsuario.TECNICO)
   @Post(':id/confirmar-completacion')
   confirmarCompletacion(
     @CurrentUser() user: AuthenticatedUser,
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: ConfirmarCodigoDto,
+    @Body() dto: ConfirmarCodigoDto | undefined,
   ) {
-    return this.solicitudesService.confirmarCompletacion(id, dto.codigo, user);
+    return this.solicitudesService.confirmarCompletacion(id, dto?.codigo, user);
   }
 }

@@ -17,6 +17,8 @@ export interface UsuarioSocket {
 interface SolicitudNotificacionPayload {
   evento: 'solicitud.nueva' | 'solicitud.actualizada';
   solicitud: Record<string, unknown>;
+  titulo?: string;
+  mensaje?: string;
 }
 
 const USUARIOS_CONECTADOS = new Map<string, Set<Socket>>();
