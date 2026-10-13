@@ -56,11 +56,11 @@ async function onGuardar() {
     <div v-if="cargando" class="fixed inset-0 z-[60] flex items-center justify-center bg-white/80">
       <AppProgressSpinner />
     </div>
-    <section class="mx-auto flex w-full max-w-5xl flex-1 items-start justify-center px-4 py-8">
+    <section class="mx-auto flex w-full max-w-5xl flex-1 px-4 py-8">
       <Toast />
 
-      <!-- Header con avatar y rol -->
-      <div class="w-full max-w-lg mb-6">
+      <div class="w-full max-w-2xl mx-auto space-y-5">
+        <!-- Header con avatar y rol -->
         <Card class="bg-gradient-to-r from-pacific to-pacific/80 text-white">
           <template #content>
             <div class="flex items-center gap-4">
@@ -69,16 +69,14 @@ async function onGuardar() {
                 <h1 class="text-2xl font-bold">{{ usuario?.nombres }} {{ usuario?.apellidos }}</h1>
                 <p class="text-white/90">{{ usuario?.email }}</p>
                 <div class="mt-2 flex items-center gap-2">
-                  <Badge :value="rolLabel" severity="info" size="large" />
+                  <Badge :value="rolLabel" :severity="usuario?.rol === 'tecnico' ? 'success' : usuario?.rol === 'admin' ? 'danger' : 'info'" size="large" />
                   <span class="text-white/70 text-sm">Cuenta verificada</span>
                 </div>
               </div>
             </div>
           </template>
         </Card>
-      </div>
 
-      <div class="w-full max-w-lg space-y-5">
         <!-- Datos personales -->
         <Card>
           <template #title>
