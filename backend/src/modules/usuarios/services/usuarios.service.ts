@@ -4,6 +4,7 @@ import { Repository, ILike } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { Usuario, RolUsuario, EstadoUsuario } from '../entities/usuario.entity';
+import { PerfilTecnico } from '../../perfiles-tecnico/entities/perfil-tecnico.entity';
 import { CreateUsuarioDto } from '../dtos/create-usuario.dto';
 
 @Injectable()
@@ -13,6 +14,8 @@ export class UsuariosService {
   constructor(
     @InjectRepository(Usuario)
     private readonly usuariosRepository: Repository<Usuario>,
+    @InjectRepository(PerfilTecnico)
+    private readonly perfilesRepository: Repository<PerfilTecnico>,
   ) {}
 
   async createPublic(createUsuarioDto: CreateUsuarioDto) {
@@ -24,6 +27,8 @@ export class UsuariosService {
 
   async create(createUsuarioDto: CreateUsuarioDto) {
     const password_hash = await bcrypt.hash(createUsuarioDto.password, this.SALT_ROUNDS);
+    const esTecnico = createUsuarioDto.rol === RolUsuario.TECNICO;
+
     const usuario = this.usuariosRepository.create({
       ...createUsuarioDto,
       password_hash,
@@ -31,6 +36,16 @@ export class UsuariosService {
 
     try {
       const saved = await this.usuariosRepository.save(usuario);
+
+      if (esTecnico) {
+        await this.perfilesRepository.insert({
+          usuario_id: saved.id,
+          verificado: false,
+          calificacion_promedio: 0,
+          total_servicios_completados: 0,
+        });
+      }
+
       return this.sanitize(saved);
     } catch (error) {
       if ((error as { code?: string })?.code === '23505') {
