@@ -11,7 +11,7 @@ declare module 'vue-router' {
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: '/', name: 'home', component: () => import('../views/home/HomeView.vue') },
+    { path: '/', name: 'home', component: () => import('../views/home/HomeView.vue'), meta: { publica: true } },
     { path: '/perfil', name: 'perfil', component: () => import('../views/perfil/PerfilTecnicoView.vue'), meta: { roles: ['tecnico'] } },
     { path: '/categorias', name: 'categorias', component: () => import('../views/admin/CategoriasView.vue'), meta: { roles: ['admin'] } },
     { path: '/usuarios', name: 'usuarios', component: () => import('../views/admin/UsuariosView.vue'), meta: { roles: ['admin'] } },
@@ -66,7 +66,7 @@ function tieneSesion() {
 router.beforeEach((to) => {
   const esPublica = to.meta.publica === true
 
-  if (tieneSesion() && esPublica) {
+  if (tieneSesion() && esPublica && to.name !== 'home') {
     return { name: 'home' }
   }
   if (!tieneSesion() && !esPublica) {
