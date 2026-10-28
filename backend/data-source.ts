@@ -12,6 +12,7 @@ import { Solicitud } from './src/modules/solicitudes/entities/solicitud.entity';
 import { SuscripcionPush } from './src/modules/notificaciones-push/entities/suscripcion-push.entity';
 import { PostulacionSolicitud } from './src/modules/solicitudes/entities/postulacion-solicitud.entity';
 import { SolicitudCategoria } from './src/modules/solicitudes/entities/solicitud-categoria.entity';
+import { ReservaServicio } from './src/modules/solicitudes/entities/reserva-servicio.entity';
 
 config();
 
@@ -29,9 +30,10 @@ const base = {
     CategoriaServicio,
     Direccion,
     Solicitud,
-    SuscripcionPush,
     PostulacionSolicitud,
     SolicitudCategoria,
+    ReservaServicio,
+    SuscripcionPush,
   ],
   migrations: ['src/migrations/*.ts'],
 };
