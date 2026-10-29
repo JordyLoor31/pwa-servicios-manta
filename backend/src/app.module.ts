@@ -61,9 +61,9 @@ import { ReservaServicio } from './modules/solicitudes/entities/reserva-servicio
           return {
             type: 'postgres',
             url: databaseUrl,
-            ssl: { rejectUnauthorized: false },
+            ssl: { rejectUnauthorized: true },
             entities,
-            synchronize: true,
+            synchronize: false,
           };
         }
 

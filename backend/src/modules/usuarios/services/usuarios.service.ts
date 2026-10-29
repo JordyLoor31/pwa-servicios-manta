@@ -99,6 +99,22 @@ export class UsuariosService {
     return this.usuariosRepository.findOneBy({ email });
   }
 
+  async asegurarPerfilTecnico(usuario: Pick<Usuario, 'id' | 'rol'>) {
+    if (usuario.rol !== RolUsuario.TECNICO) {
+      return;
+    }
+
+    const perfil = await this.perfilesRepository.findOneBy({ usuario_id: usuario.id });
+    if (!perfil) {
+      await this.perfilesRepository.insert({
+        usuario_id: usuario.id,
+        verificado: false,
+        calificacion_promedio: 0,
+        total_servicios_completados: 0,
+      });
+    }
+  }
+
   async guardarTokenReset(id: string, reset_token_hash: string, reset_token_expira: Date) {
     const usuario = await this.usuariosRepository.findOneBy({ id });
     if (!usuario) {

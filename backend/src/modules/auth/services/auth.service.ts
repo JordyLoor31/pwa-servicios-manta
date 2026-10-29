@@ -41,6 +41,8 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales inválidas');
     }
 
+    await this.usuariosService.asegurarPerfilTecnico(usuario);
+
     return this.emisionToken(usuario);
   }
 
@@ -86,6 +88,8 @@ export class AuthService {
     } else if (usuario.estado !== EstadoUsuario.ACTIVO) {
       throw new UnauthorizedException('Tu cuenta está suspendida o inactiva');
     }
+
+    await this.usuariosService.asegurarPerfilTecnico(usuario);
 
     return this.emisionToken(usuario);
   }

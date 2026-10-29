@@ -43,7 +43,7 @@ export default new DataSource(
     ? {
         ...base,
         url: databaseUrl,
-        ssl: { rejectUnauthorized: false },
+        ssl: { rejectUnauthorized: true },
       }
     : {
         ...base,
