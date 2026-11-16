@@ -28,7 +28,8 @@ import { Solicitud } from './modules/solicitudes/entities/solicitud.entity';
 import { PostulacionSolicitud } from './modules/solicitudes/entities/postulacion-solicitud.entity';
 import { SolicitudCategoria } from './modules/solicitudes/entities/solicitud-categoria.entity';
 import { SuscripcionPush } from './modules/notificaciones-push/entities/suscripcion-push.entity';
-import { ReservaServicio } from './modules/solicitudes/entities/reserva-servicio.entity'; 
+import { ReservaServicio } from './modules/solicitudes/entities/reserva-servicio.entity';
+import { CalificacionTecnico } from './modules/solicitudes/entities/calificacion-tecnico.entity'; 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -55,6 +56,7 @@ import { ReservaServicio } from './modules/solicitudes/entities/reserva-servicio
           PostulacionSolicitud,
           SolicitudCategoria,
           ReservaServicio,
+          CalificacionTecnico,
           SuscripcionPush,
         ];
         if (databaseUrl) {

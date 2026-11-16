@@ -16,7 +16,6 @@ import {
 import { PerfilesTecnicoService } from '../services/perfiles-tecnico.service';
 import { CreatePerfilTecnicoDto } from '../dtos/create-perfil-tecnico.dto';
 import { UpdatePerfilTecnicoDto } from '../dtos/update-perfil-tecnico.dto';
-import { CalificarPerfilTecnicoDto } from '../dtos/calificar-perfil-tecnico.dto';
 import { ReemplazarCategoriasDto } from '../dtos/reemplazar-categorias.dto';
 import { ReemplazarTarifasDto } from '../dtos/reemplazar-tarifas.dto';
 import { ReemplazarDisponibilidadDto } from '../dtos/reemplazar-disponibilidad.dto';
@@ -150,6 +149,12 @@ export class PerfilesTecnicoController {
   }
 
   @Public()
+  @Get(':usuarioId/perfil-publico')
+  perfilPublico(@Param('usuarioId', ParseUUIDPipe) usuarioId: string) {
+    return this.perfilesTecnicoService.perfilPublico(usuarioId);
+  }
+
+  @Public()
   @Get(':usuarioId')
   findOne(@Param('usuarioId', ParseUUIDPipe) usuarioId: string) {
     return this.perfilesTecnicoService.findOnePublic(usuarioId);
@@ -182,19 +187,6 @@ export class PerfilesTecnicoController {
   @Delete(':usuarioId/verificar')
   desverificar(@Param('usuarioId', ParseUUIDPipe) usuarioId: string) {
     return this.perfilesTecnicoService.desverificar(usuarioId);
-  }
-
-  @Roles(RolUsuario.CLIENTE)
-  @Post(':usuarioId/calificar')
-  calificar(
-    @CurrentUser() user: AuthenticatedUser,
-    @Param('usuarioId', ParseUUIDPipe) usuarioId: string,
-    @Body() dto: CalificarPerfilTecnicoDto,
-  ) {
-    if (usuarioId === user.id) {
-      throw new BadRequestException('No puedes calificar tu propio perfil');
-    }
-    return this.perfilesTecnicoService.calificar(usuarioId, dto);
   }
 
   @Roles(RolUsuario.TECNICO, RolUsuario.ADMIN)

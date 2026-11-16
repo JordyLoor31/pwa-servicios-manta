@@ -4,6 +4,7 @@ import { In, Repository } from 'typeorm';
 import { Solicitud } from '../entities/solicitud.entity';
 import { PostulacionSolicitud } from '../entities/postulacion-solicitud.entity';
 import { SolicitudCategoria } from '../entities/solicitud-categoria.entity';
+import { CalificacionTecnico } from '../entities/calificacion-tecnico.entity';
 import { TarifaTecnico } from '../../perfiles-tecnico/entities/tarifa-tecnico.entity';
 import { RolUsuario, Usuario } from '../../usuarios/entities/usuario.entity';
 import { PerfilTecnico } from '../../perfiles-tecnico/entities/perfil-tecnico.entity';
@@ -32,6 +33,8 @@ export class SolicitudesConsultaService {
     private readonly postulacionesRepository: Repository<PostulacionSolicitud>,
     @InjectRepository(SolicitudCategoria)
     private readonly solicitudCategoriasRepository: Repository<SolicitudCategoria>,
+    @InjectRepository(CalificacionTecnico)
+    private readonly calificacionesRepository: Repository<CalificacionTecnico>,
     @InjectRepository(TarifaTecnico)
     private readonly tarifasRepository: Repository<TarifaTecnico>,
   ) {}
@@ -156,11 +159,13 @@ export class SolicitudesConsultaService {
       throw new NotFoundException('Solicitud no encontrada');
     }
     this.asegurarAcceso(fila, user);
-    return toSolicitudView(
+    const vista = toSolicitudView(
       fila as SolicitudFila,
       await this.obtenerUnidadesCobro([fila.tecnico_id]),
       await this.obtenerCategorias([id]),
     );
+    const calificacion = await this.calificacionesRepository.findOneBy({ solicitud_id: id });
+    return { ...vista, calificacion };
   }
 
   private async listarConJoin(
@@ -189,10 +194,14 @@ export class SolicitudesConsultaService {
       filas.map((fila) => fila.tecnico_id).filter((id): id is string => Boolean(id)),
     );
     const categoriasPorSolicitud = await this.obtenerCategorias(filas.map((fila) => fila.id as string));
+    const calificaciones = await this.obtenerCalificaciones(
+      filas.map((fila) => fila.id as string),
+    );
     return {
-      data: filas.map((fila) =>
-        toSolicitudView(fila as SolicitudFila, unidadesCobro, categoriasPorSolicitud),
-      ),
+      data: filas.map((fila) => ({
+        ...toSolicitudView(fila as SolicitudFila, unidadesCobro, categoriasPorSolicitud),
+        calificacion: calificaciones.get(fila.id as string) ?? null,
+      })),
       total,
       page: filtros.page,
       limit: filtros.limit,
@@ -264,6 +273,19 @@ export class SolicitudesConsultaService {
       categoriasPorSolicitud.set(fila.solicitud_id, lista);
     }
     return categoriasPorSolicitud;
+  }
+
+  private async obtenerCalificaciones(solicitudIds: string[]) {
+    const ids = [...new Set(solicitudIds.filter(Boolean))];
+    const calificacionesPorSolicitud = new Map<string, CalificacionTecnico>();
+    if (ids.length === 0) return calificacionesPorSolicitud;
+    const calificaciones = await this.calificacionesRepository.find({
+      where: { solicitud_id: In(ids) },
+    });
+    for (const calificacion of calificaciones) {
+      calificacionesPorSolicitud.set(calificacion.solicitud_id, calificacion);
+    }
+    return calificacionesPorSolicitud;
   }
 }
 

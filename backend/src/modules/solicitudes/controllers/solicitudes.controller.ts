@@ -15,6 +15,7 @@ import { CrearSolicitudDto } from '../dtos/crear-solicitud.dto';
 import { AceptarSolicitudDto } from '../dtos/aceptar-solicitud.dto';
 import { RechazarSolicitudDto } from '../dtos/rechazar-solicitud.dto';
 import { CrearPostulacionDto } from '../dtos/crear-postulacion.dto';
+import { CalificarSolicitudDto } from '../dtos/calificar-solicitud.dto';
 import { Roles } from '../../auth/decorators/roles.decorator';
 import { CurrentUser, type AuthenticatedUser } from '../../auth/decorators/current-user.decorator';
 import { RolUsuario } from '../../usuarios/entities/usuario.entity';
@@ -74,6 +75,16 @@ export class SolicitudesController {
   @Patch(':id/cancelar')
   cancelar(@CurrentUser() user: AuthenticatedUser, @Param('id', ParseUUIDPipe) id: string) {
     return this.solicitudesService.cancelar(id, user);
+  }
+
+  @Roles(RolUsuario.CLIENTE)
+  @Post(':id/calificar')
+  calificar(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CalificarSolicitudDto,
+  ) {
+    return this.solicitudesService.calificar(id, dto, user);
   }
 
   @Roles(RolUsuario.CLIENTE)

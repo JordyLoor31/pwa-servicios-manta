@@ -8,6 +8,7 @@ import { useToast } from 'primevue/usetoast'
 import AppHeader from '../../components/layout/AppHeader.vue'
 import NuevaSolicitudDialog from '../../components/solicitudes/NuevaSolicitudDialog.vue'
 import DetalleSolicitudDialog from '../../components/solicitudes/DetalleSolicitudDialog.vue'
+import CalificarServicioDialog from '../../components/solicitudes/CalificarServicioDialog.vue'
 import { useSolicitudes } from '../../composables/solicitudes/useSolicitudes'
 import type { EstadoSolicitud, PostulacionSolicitud, Solicitud } from '../../types/solicitudes'
 import {
@@ -38,6 +39,8 @@ const {
 
 const toast = useToast()
 const postulaciones = ref<PostulacionSolicitud[]>([])
+const calificarVisible = ref(false)
+const solicitudCalificar = ref<Solicitud | null>(null)
 
 const FRECUENCIAS: { valor: 'todos' | EstadoSolicitud; label: string }[] = [
   { valor: 'todos', label: 'Todos' },
@@ -123,6 +126,27 @@ function onSolicitudActualizada() {
   void cargarPostulaciones(solicitudActiva.value)
 }
 
+function abrirCalificar(solicitud: Solicitud) {
+  solicitudCalificar.value = solicitud
+  calificarVisible.value = true
+}
+
+function cerrarCalificar() {
+  calificarVisible.value = false
+}
+
+async function onCalificada() {
+  const id = solicitudCalificar.value?.id
+  await cargar()
+  if (id && solicitudActiva.value?.id === id) {
+    try {
+      solicitudActiva.value = await solicitudesApi.obtener(id)
+    } catch {
+      cerrarDetalle()
+    }
+  }
+}
+
 useSolicitudEvents({ actualizada: onSolicitudActualizada })
 </script>
 
@@ -191,14 +215,23 @@ useSolicitudEvents({ actualizada: onSolicitudActualizada })
                   :severity="estadoSeveridad((item as Solicitud).estado)"
                 />
               </div>
-              <Button
-                label="Ver detalle"
-                icon="pi pi-eye"
-                severity="secondary"
-                variant="outlined"
-                size="small"
-                @click="verDetalle(item as Solicitud)"
-              />
+              <div class="flex flex-wrap gap-2">
+                <Button
+                  v-if="(item as Solicitud).estado === 'completada' && !(item as Solicitud).calificacion"
+                  label="Calificar"
+                  icon="pi pi-star"
+                  size="small"
+                  @click="abrirCalificar(item as Solicitud)"
+                />
+                <Button
+                  label="Ver detalle"
+                  icon="pi pi-eye"
+                  severity="secondary"
+                  variant="outlined"
+                  size="small"
+                  @click="verDetalle(item as Solicitud)"
+                />
+              </div>
             </div>
             <p class="mt-3 text-sm text-ink">{{ (item as Solicitud).descripcion }}</p>
             <p class="mt-1 text-sm text-muted">
@@ -249,8 +282,15 @@ useSolicitudEvents({ actualizada: onSolicitudActualizada })
         :postulaciones="postulaciones"
         @cerrar="cerrarDetalle"
         @cancelar="cancelarSolicitud"
+        @calificar="abrirCalificar"
         @aceptar-postulacion="aceptarPostulacion"
         @rechazar-postulacion="rechazarPostulacion"
+      />
+      <CalificarServicioDialog
+        :visible="calificarVisible"
+        :solicitud="solicitudCalificar"
+        @close="cerrarCalificar"
+        @calificada="onCalificada"
       />
     </section>
   </div>

@@ -26,6 +26,10 @@ export const solicitudesApi = {
     return api.patch(`/solicitudes/${id}/cancelar`, {})
   },
 
+  calificar(id: string, payload: { calificacion: number; comentario?: string }) {
+    return api.post(`/solicitudes/${id}/calificar`, payload)
+  },
+
   postulaciones(id: string) {
     return api.get<PostulacionSolicitud[]>(`/solicitudes/${id}/postulaciones`)
   },

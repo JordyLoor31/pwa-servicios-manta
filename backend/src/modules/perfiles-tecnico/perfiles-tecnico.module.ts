@@ -6,6 +6,8 @@ import { CertificacionTecnico } from './entities/certificacion-tecnico.entity';
 import { TecnicoCategoria } from './entities/tecnico-categoria.entity';
 import { TarifaTecnico } from './entities/tarifa-tecnico.entity';
 import { CategoriaServicio } from '../categorias/entities/categoria-servicio.entity';
+import { Usuario } from '../usuarios/entities/usuario.entity';
+import { CalificacionTecnico } from '../solicitudes/entities/calificacion-tecnico.entity';
 import { PerfilesTecnicoController } from './controllers/perfiles-tecnico.controller';
 import { PerfilesTecnicoService } from './services/perfiles-tecnico.service';
 import { PerfilesTecnicoConsultaService } from './services/perfiles-tecnico-consulta.service';
@@ -25,6 +27,8 @@ import { ReservasModule } from '../solicitudes/reservas.module';
       TecnicoCategoria,
       TarifaTecnico,
       CategoriaServicio,
+      Usuario,
+      CalificacionTecnico,
     ]),
   ],
   controllers: [PerfilesTecnicoController],

@@ -4,7 +4,6 @@ import { Repository } from 'typeorm';
 import { PerfilTecnico } from '../entities/perfil-tecnico.entity';
 import { CreatePerfilTecnicoDto } from '../dtos/create-perfil-tecnico.dto';
 import { UpdatePerfilTecnicoDto } from '../dtos/update-perfil-tecnico.dto';
-import { CalificarPerfilTecnicoDto } from '../dtos/calificar-perfil-tecnico.dto';
 import { SlotDisponibilidadDto } from '../dtos/reemplazar-disponibilidad.dto';
 import { CrearCertificacionDto } from '../dtos/crear-certificacion.dto';
 import { RevisarCertificacionDto } from '../dtos/revisar-certificacion.dto';
@@ -91,6 +90,10 @@ export class PerfilesTecnicoService {
     return this.consultaService.findOnePublic(usuarioId);
   }
 
+  async perfilPublico(usuarioId: string) {
+    return this.consultaService.perfilPublico(usuarioId);
+  }
+
   async update(usuarioId: string, dto: UpdatePerfilTecnicoDto) {
     await this.consultaService.findOne(usuarioId);
     await this.perfilesRepository.update({ usuario_id: usuarioId }, dto);
@@ -117,21 +120,6 @@ export class PerfilesTecnicoService {
     perfil.verificado = false;
     perfil.fecha_verificacion = null;
     return this.perfilesRepository.save(perfil);
-  }
-
-  async calificar(usuarioId: string, dto: CalificarPerfilTecnicoDto) {
-    await this.consultaService.findOne(usuarioId);
-    await this.perfilesRepository
-      .createQueryBuilder()
-      .update(PerfilTecnico)
-      .set({
-        calificacion_promedio: () =>
-          'ROUND(((calificacion_promedio * total_servicios_completados + :calificacion) / (total_servicios_completados + 1))::numeric, 2)',
-      })
-      .where('usuario_id = :usuarioId', { usuarioId })
-      .setParameter('calificacion', dto.calificacion)
-      .execute();
-    return this.consultaService.findOne(usuarioId);
   }
 
   async registrarServicioCompletado(usuarioId: string) {

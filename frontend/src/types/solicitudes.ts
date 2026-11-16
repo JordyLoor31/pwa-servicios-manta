@@ -12,6 +12,16 @@ export interface UsuarioResumen {
   apellidos: string
 }
 
+export interface CalificacionSolicitud {
+  id: string
+  solicitud_id: string
+  cliente_id: string
+  tecnico_id: string
+  calificacion: number
+  comentario: string | null
+  fecha_creacion: string
+}
+
 export interface Solicitud {
   id: string
   estado: EstadoSolicitud
@@ -32,6 +42,7 @@ export interface Solicitud {
   fecha_expiracion_oferta?: string | null
   postulado_por_mi?: boolean
   estado_mi_postulacion?: EstadoPostulacion | null
+  calificacion?: CalificacionSolicitud | null
   categorias?: Array<{ id: string; nombre: string; icono: string | null }>
 }
 

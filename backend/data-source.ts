@@ -13,6 +13,7 @@ import { SuscripcionPush } from './src/modules/notificaciones-push/entities/susc
 import { PostulacionSolicitud } from './src/modules/solicitudes/entities/postulacion-solicitud.entity';
 import { SolicitudCategoria } from './src/modules/solicitudes/entities/solicitud-categoria.entity';
 import { ReservaServicio } from './src/modules/solicitudes/entities/reserva-servicio.entity';
+import { CalificacionTecnico } from './src/modules/solicitudes/entities/calificacion-tecnico.entity';
 
 config();
 
@@ -33,6 +34,7 @@ const base = {
     PostulacionSolicitud,
     SolicitudCategoria,
     ReservaServicio,
+    CalificacionTecnico,
     SuscripcionPush,
   ],
   migrations: ['src/migrations/*.ts'],

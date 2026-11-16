@@ -15,11 +15,13 @@ import { CrearSolicitudDto } from '../dtos/crear-solicitud.dto';
 import { AceptarSolicitudDto } from '../dtos/aceptar-solicitud.dto';
 import { RechazarSolicitudDto } from '../dtos/rechazar-solicitud.dto';
 import { CrearPostulacionDto } from '../dtos/crear-postulacion.dto';
+import { CalificarSolicitudDto } from '../dtos/calificar-solicitud.dto';
 import type { AuthenticatedUser } from '../../auth/decorators/current-user.decorator';
 import { SolicitudesDisponibilidadService } from './solicitudes-disponibilidad.service';
 import { SolicitudesNotificacionesService } from './solicitudes-notificaciones.service';
 import { SolicitudesConsultaService, type FiltrosSolicitudes } from './solicitudes-consulta.service';
 import { SolicitudesPostulacionesService } from './solicitudes-postulaciones.service';
+import { SolicitudesCalificacionesService } from './solicitudes-calificaciones.service';
 
 @Injectable()
 export class SolicitudesService {
@@ -38,6 +40,7 @@ export class SolicitudesService {
     private readonly notificacionesService: SolicitudesNotificacionesService,
     private readonly consultasService: SolicitudesConsultaService,
     private readonly postulacionesService: SolicitudesPostulacionesService,
+    private readonly calificacionesService: SolicitudesCalificacionesService,
   ) {}
 
   async crear(clienteId: string, dto: CrearSolicitudDto) {
@@ -138,6 +141,10 @@ export class SolicitudesService {
 
   async detalle(id: string, user: AuthenticatedUser) {
     return this.consultasService.detalle(id, user);
+  }
+
+  async calificar(id: string, dto: CalificarSolicitudDto, user: AuthenticatedUser) {
+    return this.calificacionesService.calificar(id, dto, user);
   }
 
   async aceptar(id: string, dto: AceptarSolicitudDto, user: AuthenticatedUser) {

@@ -22,3 +22,46 @@ export interface TarifaTecnico {
   precio_max: number
   unidad_cobro: UnidadCobro
 }
+
+export interface CalificacionPublica {
+  id: string
+  calificacion: number
+  comentario: string | null
+  fecha_creacion: string
+  cliente: {
+    nombres: string
+    apellidos: string
+  }
+}
+
+export interface PerfilPublico {
+  usuario: {
+    id: string
+    nombres: string
+    apellidos: string
+    avatar_url: string | null
+  }
+  perfil: {
+    biografia: string | null
+    anios_experiencia: number | null
+    radio_cobertura_km: number | null
+    verificado: boolean
+    calificacion_promedio: number
+    total_servicios_completados: number
+  }
+  categorias: Array<{ id: string; nombre: string; icono: string | null }>
+  tarifas: Array<{
+    categoria_id: string
+    categoria_nombre: string | null
+    precio_min: number
+    precio_max: number
+    unidad_cobro: UnidadCobro
+  }>
+  certificaciones: Array<{
+    tipo_documento: string
+    estado: string
+    fecha_revision: string | null
+  }>
+  calificaciones: CalificacionPublica[]
+  total_calificaciones: number
+}

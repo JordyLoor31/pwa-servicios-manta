@@ -4,6 +4,7 @@ import { Solicitud } from './entities/solicitud.entity';
 import { PostulacionSolicitud } from './entities/postulacion-solicitud.entity';
 import { SolicitudCategoria } from './entities/solicitud-categoria.entity';
 import { ReservaServicio } from './entities/reserva-servicio.entity';
+import { CalificacionTecnico } from './entities/calificacion-tecnico.entity';
 import { TarifaTecnico } from '../perfiles-tecnico/entities/tarifa-tecnico.entity';
 import { Usuario } from '../usuarios/entities/usuario.entity';
 import { PerfilTecnico } from '../perfiles-tecnico/entities/perfil-tecnico.entity';
@@ -14,6 +15,7 @@ import { SolicitudesDisponibilidadService } from './services/solicitudes-disponi
 import { SolicitudesNotificacionesService } from './services/solicitudes-notificaciones.service';
 import { SolicitudesConsultaService } from './services/solicitudes-consulta.service';
 import { SolicitudesPostulacionesService } from './services/solicitudes-postulaciones.service';
+import { SolicitudesCalificacionesService } from './services/solicitudes-calificaciones.service';
 import { NotificacionesModule } from '../notificaciones/notificaciones.module';
 import { NotificacionesPushModule } from '../notificaciones-push/notificaciones-push.module';
 
@@ -24,6 +26,7 @@ import { NotificacionesPushModule } from '../notificaciones-push/notificaciones-
       PostulacionSolicitud,
       SolicitudCategoria,
       ReservaServicio,
+      CalificacionTecnico,
       TarifaTecnico,
       Usuario,
       PerfilTecnico,
@@ -37,6 +40,7 @@ import { NotificacionesPushModule } from '../notificaciones-push/notificaciones-
     SolicitudesService,
     SolicitudesConsultaService,
     SolicitudesPostulacionesService,
+    SolicitudesCalificacionesService,
     SolicitudesDisponibilidadService,
     SolicitudesNotificacionesService,
   ],

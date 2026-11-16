@@ -1,10 +1,14 @@
 import { api } from './api'
 import type { CategoriaServicio } from '../types/categorias'
-import type { PerfilTecnico, TarifaTecnico } from '../types/perfil-tecnico'
+import type { PerfilTecnico, PerfilPublico, TarifaTecnico } from '../types/perfil-tecnico'
 
 export const perfilTecnicoApi = {
   obtener(id: string) {
     return api.get<PerfilTecnico>(`/perfiles-tecnico/${id}`)
+  },
+
+  obtenerPerfilPublico(id: string) {
+    return api.get<PerfilPublico>(`/perfiles-tecnico/${id}/perfil-publico`)
   },
 
   obtenerCategorias(id: string) {
