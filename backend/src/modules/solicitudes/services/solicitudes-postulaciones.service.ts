@@ -1,8 +1,10 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { EstadoSolicitud, Solicitud } from '../entities/solicitud.entity';
 import { EstadoPostulacion, PostulacionSolicitud } from '../entities/postulacion-solicitud.entity';
+import { SolicitudCategoria } from '../entities/solicitud-categoria.entity';
+import { TarifaTecnico } from '../../perfiles-tecnico/entities/tarifa-tecnico.entity';
 import { CrearPostulacionDto } from '../dtos/crear-postulacion.dto';
 import type { AuthenticatedUser } from '../../auth/decorators/current-user.decorator';
 import { RolUsuario } from '../../usuarios/entities/usuario.entity';
@@ -16,6 +18,10 @@ export class SolicitudesPostulacionesService {
     private readonly solicitudesRepository: Repository<Solicitud>,
     @InjectRepository(PostulacionSolicitud)
     private readonly postulacionesRepository: Repository<PostulacionSolicitud>,
+    @InjectRepository(SolicitudCategoria)
+    private readonly solicitudCategoriasRepository: Repository<SolicitudCategoria>,
+    @InjectRepository(TarifaTecnico)
+    private readonly tarifasRepository: Repository<TarifaTecnico>,
     private readonly dataSource: DataSource,
     private readonly consultasService: SolicitudesConsultaService,
     private readonly notificacionesService: SolicitudesNotificacionesService,
@@ -37,11 +43,12 @@ export class SolicitudesPostulacionesService {
     if (existente) {
       throw new BadRequestException('Ya enviaste una postulación para esta oferta');
     }
+    const tarifa = await this.obtenerTarifaPerfil(id, user.id);
     const postulacion = await this.postulacionesRepository.save({
       solicitud_id: id,
       tecnico_id: user.id,
-      unidad_cobro: dto.unidad_cobro,
-      precio: dto.precio,
+      unidad_cobro: tarifa.unidad_cobro,
+      precio: tarifa.precio_min,
       mensaje: dto.mensaje?.trim() || null,
       estado: EstadoPostulacion.PENDIENTE,
     });
@@ -103,6 +110,40 @@ export class SolicitudesPostulacionesService {
     }
     await this.postulacionesRepository.update(postulacionId, { estado: EstadoPostulacion.RECHAZADA });
     return { ok: true };
+  }
+
+  private async obtenerTarifaPerfil(solicitudId: string, tecnicoId: string) {
+    const categorias = await this.solicitudCategoriasRepository
+      .createQueryBuilder('sc')
+      .innerJoin('categorias_servicio', 'categoria', 'categoria.id = sc.categoria_id')
+      .select(['sc.categoria_id AS categoria_id'])
+      .where('sc.solicitud_id = :solicitudId', { solicitudId })
+      .orderBy('categoria.nombre', 'ASC')
+      .getRawMany<{ categoria_id: string }>();
+
+    if (categorias.length === 0) {
+      throw new BadRequestException('La oferta no tiene categorías asociadas');
+    }
+
+    const tarifas = await this.tarifasRepository.find({
+      where: {
+        tecnico_id: tecnicoId,
+        categoria_id: In(categorias.map((categoria) => categoria.categoria_id)),
+      },
+    });
+    let tarifa: TarifaTecnico | undefined;
+    for (const categoria of categorias) {
+      tarifa = tarifas.find((actual) => actual.categoria_id === categoria.categoria_id);
+      if (tarifa) break;
+    }
+
+    if (!tarifa) {
+      throw new BadRequestException(
+        'No tienes una tarifa configurada para las categorías de esta oferta. Actualiza tus categorías y tarifas en tu perfil.',
+      );
+    }
+
+    return tarifa;
   }
 
   private verEstado(solicitud: Solicitud, permitidos: EstadoSolicitud[], mensaje: string) {

@@ -163,6 +163,7 @@ async function onGuardar() {
                 <Button label="Disponibilidad" icon="pi pi-calendar-clock" severity="secondary" class="w-full" @click="router.push('/disponibilidad')" />
                 <Button label="Certificaciones" icon="pi pi-id-card" severity="secondary" class="w-full" @click="router.push('/certificaciones')" />
                 <Button label="Tarifas" icon="pi pi-dollar" severity="secondary" class="w-full" @click="router.push('/perfil#tarifas')" />
+                <Button label="Mis reseñas" icon="pi pi-star" severity="secondary" class="w-full" @click="router.push('/perfil#resenas')" />
               </div>
             </div>
           </template>

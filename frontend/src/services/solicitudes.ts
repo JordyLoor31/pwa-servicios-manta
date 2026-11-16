@@ -34,7 +34,7 @@ export const solicitudesApi = {
     return api.get<PostulacionSolicitud[]>(`/solicitudes/${id}/postulaciones`)
   },
 
-  postular(id: string, payload: { unidad_cobro: 'por_hora' | 'por_servicio'; precio: number; mensaje?: string }) {
+  postular(id: string, payload: { mensaje?: string }) {
     return api.post<PostulacionSolicitud>(`/solicitudes/${id}/postulaciones`, payload)
   },
 

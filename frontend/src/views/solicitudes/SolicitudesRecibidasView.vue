@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
-import InputNumber from 'primevue/inputnumber'
-import Select from 'primevue/select'
 import Skeleton from 'primevue/skeleton'
 import Tag from 'primevue/tag'
 import Textarea from 'primevue/textarea'
@@ -13,19 +11,34 @@ import AppHeader from '../../components/layout/AppHeader.vue'
 import SolicitudRecibidaCard from '../../components/solicitudes/SolicitudRecibidaCard.vue'
 import ConfirmarCompletacionDialog from '../../components/solicitudes/ConfirmarCompletacionDialog.vue'
 import { useSolicitudes } from '../../composables/solicitudes/useSolicitudes'
+import { useAuthz } from '../../composables/auth/useAuthz'
 import { limpiarNotificacionesNuevas } from '../../composables/notificaciones/useNotificaciones'
 import { useSolicitudEvents, type EventoSolicitud } from '../../composables/solicitudes/useSolicitudEvents'
 import type { Solicitud } from '../../types/solicitudes'
+import type { TarifaTecnico, UnidadCobro } from '../../types/perfil-tecnico'
 import { solicitudesApi } from '../../services/solicitudes'
+import { perfilTecnicoApi } from '../../services/perfil-tecnico'
 import { estadoSeveridad, estadoLabel, formatearPropuestaLlegada } from '../../utils/solicitudes'
 
 const toast = useToast()
+const { usuario } = useAuthz()
 const propuestaVisible = ref(false)
 const ofertaPostular = ref<Solicitud | null>(null)
-const unidadCobro = ref<'por_hora' | 'por_servicio'>('por_servicio')
-const precio = ref<number | null>(null)
 const mensaje = ref('')
 const enviandoPropuesta = ref(false)
+const cargandoTarifas = ref(true)
+const tarifasPorCategoria = ref(new Map<string, TarifaTecnico>())
+
+const tarifaAplicable = computed(() => {
+  const solicitud = ofertaPostular.value
+  if (!solicitud?.categorias?.length) return null
+  const categorias = [...solicitud.categorias].sort((a, b) => a.nombre.localeCompare(b.nombre))
+  for (const categoria of categorias) {
+    const tarifa = tarifasPorCategoria.value.get(categoria.id)
+    if (tarifa) return { tarifa, categoriaNombre: categoria.nombre }
+  }
+  return null
+})
 
 const {
   solicitudes,
@@ -75,24 +88,57 @@ function onSolicitudNueva(event: CustomEvent<EventoSolicitud>) {
   void cargar()
 }
 
-function abrirPostulacion(solicitud: Solicitud) {
+function moneda(valor: number) {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(valor)
+}
+
+function unidadTexto(unidad: UnidadCobro) {
+  return unidad === 'por_hora' ? '/ hora' : '/ servicio'
+}
+
+async function cargarTarifas() {
+  const usuarioId = usuario.value?.id
+  if (!usuarioId) {
+    cargandoTarifas.value = false
+    return
+  }
+  try {
+    const tarifas = await perfilTecnicoApi.obtenerTarifas(usuarioId)
+    tarifasPorCategoria.value = new Map(tarifas.map((tarifa) => [tarifa.categoria_id, tarifa]))
+  } catch {
+    tarifasPorCategoria.value = new Map()
+  } finally {
+    cargandoTarifas.value = false
+  }
+}
+
+async function abrirPostulacion(solicitud: Solicitud) {
   ofertaPostular.value = solicitud
-  unidadCobro.value = 'por_servicio'
-  precio.value = null
   mensaje.value = ''
   propuestaVisible.value = true
+  if (!solicitud.categorias?.length) {
+    try {
+      ofertaPostular.value = await solicitudesApi.obtener(solicitud.id)
+    } catch {
+      // se conserva la solicitud del listado
+    }
+  }
 }
 
 async function enviarPostulacion() {
-  if (!ofertaPostular.value || !precio.value || precio.value <= 0) {
-    toast.add({ severity: 'warn', summary: 'Indica una tarifa', detail: 'Escribe un precio mayor que cero.', life: 3000 })
+  if (!ofertaPostular.value) return
+  if (!tarifaAplicable.value) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Falta tu tarifa',
+      detail: 'Configura una tarifa para las categorías de esta oferta en tu perfil.',
+      life: 4000,
+    })
     return
   }
   enviandoPropuesta.value = true
   try {
     await solicitudesApi.postular(ofertaPostular.value.id, {
-      unidad_cobro: unidadCobro.value,
-      precio: precio.value,
       mensaje: mensaje.value.trim() || undefined,
     })
     propuestaVisible.value = false
@@ -104,6 +150,8 @@ async function enviarPostulacion() {
     enviandoPropuesta.value = false
   }
 }
+
+onMounted(cargarTarifas)
 
 useSolicitudEvents({
   nueva: onSolicitudNueva,
@@ -179,28 +227,32 @@ limpiarNotificacionesNuevas()
       <Dialog v-model:visible="propuestaVisible" header="Enviar propuesta" modal class="w-full max-w-md">
         <div v-if="ofertaPostular" class="flex flex-col gap-4">
           <p class="text-sm text-muted">{{ ofertaPostular.descripcion }}</p>
-          <div class="flex flex-col gap-1.5">
-            <label for="unidad-cobro" class="text-sm font-medium text-ink">Forma de cobro</label>
-            <Select
-              id="unidad-cobro"
-              v-model="unidadCobro"
-              :options="[{ label: 'Por servicio', value: 'por_servicio' }, { label: 'Por hora', value: 'por_hora' }]"
-              option-label="label"
-              option-value="value"
-              class="w-full"
-            />
+          <div v-if="cargandoTarifas" class="rounded-lg border border-pacific/10 bg-card p-3">
+            <Skeleton width="8rem" height="0.9rem" />
+            <Skeleton width="12rem" height="1.4rem" class="mt-2" />
           </div>
-          <div class="flex flex-col gap-1.5">
-            <label for="precio-propuesta" class="text-sm font-medium text-ink">Tu tarifa</label>
-            <InputNumber
-              id="precio-propuesta"
-              v-model="precio"
-              mode="currency"
-              currency="USD"
-              locale="en-US"
-              :min="0.01"
-              class="w-full"
-            />
+          <div
+            v-else-if="tarifaAplicable"
+            class="rounded-lg border border-pacific/10 bg-pacific/5 p-3"
+          >
+            <p class="text-xs text-muted">
+              Tarifa de tu perfil · {{ tarifaAplicable.categoriaNombre }}
+            </p>
+            <p class="mt-1 text-lg font-semibold text-ink">
+              {{ moneda(tarifaAplicable.tarifa.precio_min) }} - {{ moneda(tarifaAplicable.tarifa.precio_max) }}
+              <span class="text-xs font-normal text-muted">
+                {{ unidadTexto(tarifaAplicable.tarifa.unidad_cobro) }}
+              </span>
+            </p>
+            <p class="mt-1 text-xs text-muted">
+              Se enviará tu precio base de {{ moneda(tarifaAplicable.tarifa.precio_min) }}
+              {{ unidadTexto(tarifaAplicable.tarifa.unidad_cobro) }}.
+            </p>
+          </div>
+          <div v-else class="rounded-lg bg-amber-50 p-3 text-sm text-amber-700">
+            <i class="pi pi-exclamation-triangle mr-1" />
+            No tienes una tarifa configurada para las categorías de esta oferta.
+            <RouterLink to="/perfil" class="font-medium underline">Actualizar mi perfil</RouterLink>
           </div>
           <div class="flex flex-col gap-1.5">
             <label for="mensaje-propuesta" class="text-sm font-medium text-ink">Mensaje (opcional)</label>
@@ -209,7 +261,13 @@ limpiarNotificacionesNuevas()
         </div>
         <template #footer>
           <Button label="Cancelar" severity="secondary" @click="propuestaVisible = false" />
-          <Button label="Enviar propuesta" icon="pi pi-send" :loading="enviandoPropuesta" @click="enviarPostulacion" />
+          <Button
+            label="Enviar propuesta"
+            icon="pi pi-send"
+            :loading="enviandoPropuesta"
+            :disabled="cargandoTarifas || !tarifaAplicable"
+            @click="enviarPostulacion"
+          />
         </template>
       </Dialog>
 

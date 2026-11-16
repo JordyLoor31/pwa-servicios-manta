@@ -7,6 +7,7 @@ import Skeleton from 'primevue/skeleton'
 import Tag from 'primevue/tag'
 import { perfilTecnicoApi } from '../../services/perfil-tecnico'
 import type { PerfilPublico } from '../../types/perfil-tecnico'
+import ResenasCarousel from './ResenasCarousel.vue'
 
 const visible = defineModel<boolean>('visible', { required: true })
 
@@ -44,14 +45,6 @@ async function cargar(tecnicoId: string) {
 
 function moneda(valor: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(valor)
-}
-
-function fecha(valor: string) {
-  return new Date(valor).toLocaleDateString('es-EC', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  })
 }
 </script>
 
@@ -190,24 +183,12 @@ function fecha(valor: string) {
           Reseñas
           <span class="text-xs font-normal text-muted">({{ perfil.total_calificaciones }})</span>
         </p>
-        <div v-if="perfil.calificaciones.length" class="mt-2 flex flex-col gap-2">
-          <div
-            v-for="calificacion in perfil.calificaciones"
-            :key="calificacion.id"
-            class="rounded-lg border border-pacific/10 bg-card p-3"
-          >
-            <div class="flex flex-wrap items-center justify-between gap-1">
-              <p class="font-medium text-ink">
-                {{ calificacion.cliente.nombres }} {{ calificacion.cliente.apellidos }}
-              </p>
-              <span class="text-xs text-muted">{{ fecha(calificacion.fecha_creacion) }}</span>
-            </div>
-            <Rating :modelValue="calificacion.calificacion" readonly :cancel="false" class="mt-1" />
-            <p v-if="calificacion.comentario" class="mt-1 whitespace-pre-line text-ink">
-              {{ calificacion.comentario }}
-            </p>
-          </div>
-        </div>
+        <ResenasCarousel
+          v-if="perfil.calificaciones.length"
+          :calificaciones="perfil.calificaciones"
+          :activo="visible"
+          class="mt-2"
+        />
         <p v-else class="mt-1 text-muted">Este técnico aún no tiene reseñas.</p>
       </div>
     </div>
