@@ -48,10 +48,15 @@ export class SolicitudesConsultaService {
     ) {
       await this.solicitudesRepository.update(id, { estado: EstadoSolicitud.EXPIRADA });
     }
-    return this.postulacionesRepository
+    const postulaciones = await this.postulacionesRepository
       .createQueryBuilder('postulacion')
       .innerJoin(Usuario, 'tecnico', 'tecnico.id = postulacion.tecnico_id')
       .innerJoin(PerfilTecnico, 'perfil', 'perfil.usuario_id = postulacion.tecnico_id')
+      .leftJoin(
+        'direcciones',
+        'direccion_tecnico',
+        'direccion_tecnico.usuario_id = postulacion.tecnico_id AND direccion_tecnico.es_principal = true',
+      )
       .where('postulacion.solicitud_id = :id', { id })
       .select([
         'postulacion.id AS id',
@@ -68,9 +73,45 @@ export class SolicitudesConsultaService {
         'perfil.verificado AS tecnico_verificado',
         'perfil.calificacion_promedio AS tecnico_calificacion',
         'perfil.total_servicios_completados AS tecnico_servicios_completados',
+        'perfil.biografia AS tecnico_biografia',
+        'perfil.anios_experiencia AS tecnico_anios_experiencia',
+        'perfil.radio_cobertura_km AS tecnico_radio_cobertura_km',
+        'direccion_tecnico.latitud AS tecnico_latitud',
+        'direccion_tecnico.longitud AS tecnico_longitud',
+        's.direccion_latitud AS solicitud_latitud',
+        's.direccion_longitud AS solicitud_longitud',
       ])
+      .innerJoin(Solicitud, 's', 's.id = postulacion.solicitud_id')
       .orderBy('postulacion.fecha_postulacion', 'ASC')
-      .getRawMany();
+      .getRawMany<{
+        tecnico_latitud: string | number | null;
+        tecnico_longitud: string | number | null;
+        solicitud_latitud: string | number | null;
+        solicitud_longitud: string | number | null;
+        tecnico_radio_cobertura_km: string | number | null;
+        tecnico_anios_experiencia: string | number | null;
+        [key: string]: unknown;
+      }>();
+
+    return postulaciones.map((postulacion) => ({
+      ...postulacion,
+      tecnico_calificacion: Number(postulacion.tecnico_calificacion ?? 0),
+      tecnico_servicios_completados: Number(postulacion.tecnico_servicios_completados ?? 0),
+      tecnico_anios_experiencia:
+        postulacion.tecnico_anios_experiencia == null
+          ? null
+          : Number(postulacion.tecnico_anios_experiencia),
+      tecnico_radio_cobertura_km:
+        postulacion.tecnico_radio_cobertura_km == null
+          ? null
+          : Number(postulacion.tecnico_radio_cobertura_km),
+      tecnico_distancia_km: calcularDistanciaKm(
+        postulacion.solicitud_latitud,
+        postulacion.solicitud_longitud,
+        postulacion.tecnico_latitud,
+        postulacion.tecnico_longitud,
+      ),
+    }));
   }
 
   async listarMis(clienteId: string, filtros: FiltrosSolicitudes) {
@@ -224,4 +265,27 @@ export class SolicitudesConsultaService {
     }
     return categoriasPorSolicitud;
   }
+}
+
+function calcularDistanciaKm(
+  latitudOrigen: string | number | null,
+  longitudOrigen: string | number | null,
+  latitudDestino: string | number | null,
+  longitudDestino: string | number | null,
+) {
+  const lat1 = Number(latitudOrigen);
+  const lon1 = Number(longitudOrigen);
+  const lat2 = Number(latitudDestino);
+  const lon2 = Number(longitudDestino);
+  if (![lat1, lon1, lat2, lon2].every(Number.isFinite)) return null;
+
+  const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
+  const deltaLat = toRadians(lat2 - lat1);
+  const deltaLon = toRadians(lon2 - lon1);
+  const a =
+    Math.sin(deltaLat / 2) ** 2 +
+    Math.cos(toRadians(lat1)) *
+      Math.cos(toRadians(lat2)) *
+      Math.sin(deltaLon / 2) ** 2;
+  return Number((6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(2));
 }

@@ -21,6 +21,8 @@ const emit = defineEmits<{
 }>()
 
 const confirmando = ref(false)
+const perfilVisible = ref(false)
+const perfilActivo = ref<PostulacionSolicitud | null>(null)
 
 function urlOpenStreetMap(direccion: string | null | undefined, latitud?: number | null, longitud?: number | null) {
   if (latitud != null && longitud != null) {
@@ -37,6 +39,11 @@ watch(visible, (abierto) => {
 
 function pedirCancelar() {
   if (props.solicitud) confirmando.value = true
+}
+
+function verPerfil(postulacion: PostulacionSolicitud) {
+  perfilActivo.value = postulacion
+  perfilVisible.value = true
 }
 </script>
 
@@ -81,6 +88,12 @@ function pedirCancelar() {
                   <i class="pi pi-star-fill mr-1 text-coral" />{{ Number(postulacion.tecnico_calificacion).toFixed(1) }}
                   · {{ postulacion.tecnico_servicios_completados }} servicios completados
                 </p>
+                <p class="text-xs text-muted">
+                  <i class="pi pi-map-marker mr-1" />
+                  {{ postulacion.tecnico_distancia_km != null
+                    ? `${postulacion.tecnico_distancia_km.toFixed(2)} km de distancia`
+                    : 'Distancia no disponible' }}
+                </p>
               </div>
               <p class="font-bold text-pacific">
                 ${{ Number(postulacion.precio).toFixed(2) }}
@@ -91,6 +104,14 @@ function pedirCancelar() {
             </div>
             <p v-if="postulacion.mensaje" class="mt-2 text-xs text-muted">{{ postulacion.mensaje }}</p>
             <div class="mt-2 flex justify-end gap-2">
+              <Button
+                label="Ver perfil"
+                icon="pi pi-user"
+                size="small"
+                severity="secondary"
+                variant="outlined"
+                @click="verPerfil(postulacion)"
+              />
               <Button
                 v-if="postulacion.estado === 'pendiente'"
                 label="Rechazar"
@@ -183,6 +204,70 @@ function pedirCancelar() {
         </template>
         <Button label="Cerrar" severity="secondary" @click="emit('cerrar')" />
       </div>
+    </template>
+  </Dialog>
+
+  <Dialog v-model:visible="perfilVisible" header="Perfil del técnico" modal class="w-full max-w-md">
+    <div v-if="perfilActivo" class="flex flex-col gap-4 text-sm">
+      <div class="flex items-center gap-3">
+        <img
+          v-if="perfilActivo.tecnico_avatar_url"
+          :src="perfilActivo.tecnico_avatar_url"
+          :alt="`Foto de ${perfilActivo.tecnico_nombres}`"
+          class="h-14 w-14 rounded-full object-cover"
+        />
+        <div
+          v-else
+          class="flex h-14 w-14 items-center justify-center rounded-full bg-pacific/10 text-xl font-semibold text-pacific"
+        >
+          {{ perfilActivo.tecnico_nombres.charAt(0) }}
+        </div>
+        <div>
+          <p class="font-semibold text-ink">
+            {{ perfilActivo.tecnico_nombres }} {{ perfilActivo.tecnico_apellidos }}
+          </p>
+          <Tag v-if="perfilActivo.tecnico_verificado" value="Técnico verificado" severity="success" />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2">
+        <div class="rounded-lg bg-pacific/5 p-3">
+          <p class="text-xs text-muted">Calificación</p>
+          <p class="mt-1 font-semibold text-ink">
+            <i class="pi pi-star-fill mr-1 text-coral" />
+            {{ Number(perfilActivo.tecnico_calificacion).toFixed(1) }} / 5
+          </p>
+        </div>
+        <div class="rounded-lg bg-pacific/5 p-3">
+          <p class="text-xs text-muted">Servicios completados</p>
+          <p class="mt-1 font-semibold text-ink">{{ perfilActivo.tecnico_servicios_completados }}</p>
+        </div>
+        <div class="rounded-lg bg-pacific/5 p-3">
+          <p class="text-xs text-muted">Distancia</p>
+          <p class="mt-1 font-semibold text-ink">
+            {{ perfilActivo.tecnico_distancia_km != null ? `${perfilActivo.tecnico_distancia_km.toFixed(2)} km` : 'No disponible' }}
+          </p>
+        </div>
+        <div class="rounded-lg bg-pacific/5 p-3">
+          <p class="text-xs text-muted">Radio de cobertura</p>
+          <p class="mt-1 font-semibold text-ink">
+            {{ perfilActivo.tecnico_radio_cobertura_km != null ? `${perfilActivo.tecnico_radio_cobertura_km} km` : 'No indicado' }}
+          </p>
+        </div>
+      </div>
+
+      <p v-if="perfilActivo.tecnico_anios_experiencia != null" class="text-muted">
+        <i class="pi pi-briefcase mr-1 text-pacific" />
+        {{ perfilActivo.tecnico_anios_experiencia }}
+        {{ perfilActivo.tecnico_anios_experiencia === 1 ? 'año' : 'años' }} de experiencia
+      </p>
+      <p v-if="perfilActivo.tecnico_biografia" class="whitespace-pre-line text-ink">
+        {{ perfilActivo.tecnico_biografia }}
+      </p>
+      <p v-else class="text-muted">Este técnico aún no ha agregado una biografía.</p>
+    </div>
+    <template #footer>
+      <Button label="Cerrar" severity="secondary" @click="perfilVisible = false" />
     </template>
   </Dialog>
 </template>

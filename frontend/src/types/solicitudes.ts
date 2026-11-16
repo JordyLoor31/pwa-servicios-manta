@@ -52,6 +52,10 @@ export interface PostulacionSolicitud {
   tecnico_verificado: boolean
   tecnico_calificacion: number
   tecnico_servicios_completados: number
+  tecnico_biografia?: string | null
+  tecnico_anios_experiencia?: number | null
+  tecnico_radio_cobertura_km?: number | null
+  tecnico_distancia_km?: number | null
 }
 
 export interface SolicitudesPaginadas {
