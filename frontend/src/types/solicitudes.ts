@@ -32,6 +32,7 @@ export interface Solicitud {
   motivo_rechazo: string | null
   fecha_propuesta: string | null
   hora_propuesta: string | null
+  hora_fin_estimada?: string | null
   fecha_solicitud: string
   fecha_aceptacion: string | null
   fecha_completada: string | null
@@ -42,6 +43,9 @@ export interface Solicitud {
   fecha_expiracion_oferta?: string | null
   postulado_por_mi?: boolean
   estado_mi_postulacion?: EstadoPostulacion | null
+  tecnico_radio_cobertura_km?: number | null
+  tecnico_distancia_km?: number | null
+  tecnico_cubre_zona?: boolean | null
   calificacion?: CalificacionSolicitud | null
   categorias?: Array<{ id: string; nombre: string; icono: string | null }>
 }
@@ -67,6 +71,7 @@ export interface PostulacionSolicitud {
   tecnico_anios_experiencia?: number | null
   tecnico_radio_cobertura_km?: number | null
   tecnico_distancia_km?: number | null
+  tecnico_cubre_zona?: boolean | null
 }
 
 export interface SolicitudesPaginadas {

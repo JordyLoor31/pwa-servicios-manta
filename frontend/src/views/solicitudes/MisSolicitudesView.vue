@@ -1,23 +1,19 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import Skeleton from 'primevue/skeleton'
 import Tag from 'primevue/tag'
 import Toast from 'primevue/toast'
-import { useToast } from 'primevue/usetoast'
 import AppHeader from '../../components/layout/AppHeader.vue'
 import NuevaSolicitudDialog from '../../components/solicitudes/NuevaSolicitudDialog.vue'
-import DetalleSolicitudDialog from '../../components/solicitudes/DetalleSolicitudDialog.vue'
 import CalificarServicioDialog from '../../components/solicitudes/CalificarServicioDialog.vue'
 import { useSolicitudes } from '../../composables/solicitudes/useSolicitudes'
-import type { EstadoSolicitud, PostulacionSolicitud, Solicitud } from '../../types/solicitudes'
-import {
-  estadoSeveridad,
-  estadoLabel,
-  formatearPropuestaLlegada,
-} from '../../utils/solicitudes'
-import { solicitudesApi } from '../../services/solicitudes'
+import type { EstadoSolicitud, Solicitud } from '../../types/solicitudes'
+import { estadoSeveridad, estadoLabel, formatearPropuestaLlegada } from '../../utils/solicitudes'
 import { useSolicitudEvents } from '../../composables/solicitudes/useSolicitudEvents'
+
+const router = useRouter()
 
 const {
   solicitudes,
@@ -27,18 +23,12 @@ const {
   totalPaginas,
   filtroEstado,
   formAbierto,
-  detalleVisible,
-  solicitudActiva,
   cambiarFiltroEstado,
   abrirFormulario,
   cargar,
   irPagina,
-  verDetalle,
-  cerrarDetalle,
 } = useSolicitudes()
 
-const toast = useToast()
-const postulaciones = ref<PostulacionSolicitud[]>([])
 const calificarVisible = ref(false)
 const solicitudCalificar = ref<Solicitud | null>(null)
 
@@ -53,77 +43,13 @@ const FRECUENCIAS: { valor: 'todos' | EstadoSolicitud; label: string }[] = [
 
 const placeholders = Array.from({ length: 3 }, (_, i) => ({ id: `skeleton-${i}` }))
 
-watch(solicitudActiva, (solicitud) => {
-  void cargarPostulaciones(solicitud)
-})
-
 async function onCreada(creada: Solicitud) {
   await cargar()
-  verDetalle(creada)
-  await cargarPostulaciones(creada)
+  await router.push({ name: 'solicitud-detalle', params: { id: creada.id } })
 }
 
-async function cargarPostulaciones(solicitud: Solicitud | null) {
-  if (!solicitud || solicitud.estado !== 'pendiente') {
-    postulaciones.value = []
-    return
-  }
-  try {
-    postulaciones.value = await solicitudesApi.postulaciones(solicitud.id)
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: error instanceof Error ? error.message : 'No se pudieron cargar las postulaciones',
-      life: 4000,
-    })
-  }
-}
-
-async function aceptarPostulacion(postulacion: PostulacionSolicitud) {
-  if (!solicitudActiva.value) return
-  try {
-    const actualizada = await solicitudesApi.aceptarPostulacion(solicitudActiva.value.id, postulacion.id)
-    solicitudActiva.value = actualizada
-    postulaciones.value = []
-    toast.add({ severity: 'success', summary: 'Técnico elegido', detail: 'La postulación fue aceptada.', life: 3000 })
-    await cargar()
-  } catch (error) {
-    toast.add({ severity: 'error', summary: 'Error', detail: error instanceof Error ? error.message : 'No se pudo aceptar la postulación', life: 4000 })
-  }
-}
-
-async function rechazarPostulacion(postulacion: PostulacionSolicitud) {
-  if (!solicitudActiva.value) return
-  try {
-    await solicitudesApi.rechazarPostulacion(solicitudActiva.value.id, postulacion.id)
-    postulaciones.value = postulaciones.value.map((item) =>
-      item.id === postulacion.id ? { ...item, estado: 'rechazada' } : item,
-    )
-  } catch (error) {
-    toast.add({ severity: 'error', summary: 'Error', detail: error instanceof Error ? error.message : 'No se pudo rechazar la postulación', life: 4000 })
-  }
-}
-
-async function cancelarSolicitud(solicitud: Solicitud) {
-  try {
-    await solicitudesApi.cancelar(solicitud.id)
-    toast.add({ severity: 'success', summary: 'Solicitud cancelada', life: 3000 })
-    cerrarDetalle()
-    await cargar()
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: error instanceof Error ? error.message : 'No se pudo cancelar la solicitud',
-      life: 4000,
-    })
-  }
-}
-
-function onSolicitudActualizada() {
-  void cargar()
-  void cargarPostulaciones(solicitudActiva.value)
+function abrirDetalle(solicitud: Solicitud) {
+  void router.push({ name: 'solicitud-detalle', params: { id: solicitud.id } })
 }
 
 function abrirCalificar(solicitud: Solicitud) {
@@ -136,18 +62,10 @@ function cerrarCalificar() {
 }
 
 async function onCalificada() {
-  const id = solicitudCalificar.value?.id
   await cargar()
-  if (id && solicitudActiva.value?.id === id) {
-    try {
-      solicitudActiva.value = await solicitudesApi.obtener(id)
-    } catch {
-      cerrarDetalle()
-    }
-  }
 }
 
-useSolicitudEvents({ actualizada: onSolicitudActualizada })
+useSolicitudEvents({ actualizada: () => void cargar() })
 </script>
 
 <template>
@@ -229,7 +147,7 @@ useSolicitudEvents({ actualizada: onSolicitudActualizada })
                   severity="secondary"
                   variant="outlined"
                   size="small"
-                  @click="verDetalle(item as Solicitud)"
+                  @click="abrirDetalle(item as Solicitud)"
                 />
               </div>
             </div>
@@ -276,16 +194,6 @@ useSolicitudEvents({ actualizada: onSolicitudActualizada })
       </div>
 
       <NuevaSolicitudDialog v-model:visible="formAbierto" @creada="onCreada" />
-      <DetalleSolicitudDialog
-        v-model:visible="detalleVisible"
-        :solicitud="solicitudActiva"
-        :postulaciones="postulaciones"
-        @cerrar="cerrarDetalle"
-        @cancelar="cancelarSolicitud"
-        @calificar="abrirCalificar"
-        @aceptar-postulacion="aceptarPostulacion"
-        @rechazar-postulacion="rechazarPostulacion"
-      />
       <CalificarServicioDialog
         :visible="calificarVisible"
         :solicitud="solicitudCalificar"

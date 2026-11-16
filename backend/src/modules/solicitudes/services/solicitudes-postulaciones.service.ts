@@ -5,9 +5,12 @@ import { EstadoSolicitud, Solicitud } from '../entities/solicitud.entity';
 import { EstadoPostulacion, PostulacionSolicitud } from '../entities/postulacion-solicitud.entity';
 import { SolicitudCategoria } from '../entities/solicitud-categoria.entity';
 import { TarifaTecnico } from '../../perfiles-tecnico/entities/tarifa-tecnico.entity';
+import { PerfilTecnico } from '../../perfiles-tecnico/entities/perfil-tecnico.entity';
+import { Direccion } from '../../direcciones/entities/direccion.entity';
 import { CrearPostulacionDto } from '../dtos/crear-postulacion.dto';
 import type { AuthenticatedUser } from '../../auth/decorators/current-user.decorator';
 import { RolUsuario } from '../../usuarios/entities/usuario.entity';
+import { calcularDistanciaKm } from '../utils/geo';
 import { SolicitudesConsultaService } from './solicitudes-consulta.service';
 import { SolicitudesNotificacionesService } from './solicitudes-notificaciones.service';
 
@@ -22,6 +25,10 @@ export class SolicitudesPostulacionesService {
     private readonly solicitudCategoriasRepository: Repository<SolicitudCategoria>,
     @InjectRepository(TarifaTecnico)
     private readonly tarifasRepository: Repository<TarifaTecnico>,
+    @InjectRepository(PerfilTecnico)
+    private readonly perfilesRepository: Repository<PerfilTecnico>,
+    @InjectRepository(Direccion)
+    private readonly direccionesRepository: Repository<Direccion>,
     private readonly dataSource: DataSource,
     private readonly consultasService: SolicitudesConsultaService,
     private readonly notificacionesService: SolicitudesNotificacionesService,
@@ -43,6 +50,7 @@ export class SolicitudesPostulacionesService {
     if (existente) {
       throw new BadRequestException('Ya enviaste una postulación para esta oferta');
     }
+    await this.asegurarCobertura(solicitud, user.id);
     const tarifa = await this.obtenerTarifaPerfil(id, user.id);
     const postulacion = await this.postulacionesRepository.save({
       solicitud_id: id,
@@ -110,6 +118,29 @@ export class SolicitudesPostulacionesService {
     }
     await this.postulacionesRepository.update(postulacionId, { estado: EstadoPostulacion.RECHAZADA });
     return { ok: true };
+  }
+
+  private async asegurarCobertura(solicitud: Solicitud, tecnicoId: string) {
+    const perfil = await this.perfilesRepository.findOneBy({ usuario_id: tecnicoId });
+    const radioCoberturaKm = perfil?.radio_cobertura_km ?? null;
+    if (radioCoberturaKm == null) return;
+
+    const direccion = await this.direccionesRepository.findOne({
+      where: { usuario_id: tecnicoId, es_principal: true },
+    });
+    if (!direccion) return;
+
+    const distanciaKm = calcularDistanciaKm(
+      solicitud.direccion_latitud,
+      solicitud.direccion_longitud,
+      direccion.latitud,
+      direccion.longitud,
+    );
+    if (distanciaKm == null || distanciaKm <= radioCoberturaKm) return;
+
+    throw new BadRequestException(
+      `La ubicación del cliente está a ${distanciaKm.toFixed(2)} km de tu dirección y supera tu radio de cobertura de ${radioCoberturaKm} km.`,
+    );
   }
 
   private async obtenerTarifaPerfil(solicitudId: string, tecnicoId: string) {

@@ -9,6 +9,7 @@ import HomeHero from '../../components/home/HomeHero.vue'
 import HomeHowItWorks from '../../components/home/HomeHowItWorks.vue'
 import NuevaSolicitudDialog from '../../components/solicitudes/NuevaSolicitudDialog.vue'
 import { useAuthz } from '../../composables/auth/useAuthz'
+import type { Solicitud } from '../../types/solicitudes'
 
 const { usuario } = useAuthz()
 const router = useRouter()
@@ -16,6 +17,10 @@ const nuevaSolicitudVisible = ref(false)
 
 function explorarCategorias() {
   void nextTick(() => document.getElementById('categorias')?.scrollIntoView({ behavior: 'smooth' }))
+}
+
+function onSolicitudCreada(creada: Solicitud) {
+  void router.push({ name: 'solicitud-detalle', params: { id: creada.id } })
 }
 </script>
 
@@ -38,6 +43,10 @@ function explorarCategorias() {
       <HomeDownloadSection />
     </main>
 
-    <NuevaSolicitudDialog v-if="usuario?.rol === 'cliente'" v-model:visible="nuevaSolicitudVisible" />
+    <NuevaSolicitudDialog
+      v-if="usuario?.rol === 'cliente'"
+      v-model:visible="nuevaSolicitudVisible"
+      @creada="onSolicitudCreada"
+    />
   </div>
 </template>

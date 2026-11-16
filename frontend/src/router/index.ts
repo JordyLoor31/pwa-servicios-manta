@@ -41,6 +41,12 @@ const router = createRouter({
       meta: { roles: ['tecnico'] },
     },
     {
+      path: '/solicitudes/:id',
+      name: 'solicitud-detalle',
+      component: () => import('../views/solicitudes/SolicitudDetalleView.vue'),
+      meta: { roles: ['cliente', 'tecnico', 'admin'] },
+    },
+    {
       path: '/certificaciones',
       name: 'certificaciones',
       component: () => import('../views/certificaciones/MisCertificacionesView.vue'),
@@ -57,6 +63,11 @@ const router = createRouter({
       meta: { roles: ['cliente', 'tecnico', 'admin'] },
     },
   ],
+  scrollBehavior(to, _from, savedPosition) {
+    if (savedPosition) return savedPosition
+    if (to.hash) return { el: to.hash, behavior: 'smooth' }
+    return { top: 0 }
+  },
 })
 
 function tieneSesion() {

@@ -76,7 +76,7 @@ export function useSolicitudes() {
       } else {
         await listado.cargar()
       }
-      await router.replace({ query: { detalle: creada.id } })
+      await router.push({ name: 'solicitud-detalle', params: { id: creada.id } })
     } catch (error) {
       toast.add({
         severity: 'error',
@@ -91,7 +91,6 @@ export function useSolicitudes() {
 
   onMounted(() => {
     void listado.cargar()
-    detalle.abrirDetalleInicial()
   })
 
   return {

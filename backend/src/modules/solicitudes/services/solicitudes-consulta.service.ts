@@ -8,6 +8,7 @@ import { CalificacionTecnico } from '../entities/calificacion-tecnico.entity';
 import { TarifaTecnico } from '../../perfiles-tecnico/entities/tarifa-tecnico.entity';
 import { RolUsuario, Usuario } from '../../usuarios/entities/usuario.entity';
 import { PerfilTecnico } from '../../perfiles-tecnico/entities/perfil-tecnico.entity';
+import { Direccion } from '../../direcciones/entities/direccion.entity';
 import type { AuthenticatedUser } from '../../auth/decorators/current-user.decorator';
 import {
   columnasBase,
@@ -17,6 +18,7 @@ import {
   type UnidadCobro,
 } from './solicitud-view.mapper';
 import { EstadoSolicitud } from '../entities/solicitud.entity';
+import { calcularDistanciaKm } from '../utils/geo';
 
 export interface FiltrosSolicitudes {
   page: number;
@@ -37,6 +39,10 @@ export class SolicitudesConsultaService {
     private readonly calificacionesRepository: Repository<CalificacionTecnico>,
     @InjectRepository(TarifaTecnico)
     private readonly tarifasRepository: Repository<TarifaTecnico>,
+    @InjectRepository(PerfilTecnico)
+    private readonly perfilesRepository: Repository<PerfilTecnico>,
+    @InjectRepository(Direccion)
+    private readonly direccionesRepository: Repository<Direccion>,
   ) {}
 
   async listarPostulaciones(id: string, user: AuthenticatedUser) {
@@ -96,25 +102,33 @@ export class SolicitudesConsultaService {
         [key: string]: unknown;
       }>();
 
-    return postulaciones.map((postulacion) => ({
-      ...postulacion,
-      tecnico_calificacion: Number(postulacion.tecnico_calificacion ?? 0),
-      tecnico_servicios_completados: Number(postulacion.tecnico_servicios_completados ?? 0),
-      tecnico_anios_experiencia:
-        postulacion.tecnico_anios_experiencia == null
-          ? null
-          : Number(postulacion.tecnico_anios_experiencia),
-      tecnico_radio_cobertura_km:
-        postulacion.tecnico_radio_cobertura_km == null
-          ? null
-          : Number(postulacion.tecnico_radio_cobertura_km),
-      tecnico_distancia_km: calcularDistanciaKm(
+    return postulaciones.map((postulacion) => {
+      const distanciaKm = calcularDistanciaKm(
         postulacion.solicitud_latitud,
         postulacion.solicitud_longitud,
         postulacion.tecnico_latitud,
         postulacion.tecnico_longitud,
-      ),
-    }));
+      );
+      const radioCoberturaKm =
+        postulacion.tecnico_radio_cobertura_km == null
+          ? null
+          : Number(postulacion.tecnico_radio_cobertura_km);
+      return {
+        ...postulacion,
+        tecnico_calificacion: Number(postulacion.tecnico_calificacion ?? 0),
+        tecnico_servicios_completados: Number(postulacion.tecnico_servicios_completados ?? 0),
+        tecnico_anios_experiencia:
+          postulacion.tecnico_anios_experiencia == null
+            ? null
+            : Number(postulacion.tecnico_anios_experiencia),
+        tecnico_radio_cobertura_km: radioCoberturaKm,
+        tecnico_distancia_km: distanciaKm,
+        tecnico_cubre_zona:
+          distanciaKm == null || radioCoberturaKm == null
+            ? null
+            : distanciaKm <= radioCoberturaKm,
+      };
+    });
   }
 
   async listarMis(clienteId: string, filtros: FiltrosSolicitudes) {
@@ -139,13 +153,32 @@ export class SolicitudesConsultaService {
     const estadosPorSolicitud = new Map(
       postulaciones.map((postulacion) => [postulacion.solicitud_id, postulacion.estado]),
     );
+    const [direccionTecnico, perfilTecnico] = await Promise.all([
+      this.direccionesRepository.findOneBy({ usuario_id: tecnicoId, es_principal: true }),
+      this.perfilesRepository.findOneBy({ usuario_id: tecnicoId }),
+    ]);
+    const radioCoberturaKm = perfilTecnico?.radio_cobertura_km ?? null;
     return {
       ...resultado,
-      data: resultado.data.map((solicitud: Record<string, unknown>) => ({
-        ...solicitud,
-        postulado_por_mi: estadosPorSolicitud.has(solicitud.id as string),
-        estado_mi_postulacion: estadosPorSolicitud.get(solicitud.id as string) ?? null,
-      })),
+      data: resultado.data.map((solicitud: Record<string, unknown>) => {
+        const distanciaKm = calcularDistanciaKm(
+          solicitud.direccion_latitud as string | number | null,
+          solicitud.direccion_longitud as string | number | null,
+          direccionTecnico?.latitud ?? null,
+          direccionTecnico?.longitud ?? null,
+        );
+        return {
+          ...solicitud,
+          postulado_por_mi: estadosPorSolicitud.has(solicitud.id as string),
+          estado_mi_postulacion: estadosPorSolicitud.get(solicitud.id as string) ?? null,
+          tecnico_radio_cobertura_km: radioCoberturaKm,
+          tecnico_distancia_km: distanciaKm,
+          tecnico_cubre_zona:
+            distanciaKm == null || radioCoberturaKm == null
+              ? null
+              : distanciaKm <= radioCoberturaKm,
+        };
+      }),
     };
   }
 
@@ -165,7 +198,19 @@ export class SolicitudesConsultaService {
       await this.obtenerCategorias([id]),
     );
     const calificacion = await this.calificacionesRepository.findOneBy({ solicitud_id: id });
-    return { ...vista, calificacion };
+    const postulacion =
+      user.rol === RolUsuario.TECNICO
+        ? await this.postulacionesRepository.findOne({
+            where: { solicitud_id: id, tecnico_id: user.id },
+            select: { estado: true },
+          })
+        : null;
+    return {
+      ...vista,
+      calificacion,
+      postulado_por_mi: Boolean(postulacion),
+      estado_mi_postulacion: postulacion?.estado ?? null,
+    };
   }
 
   private async listarConJoin(
@@ -287,27 +332,4 @@ export class SolicitudesConsultaService {
     }
     return calificacionesPorSolicitud;
   }
-}
-
-function calcularDistanciaKm(
-  latitudOrigen: string | number | null,
-  longitudOrigen: string | number | null,
-  latitudDestino: string | number | null,
-  longitudDestino: string | number | null,
-) {
-  const lat1 = Number(latitudOrigen);
-  const lon1 = Number(longitudOrigen);
-  const lat2 = Number(latitudDestino);
-  const lon2 = Number(longitudDestino);
-  if (![lat1, lon1, lat2, lon2].every(Number.isFinite)) return null;
-
-  const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
-  const deltaLat = toRadians(lat2 - lat1);
-  const deltaLon = toRadians(lon2 - lon1);
-  const a =
-    Math.sin(deltaLat / 2) ** 2 +
-    Math.cos(toRadians(lat1)) *
-      Math.cos(toRadians(lat2)) *
-      Math.sin(deltaLon / 2) ** 2;
-  return Number((6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(2));
 }

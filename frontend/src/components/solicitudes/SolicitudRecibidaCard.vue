@@ -30,6 +30,7 @@ const emit = defineEmits<{
         label="Postular a este trabajo"
         icon="pi pi-send"
         size="small"
+        :disabled="solicitud.tecnico_cubre_zona === false"
         @click="emit('postular')"
       />
       <Button
@@ -49,7 +50,7 @@ const emit = defineEmits<{
         @click="emit('completar')"
       />
       <Button
-        v-if="solicitud.estado === 'pendiente'"
+        v-if="solicitud.estado === 'pendiente' && solicitud.tecnico"
         label="Rechazar"
         icon="pi pi-times"
         severity="warn"
@@ -102,6 +103,17 @@ const emit = defineEmits<{
     <span v-if="solicitud.unidad_cobro" class="font-medium text-pacific">
       <i class="pi pi-tag mr-1" />
       {{ solicitud.unidad_cobro === 'por_hora' ? 'Cobro por hora' : 'Cobro por servicio' }}
+    </span>
+    <span v-if="solicitud.tecnico_distancia_km != null">
+      <i class="pi pi-map-marker mr-1" />
+      A {{ solicitud.tecnico_distancia_km.toFixed(2) }} km de tu ubicación
+    </span>
+    <span v-if="solicitud.tecnico_cubre_zona === false" class="font-medium text-amber-600">
+      <i class="pi pi-exclamation-triangle mr-1" />
+      Fuera de tu cobertura{{ solicitud.tecnico_radio_cobertura_km != null ? ` (${solicitud.tecnico_radio_cobertura_km} km)` : '' }}
+    </span>
+    <span v-else-if="solicitud.tecnico_cubre_zona" class="text-emerald-600">
+      <i class="pi pi-check-circle mr-1" />Dentro de tu cobertura
     </span>
     <span v-if="solicitud.motivo_rechazo" class="text-red-500">
       <i class="pi pi-comment mr-1" />{{ solicitud.motivo_rechazo }}

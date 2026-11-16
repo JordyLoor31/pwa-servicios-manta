@@ -1,44 +1,25 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import Skeleton from 'primevue/skeleton'
-import Tag from 'primevue/tag'
 import Textarea from 'primevue/textarea'
 import Toast from 'primevue/toast'
 import { useToast } from 'primevue/usetoast'
 import AppHeader from '../../components/layout/AppHeader.vue'
 import SolicitudRecibidaCard from '../../components/solicitudes/SolicitudRecibidaCard.vue'
 import ConfirmarCompletacionDialog from '../../components/solicitudes/ConfirmarCompletacionDialog.vue'
+import PostularDialog from '../../components/solicitudes/PostularDialog.vue'
 import { useSolicitudes } from '../../composables/solicitudes/useSolicitudes'
-import { useAuthz } from '../../composables/auth/useAuthz'
 import { limpiarNotificacionesNuevas } from '../../composables/notificaciones/useNotificaciones'
 import { useSolicitudEvents, type EventoSolicitud } from '../../composables/solicitudes/useSolicitudEvents'
 import type { Solicitud } from '../../types/solicitudes'
-import type { TarifaTecnico, UnidadCobro } from '../../types/perfil-tecnico'
-import { solicitudesApi } from '../../services/solicitudes'
-import { perfilTecnicoApi } from '../../services/perfil-tecnico'
-import { estadoSeveridad, estadoLabel, formatearPropuestaLlegada } from '../../utils/solicitudes'
 
+const router = useRouter()
 const toast = useToast()
-const { usuario } = useAuthz()
 const propuestaVisible = ref(false)
 const ofertaPostular = ref<Solicitud | null>(null)
-const mensaje = ref('')
-const enviandoPropuesta = ref(false)
-const cargandoTarifas = ref(true)
-const tarifasPorCategoria = ref(new Map<string, TarifaTecnico>())
-
-const tarifaAplicable = computed(() => {
-  const solicitud = ofertaPostular.value
-  if (!solicitud?.categorias?.length) return null
-  const categorias = [...solicitud.categorias].sort((a, b) => a.nombre.localeCompare(b.nombre))
-  for (const categoria of categorias) {
-    const tarifa = tarifasPorCategoria.value.get(categoria.id)
-    if (tarifa) return { tarifa, categoriaNombre: categoria.nombre }
-  }
-  return null
-})
 
 const {
   solicitudes,
@@ -46,16 +27,9 @@ const {
   total,
   page,
   totalPaginas,
-  detalleVisible,
   solicitudActiva,
   confirmarAccionVisible,
-  accionPendiente,
   motivoRechazo,
-  fechaAceptacion,
-  horaAceptacion,
-  duracionHorasAceptacion,
-  verDetalle,
-  cerrarDetalle,
   confirmarRechazar,
   ejecutarAccion,
   cerrarConfirmacion,
@@ -88,70 +62,14 @@ function onSolicitudNueva(event: CustomEvent<EventoSolicitud>) {
   void cargar()
 }
 
-function moneda(valor: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(valor)
-}
-
-function unidadTexto(unidad: UnidadCobro) {
-  return unidad === 'por_hora' ? '/ hora' : '/ servicio'
-}
-
-async function cargarTarifas() {
-  const usuarioId = usuario.value?.id
-  if (!usuarioId) {
-    cargandoTarifas.value = false
-    return
-  }
-  try {
-    const tarifas = await perfilTecnicoApi.obtenerTarifas(usuarioId)
-    tarifasPorCategoria.value = new Map(tarifas.map((tarifa) => [tarifa.categoria_id, tarifa]))
-  } catch {
-    tarifasPorCategoria.value = new Map()
-  } finally {
-    cargandoTarifas.value = false
-  }
-}
-
-async function abrirPostulacion(solicitud: Solicitud) {
+function abrirPostulacion(solicitud: Solicitud) {
   ofertaPostular.value = solicitud
-  mensaje.value = ''
   propuestaVisible.value = true
-  if (!solicitud.categorias?.length) {
-    try {
-      ofertaPostular.value = await solicitudesApi.obtener(solicitud.id)
-    } catch {
-      // se conserva la solicitud del listado
-    }
-  }
 }
 
-async function enviarPostulacion() {
-  if (!ofertaPostular.value) return
-  if (!tarifaAplicable.value) {
-    toast.add({
-      severity: 'warn',
-      summary: 'Falta tu tarifa',
-      detail: 'Configura una tarifa para las categorías de esta oferta en tu perfil.',
-      life: 4000,
-    })
-    return
-  }
-  enviandoPropuesta.value = true
-  try {
-    await solicitudesApi.postular(ofertaPostular.value.id, {
-      mensaje: mensaje.value.trim() || undefined,
-    })
-    propuestaVisible.value = false
-    toast.add({ severity: 'success', summary: 'Propuesta enviada', detail: 'El cliente podrá revisarla en tiempo real.', life: 4000 })
-    await cargar()
-  } catch (error) {
-    toast.add({ severity: 'error', summary: 'Error', detail: error instanceof Error ? error.message : 'No se pudo enviar la propuesta', life: 4000 })
-  } finally {
-    enviandoPropuesta.value = false
-  }
+function verDetalle(solicitud: Solicitud) {
+  void router.push({ name: 'solicitud-detalle', params: { id: solicitud.id } })
 }
-
-onMounted(cargarTarifas)
 
 useSolicitudEvents({
   nueva: onSolicitudNueva,
@@ -224,139 +142,22 @@ limpiarNotificacionesNuevas()
         </div>
       </div>
 
-      <Dialog v-model:visible="propuestaVisible" header="Enviar propuesta" modal class="w-full max-w-md">
-        <div v-if="ofertaPostular" class="flex flex-col gap-4">
-          <p class="text-sm text-muted">{{ ofertaPostular.descripcion }}</p>
-          <div v-if="cargandoTarifas" class="rounded-lg border border-pacific/10 bg-card p-3">
-            <Skeleton width="8rem" height="0.9rem" />
-            <Skeleton width="12rem" height="1.4rem" class="mt-2" />
-          </div>
-          <div
-            v-else-if="tarifaAplicable"
-            class="rounded-lg border border-pacific/10 bg-pacific/5 p-3"
-          >
-            <p class="text-xs text-muted">
-              Tarifa de tu perfil · {{ tarifaAplicable.categoriaNombre }}
-            </p>
-            <p class="mt-1 text-lg font-semibold text-ink">
-              {{ moneda(tarifaAplicable.tarifa.precio_min) }} - {{ moneda(tarifaAplicable.tarifa.precio_max) }}
-              <span class="text-xs font-normal text-muted">
-                {{ unidadTexto(tarifaAplicable.tarifa.unidad_cobro) }}
-              </span>
-            </p>
-            <p class="mt-1 text-xs text-muted">
-              Se enviará tu precio base de {{ moneda(tarifaAplicable.tarifa.precio_min) }}
-              {{ unidadTexto(tarifaAplicable.tarifa.unidad_cobro) }}.
-            </p>
-          </div>
-          <div v-else class="rounded-lg bg-amber-50 p-3 text-sm text-amber-700">
-            <i class="pi pi-exclamation-triangle mr-1" />
-            No tienes una tarifa configurada para las categorías de esta oferta.
-            <RouterLink to="/perfil" class="font-medium underline">Actualizar mi perfil</RouterLink>
-          </div>
-          <div class="flex flex-col gap-1.5">
-            <label for="mensaje-propuesta" class="text-sm font-medium text-ink">Mensaje (opcional)</label>
-            <Textarea id="mensaje-propuesta" v-model="mensaje" rows="3" auto-resize class="w-full" />
-          </div>
-        </div>
-        <template #footer>
-          <Button label="Cancelar" severity="secondary" @click="propuestaVisible = false" />
-          <Button
-            label="Enviar propuesta"
-            icon="pi pi-send"
-            :loading="enviandoPropuesta"
-            :disabled="cargandoTarifas || !tarifaAplicable"
-            @click="enviarPostulacion"
-          />
-        </template>
-      </Dialog>
-
-      <Dialog v-model:visible="detalleVisible" header="Detalle de la solicitud" modal class="w-full max-w-lg">
-        <div v-if="solicitudActiva" class="mt-2 flex flex-col gap-3 text-sm">
-          <div class="flex items-center gap-2">
-            <span class="font-semibold text-ink">
-              {{ solicitudActiva.cliente.nombres }} {{ solicitudActiva.cliente.apellidos }}
-            </span>
-            <Tag
-              :value="estadoLabel(solicitudActiva.estado)"
-              :severity="estadoSeveridad(solicitudActiva.estado)"
-            />
-          </div>
-          <p class="text-ink">{{ solicitudActiva.descripcion }}</p>
-          <p class="text-muted">
-            <i class="pi pi-map-marker mr-1" />{{ solicitudActiva.direccion || 'Dirección no indicada' }}
-          </p>
-          <div
-            v-if="formatearPropuestaLlegada(solicitudActiva.fecha_propuesta, solicitudActiva.hora_propuesta)"
-            class="rounded-lg bg-pacific/10 p-3 text-sm text-ink"
-          >
-            <p class="font-semibold">
-              <i class="pi pi-clock mr-1" />Llegada propuesta:
-              {{ formatearPropuestaLlegada(solicitudActiva.fecha_propuesta, solicitudActiva.hora_propuesta) }}
-            </p>
-            <p class="mt-1 text-xs text-muted">
-              Es una hora tentativa: acuerda la hora exacta de llegada con el cliente.
-            </p>
-          </div>
-          <p class="text-xs text-muted">
-            <i class="pi pi-calendar mr-1" />
-            Solicitada el {{ new Date(solicitudActiva.fecha_solicitud).toLocaleString() }}
-          </p>
-          <p v-if="solicitudActiva.fecha_aceptacion" class="text-xs text-muted">
-            <i class="pi pi-check-circle mr-1" />
-            Aceptada el {{ new Date(solicitudActiva.fecha_aceptacion).toLocaleString() }}
-          </p>
-          <p v-if="solicitudActiva.fecha_completada" class="text-xs text-muted">
-            <i class="pi pi-flag mr-1" />
-            Completada el {{ new Date(solicitudActiva.fecha_completada).toLocaleString() }}
-          </p>
-          <p v-if="solicitudActiva.motivo_rechazo" class="rounded-lg bg-red-50 p-3 text-sm text-red-600">
-            <i class="pi pi-comment mr-1" />{{ solicitudActiva.motivo_rechazo }}
-          </p>
-        </div>
-        <template #footer>
-          <div class="flex justify-end gap-2">
-            <Button
-              v-if="solicitudActiva?.estado === 'pendiente'"
-              label="Rechazar"
-              icon="pi pi-times"
-              severity="warn"
-              variant="outlined"
-              @click="confirmarRechazar(solicitudActiva)"
-            />
-            <Button
-              v-if="solicitudActiva?.estado === 'aceptada'"
-              label="Marcar como completada"
-              icon="pi pi-flag"
-              @click="abrirConfirmarCompletacion(solicitudActiva)"
-            />
-            <Button label="Cerrar" severity="secondary" @click="cerrarDetalle" />
-          </div>
-        </template>
-      </Dialog>
+      <PostularDialog
+        v-model:visible="propuestaVisible"
+        :solicitud="ofertaPostular"
+        @enviada="cargar"
+      />
 
       <Dialog
         v-model:visible="confirmarAccionVisible"
-        :header="accionPendiente === 'rechazar' ? 'Rechazar solicitud' : 'Confirmar acción'"
+        header="Rechazar solicitud"
         modal
         class="w-full max-w-sm"
       >
-        <div v-if="accionPendiente === 'aceptar'" class="flex flex-col gap-3">
+        <div class="flex flex-col gap-2">
           <p class="text-sm text-ink">
-            ¿Confirmas que aceptas la solicitud de
-            <span class="font-semibold">
-              {{ solicitudActiva?.cliente.nombres }} {{ solicitudActiva?.cliente.apellidos }}
-            </span>
-            ?
+            Indica al cliente el motivo por el que no puedes atender esta solicitud.
           </p>
-          <label class="text-sm font-medium text-ink">Fecha del servicio *</label>
-          <input v-model="fechaAceptacion" type="date" class="rounded border p-2" />
-          <label class="text-sm font-medium text-ink">Hora de inicio *</label>
-          <input v-model="horaAceptacion" type="time" class="rounded border p-2" />
-          <label class="text-sm font-medium text-ink">Duración (horas) *</label>
-          <input v-model.number="duracionHorasAceptacion" type="number" min="1" max="12" class="rounded border p-2" />
-        </div>
-        <div v-else class="flex flex-col gap-2">
           <label for="motivo" class="text-sm font-medium text-ink">Motivo del rechazo *</label>
           <Textarea
             id="motivo"
@@ -369,12 +170,7 @@ limpiarNotificacionesNuevas()
         <template #footer>
           <div class="flex justify-end gap-2">
             <Button label="Cancelar" severity="secondary" @click="cerrarConfirmacion" />
-            <Button
-              :label="accionPendiente === 'rechazar' ? 'Rechazar' : 'Confirmar'"
-              :icon="accionPendiente === 'rechazar' ? 'pi pi-times' : 'pi pi-check'"
-              :severity="accionPendiente === 'rechazar' ? 'warn' : 'primary'"
-              @click="ejecutarAccion"
-            />
+            <Button label="Rechazar" icon="pi pi-times" severity="warn" @click="ejecutarAccion" />
           </div>
         </template>
       </Dialog>
