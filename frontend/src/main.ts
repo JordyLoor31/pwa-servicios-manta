@@ -13,9 +13,11 @@ if (localStorage.getItem('theme') === 'dark') {
 
 const app = createApp(App)
 
+const primeuiLicense = import.meta.env.VITE_PRIMEUI_LICENSE?.trim()
+
 app.use(router)
 app.use(PrimeVue, {
-  license: import.meta.env.VITE_PRIMEUI_LICENSE,
+  license: primeuiLicense,
   theme: {
     preset: MantaPreset,
   },

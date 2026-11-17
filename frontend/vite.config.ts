@@ -1,9 +1,14 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), 'VITE_')
+  if (!env.VITE_PRIMEUI_LICENSE) {
+    console.warn('[build] VITE_PRIMEUI_LICENSE no está definida; PrimeVue mostrará el aviso de licencia.')
+  }
+  return {
   plugins: [
     vue(),
     tailwindcss(),
@@ -49,5 +54,6 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173
+  }
   }
 })
