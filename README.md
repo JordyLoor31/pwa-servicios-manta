@@ -120,6 +120,14 @@ Frontend disponible en http://localhost:5173 (usa `VITE_API_URL`, por defecto `h
 
 ## Scripts útiles
 
+### Licencia PrimeUI
+
+PrimeVue muestra el aviso de licencia cuando no recibe una clave válida. Solicita la Community License en `primeui.dev` y define `VITE_PRIMEUI_LICENSE` en el entorno de build del frontend; no guardes la clave en el repositorio.
+
+### Módulos futuros
+
+`ChatModule` y `PagosModule` permanecen registrados como módulos reservados para trabajo futuro; actualmente no exponen funcionalidad ni endpoints.
+
 ### Backend (`backend/`)
 
 | Comando | Descripción |

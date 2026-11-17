@@ -2,7 +2,7 @@
 import Card from 'primevue/card'
 
 const beneficios = [
-  { icono: 'pi pi-shield', titulo: 'Técnicos verificados', descripcion: 'Perfiles con información clara, experiencia y calificaciones reales.' },
+  { icono: 'pi pi-shield', titulo: 'Perfiles transparentes', descripcion: 'Consulta verificación, experiencia y calificaciones antes de elegir.' },
   { icono: 'pi pi-comments', titulo: 'Propuestas a tu medida', descripcion: 'Recibe tarifas y mensajes antes de elegir a quién contratar.' },
   { icono: 'pi pi-bolt', titulo: 'Atención local', descripcion: 'Encuentra ayuda cerca de ti para resolverlo sin complicaciones.' },
 ]

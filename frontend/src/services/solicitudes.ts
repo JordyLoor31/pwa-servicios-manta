@@ -46,10 +46,6 @@ export const solicitudesApi = {
     return api.patch(`/solicitudes/${id}/postulaciones/${postulacionId}/rechazar`, {})
   },
 
-  aceptar(id: string, payload: { fecha_servicio: string; hora_inicio: string; duracion_horas: number }) {
-    return api.patch(`/solicitudes/${id}/aceptar`, payload)
-  },
-
   completar(id: string) {
     return api.patch(`/solicitudes/${id}/completar`, {})
   },

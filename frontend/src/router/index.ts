@@ -5,6 +5,7 @@ declare module 'vue-router' {
   interface RouteMeta {
     publica?: boolean
     roles?: RolUsuario[]
+    etiqueta?: string
   }
 }
 
@@ -44,7 +45,7 @@ const router = createRouter({
       path: '/solicitudes/:id',
       name: 'solicitud-detalle',
       component: () => import('../views/solicitudes/SolicitudDetalleView.vue'),
-      meta: { roles: ['cliente', 'tecnico', 'admin'] },
+      meta: { roles: ['cliente', 'tecnico', 'admin'], etiqueta: 'Detalle de solicitud' },
     },
     {
       path: '/certificaciones',

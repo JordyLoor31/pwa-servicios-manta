@@ -33,9 +33,11 @@ const items = computed<BreadcrumbItem[]>(() => {
   const segmentos = route.path.split('/').filter(Boolean)
   const lista: BreadcrumbItem[] = []
   let ruta = ''
-  for (const segmento of segmentos) {
+  for (const [indice, segmento] of segmentos.entries()) {
     ruta += `/${segmento}`
-    lista.push({ label: etiqueta(ruta), ruta })
+    const esUltimo = indice === segmentos.length - 1
+    const label = esUltimo && route.meta.etiqueta ? route.meta.etiqueta : etiqueta(ruta)
+    lista.push({ label, ruta })
   }
   if (segmentos.length === 0) {
     return []

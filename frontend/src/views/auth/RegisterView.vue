@@ -59,7 +59,7 @@ function goToLogin() {
         </div>
       </template>
       <template #title>Crea tu cuenta</template>
-      <template #subtitle>Únete a Servicios Manta para empezar.</template>
+      <template #subtitle>Únete a CamelloApp para empezar.</template>
       <template #content>
         <Divider align="center" class="my-4">
           <span class="text-sm text-muted">Datos de tu cuenta</span>

@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { randomInt } from 'node:crypto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Solicitud, EstadoSolicitud } from '../entities/solicitud.entity';
@@ -12,7 +13,6 @@ import { DisponibilidadTecnico } from '../../perfiles-tecnico/entities/disponibi
 import { Usuario, RolUsuario, EstadoUsuario } from '../../usuarios/entities/usuario.entity';
 import { PerfilTecnico } from '../../perfiles-tecnico/entities/perfil-tecnico.entity';
 import { CrearSolicitudDto } from '../dtos/crear-solicitud.dto';
-import { AceptarSolicitudDto } from '../dtos/aceptar-solicitud.dto';
 import { RechazarSolicitudDto } from '../dtos/rechazar-solicitud.dto';
 import { CrearPostulacionDto } from '../dtos/crear-postulacion.dto';
 import { CalificarSolicitudDto } from '../dtos/calificar-solicitud.dto';
@@ -147,15 +147,6 @@ export class SolicitudesService {
     return this.calificacionesService.calificar(id, dto, user);
   }
 
-  async aceptar(id: string, dto: AceptarSolicitudDto, user: AuthenticatedUser) {
-    void id;
-    void dto;
-    void user;
-    throw new BadRequestException(
-      'Debes enviar una postulación; el cliente debe elegir tu propuesta',
-    );
-  }
-
   async rechazar(id: string, dto: RechazarSolicitudDto, user: AuthenticatedUser) {
     const solicitud = await this.obtenerParaAccion(
       id,
@@ -214,7 +205,7 @@ export class SolicitudesService {
   }
 
   private generarCodigo(): string {
-    return Math.floor(1000 + Math.random() * 9000).toString();
+    return randomInt(1000, 10000).toString();
   }
 
   async iniciarCompletacion(id: string, user: AuthenticatedUser) {
@@ -233,6 +224,7 @@ export class SolicitudesService {
       codigo_completacion: codigo,
       fecha_expiracion_codigo: expiracion,
       codigo_fallido: false,
+      codigo_intentos: 0,
     });
 
     const vista = await this.detalle(id, user);
@@ -269,13 +261,25 @@ export class SolicitudesService {
       await this.solicitudesRepository.update(solicitud.id, {
         codigo_completacion: null,
         fecha_expiracion_codigo: null,
+        codigo_intentos: 0,
       });
       throw new BadRequestException('El código ha expirado');
     }
     if (solicitud.codigo_completacion !== codigoNormalizado) {
+      const intentos = (solicitud.codigo_intentos ?? 0) + 1;
       await this.solicitudesRepository.update(solicitud.id, {
         codigo_fallido: true,
+        codigo_intentos: intentos,
+        ...(intentos >= 3
+          ? {
+              codigo_completacion: null,
+              fecha_expiracion_codigo: null,
+            }
+          : {}),
       });
+      if (intentos >= 3) {
+        throw new BadRequestException('Se agotaron los intentos para este código. Solicita uno nuevo.');
+      }
       throw new BadRequestException('Código incorrecto. Verifica el código entregado por el cliente.');
     }
 
@@ -285,6 +289,7 @@ export class SolicitudesService {
       codigo_completacion: null,
       fecha_expiracion_codigo: null,
       codigo_fallido: false,
+      codigo_intentos: 0,
     });
     if (solicitud.tecnico_id) {
       await this.perfilesRepository.increment(

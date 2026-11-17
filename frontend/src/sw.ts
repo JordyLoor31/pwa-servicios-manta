@@ -76,3 +76,29 @@ self.addEventListener('notificationclick', (evento) => {
     ;(evento as { waitUntil(p: Promise<unknown>): void }).waitUntil(promesa)
   }
 })
+
+interface EventoFetch extends Event {
+  request: Request
+  respondWith(respuesta: Promise<Response>): void
+}
+
+self.addEventListener('fetch', (evento) => {
+  const fetchEvent = evento as EventoFetch
+  const request = fetchEvent.request
+  const url = new URL(request.url)
+  if (request.method !== 'GET' || !url.pathname.endsWith('/categorias-servicio')) return
+
+  const respuesta = fetch(request)
+    .then((response) => {
+      if (response.ok) {
+        void caches.open('camelloapp-categorias-v1').then((cache) => cache.put(request, response.clone()))
+      }
+      return response
+    })
+    .catch(async () => {
+      const cache = await caches.open('camelloapp-categorias-v1')
+      return (await cache.match(request)) ?? Response.error()
+    })
+
+  fetchEvent.respondWith(respuesta)
+})

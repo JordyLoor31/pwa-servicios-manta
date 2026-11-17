@@ -28,7 +28,7 @@ const emit = defineEmits<{
           Soluciones para tu hogar, <span class="text-amber-300">a tu manera.</span>
         </h1>
         <p class="mt-4 max-w-xl text-sm leading-7 text-cyan-50 sm:text-base">
-          Conecta con técnicos locales verificados, compara propuestas y elige con tranquilidad
+          Conecta con técnicos locales, compara propuestas y elige con tranquilidad
           quién atenderá tu servicio.
         </p>
         <div class="mt-7 flex flex-wrap gap-3">

@@ -12,7 +12,6 @@ import {
 } from '@nestjs/common';
 import { SolicitudesService } from '../services/solicitudes.service';
 import { CrearSolicitudDto } from '../dtos/crear-solicitud.dto';
-import { AceptarSolicitudDto } from '../dtos/aceptar-solicitud.dto';
 import { RechazarSolicitudDto } from '../dtos/rechazar-solicitud.dto';
 import { CrearPostulacionDto } from '../dtos/crear-postulacion.dto';
 import { CalificarSolicitudDto } from '../dtos/calificar-solicitud.dto';
@@ -121,16 +120,6 @@ export class SolicitudesController {
     @Param('postulacionId', ParseUUIDPipe) postulacionId: string,
   ) {
     return this.solicitudesService.rechazarPostulacion(id, postulacionId, user);
-  }
-
-  @Roles(RolUsuario.TECNICO, RolUsuario.ADMIN)
-  @Patch(':id/aceptar')
-  aceptar(
-    @CurrentUser() user: AuthenticatedUser,
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: AceptarSolicitudDto,
-  ) {
-    return this.solicitudesService.aceptar(id, dto, user);
   }
 
   @Roles(RolUsuario.TECNICO, RolUsuario.ADMIN)

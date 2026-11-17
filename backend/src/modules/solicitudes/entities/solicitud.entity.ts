@@ -106,6 +106,9 @@ export class Solicitud {
   @Column({ type: 'boolean', default: false })
   codigo_fallido: boolean;
 
+  @Column({ type: 'smallint', default: 0 })
+  codigo_intentos: number;
+
   @CreateDateColumn({ type: 'timestamptz' })
   fecha_solicitud: Date;
 
