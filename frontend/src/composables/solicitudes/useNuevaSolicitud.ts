@@ -1,4 +1,4 @@
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { categoriasApi } from '../../services/categorias'
 import { solicitudesApi } from '../../services/solicitudes'
@@ -19,9 +19,12 @@ export function useNuevaSolicitud() {
   const tecnicos = ref<TecnicoDirectorio[]>([])
   const cargandoTecnicos = ref(false)
   const horas = ref<string[]>([...horasBase])
+  const horasValidas = computed(() => horas.value.filter(horaEsFutura))
   const horaBusqueda = ref(horasBase[0])
   const enviando = ref(false)
-  const duracionOferta = ref<30 | 60>(30)
+  const duracionOferta = ref<30 | 180 | 360 | 540>(30)
+  const ofertaHastaFinDia = ref(false)
+  const serviciosPorCategoria = ref<Record<string, string[]>>({})
   const idempotencyKey = ref('')
 
   const form = ref({ tecnico_id: '', descripcion: '', direccion: '' })
@@ -30,6 +33,28 @@ export function useNuevaSolicitud() {
   const direccionLatitud = ref<number | undefined>()
   const direccionLongitud = ref<number | undefined>()
 
+  function actualizarServicios(categoriaId: string, valores: string[]) {
+    serviciosPorCategoria.value[categoriaId] = [...new Set(
+      valores.map((valor) => valor.trim().slice(0, 150)).filter(Boolean),
+    )]
+  }
+
+  function horaEsFutura(hora: string): boolean {
+    const hoy = new Date()
+    const fechaEsHoy = aFechaISO(fechaServicio.value) === aFechaISO(hoy)
+    if (!fechaEsHoy) return true
+    const [horasTexto, minutosTexto] = hora.split(':')
+    const minutosHora = Number(horasTexto) * 60 + Number(minutosTexto)
+    return minutosHora > hoy.getHours() * 60 + hoy.getMinutes()
+  }
+
+  function actualizarHorasValidas() {
+    const horasDisponibles = horas.value.filter(horaEsFutura)
+    if (!horasDisponibles.includes(horaBusqueda.value)) {
+      horaBusqueda.value = horasDisponibles[0] ?? ''
+    }
+  }
+
   async function cargarCategorias() {
     if (categorias.value.length > 0) return
     try {
@@ -37,6 +62,7 @@ export function useNuevaSolicitud() {
     } catch {
       categorias.value = []
     }
+
   }
 
   async function cargarTecnicos() {
@@ -61,6 +87,7 @@ export function useNuevaSolicitud() {
     const tecnicoId = form.value.tecnico_id
     if (!tecnicoId) {
       horaBusqueda.value = horas.value[0] ?? ''
+      actualizarHorasValidas()
       return
     }
     try {
@@ -70,24 +97,31 @@ export function useNuevaSolicitud() {
         categoriasSeleccionadas.value,
       )
       horas.value = horasDisponibles.length > 0 ? horasDisponibles : [...horasBase]
-      if (!horas.value.includes(horaBusqueda.value)) {
-        horaBusqueda.value = horas.value[0] ?? ''
+      actualizarHorasValidas()
+      if (!horasValidas.value.includes(horaBusqueda.value)) {
+        horaBusqueda.value = horasValidas.value[0] ?? ''
       }
     } catch {
       horas.value = [...horasBase]
-      if (!horas.value.includes(horaBusqueda.value)) {
-        horaBusqueda.value = horas.value[0] ?? ''
-      }
+      actualizarHorasValidas()
     }
   }
 
   watch(fechaServicio, () => {
+    actualizarHorasValidas()
     void cargarTecnicos()
   })
 
   watch(categoriasSeleccionadas, () => {
+    const actuales = new Set(categoriasSeleccionadas.value)
+    for (const id of Object.keys(serviciosPorCategoria.value)) {
+      if (!actuales.has(id)) delete serviciosPorCategoria.value[id]
+    }
+    for (const id of categoriasSeleccionadas.value) {
+      if (!serviciosPorCategoria.value[id]) serviciosPorCategoria.value[id] = []
+    }
     void cargarTecnicos()
-  })
+  }, { deep: true })
 
   watch(
     () => form.value.tecnico_id,
@@ -113,6 +147,8 @@ export function useNuevaSolicitud() {
     horaBusqueda.value = horasBase[0]
     direccionSeleccionadaId.value = ''
     duracionOferta.value = 30
+    ofertaHastaFinDia.value = false
+    serviciosPorCategoria.value = {}
     direccionLatitud.value = undefined
     direccionLongitud.value = undefined
     idempotencyKey.value =
@@ -132,11 +168,29 @@ export function useNuevaSolicitud() {
 
   async function crear(): Promise<Solicitud | null> {
     const descripcion = form.value.descripcion.trim()
-    if (descripcion.length < 10 || !horaBusqueda.value || categoriasSeleccionadas.value.length === 0) {
+    const tiposServicio = Object.values(serviciosPorCategoria.value)
+      .flat()
+      .map((tipo) => tipo.trim())
+      .filter(Boolean)
+    if (
+      descripcion.length < 10 ||
+      !horaBusqueda.value ||
+      categoriasSeleccionadas.value.length === 0 ||
+      tiposServicio.length === 0
+    ) {
       toast.add({
         severity: 'warn',
         summary: 'Faltan datos',
-        detail: 'Selecciona al menos una categoría, una hora y describe la necesidad (mínimo 10 caracteres).',
+        detail: 'Selecciona una categoría, al menos un tipo de servicio, una hora y describe la necesidad (mínimo 10 caracteres).',
+        life: 3000,
+      })
+      return null
+    }
+    if (!horaEsFutura(horaBusqueda.value)) {
+      toast.add({
+        severity: 'warn',
+        summary: 'Hora no válida',
+        detail: 'La hora de llegada debe ser posterior a la hora actual.',
         life: 3000,
       })
       return null
@@ -160,8 +214,10 @@ export function useNuevaSolicitud() {
         direccion_longitud?: number
         fecha_propuesta: string
         hora_propuesta: string
-        duracion_oferta_minutos: 30 | 60
+        duracion_oferta_minutos: 30 | 180 | 360 | 540
+        oferta_hasta_fin_dia: boolean
         categoria_ids: string[]
+        tipos_servicio: string[]
       } = {
         descripcion,
         direccion: form.value.direccion.trim() || undefined,
@@ -170,7 +226,9 @@ export function useNuevaSolicitud() {
         fecha_propuesta: aFechaISO(fechaServicio.value),
         hora_propuesta: horaBusqueda.value,
         duracion_oferta_minutos: duracionOferta.value,
+        oferta_hasta_fin_dia: ofertaHastaFinDia.value,
         categoria_ids: categoriasSeleccionadas.value,
+        tipos_servicio: tiposServicio,
       }
       if (form.value.tecnico_id) payload.tecnico_id = form.value.tecnico_id
       const creada = await solicitudesApi.crear(payload, idempotencyKey.value)
@@ -196,8 +254,11 @@ export function useNuevaSolicitud() {
     tecnicos,
     cargandoTecnicos,
     horas,
+    horasValidas,
     horaBusqueda,
     duracionOferta,
+    ofertaHastaFinDia,
+    serviciosPorCategoria,
     enviando,
     form,
     direcciones,
@@ -206,5 +267,8 @@ export function useNuevaSolicitud() {
     cargarCategorias,
     iniciar,
     crear,
+    actualizarHorasValidas,
+    horaEsFutura,
+    actualizarServicios,
   }
 }

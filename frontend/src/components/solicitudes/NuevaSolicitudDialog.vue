@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { watch } from 'vue'
 import Button from 'primevue/button'
+import Checkbox from 'primevue/checkbox'
 import DatePicker from 'primevue/datepicker'
 import Dialog from 'primevue/dialog'
+import InputTags from 'primevue/inputtags'
 import Listbox from 'primevue/listbox'
 import Message from 'primevue/message'
 import Select from 'primevue/select'
 import Textarea from 'primevue/textarea'
 import { useNuevaSolicitud } from '../../composables/solicitudes/useNuevaSolicitud'
 import type { Solicitud } from '../../types/solicitudes'
+import { tiposServicioParaCategoria } from '../../utils/tiposServicio'
 
 const props = defineProps<{ visible: boolean }>()
 const emit = defineEmits<{
@@ -23,9 +26,11 @@ function cerrar() {
 const {
   categorias,
   categoriasSeleccionadas,
+  serviciosPorCategoria,
   fechaServicio,
   duracionOferta,
-  horas,
+  ofertaHastaFinDia,
+  horasValidas,
   horaBusqueda,
   enviando,
   form,
@@ -33,6 +38,7 @@ const {
   direccionSeleccionadaId,
   iniciar,
   crear: crearSolicitud,
+  actualizarServicios,
 } = useNuevaSolicitud()
 
 watch(() => props.visible, (abierto) => {
@@ -75,6 +81,45 @@ async function submit() {
         <p v-if="categorias.length === 0" class="text-xs text-muted">Cargando categorías…</p>
       </div>
 
+      <div
+        v-for="categoria in categorias.filter((actual) => categoriasSeleccionadas.includes(actual.id))"
+        :key="`servicios-${categoria.id}`"
+        class="flex flex-col gap-1.5"
+      >
+        <label :for="`tipos-${categoria.id}`" class="text-sm font-medium text-ink">
+          Tipo de servicio en {{ categoria.nombre }} *
+        </label>
+        <InputTags
+          :id="`tipos-${categoria.id}`"
+          :model-value="serviciosPorCategoria[categoria.id] ?? []"
+          :maxlength="150"
+          separator=","
+          placeholder="Escribe un servicio y presiona Enter"
+          class="w-full"
+          @update:model-value="actualizarServicios(categoria.id, $event)"
+        />
+        <div class="flex flex-wrap gap-1.5">
+          <Button
+            v-for="tipo in tiposServicioParaCategoria(categoria.nombre)"
+            :key="tipo"
+            :label="tipo"
+            size="small"
+            severity="secondary"
+            variant="outlined"
+            :disabled="(serviciosPorCategoria[categoria.id] ?? []).includes(tipo)"
+            @click="
+              actualizarServicios(categoria.id, [
+                ...(serviciosPorCategoria[categoria.id] ?? []),
+                tipo,
+              ])
+            "
+          />
+        </div>
+        <p class="text-xs text-muted">
+          Puedes elegir una sugerencia o escribir otro tipo. Cada tag admite hasta 150 caracteres.
+        </p>
+      </div>
+
       <div class="flex flex-col gap-1.5">
         <label for="dia" class="text-sm font-medium text-ink">Día del servicio *</label>
         <DatePicker
@@ -92,11 +137,21 @@ async function submit() {
         <Select
           id="duracion-oferta"
           v-model="duracionOferta"
-          :options="[{ label: '30 minutos', value: 30 }, { label: '1 hora', value: 60 }]"
+          :options="[
+            { label: '30 minutos', value: 30 },
+            { label: '3 horas', value: 180 },
+            { label: '6 horas', value: 360 },
+            { label: '9 horas', value: 540 },
+          ]"
           option-label="label"
           option-value="value"
+          :disabled="ofertaHastaFinDia"
           class="w-full"
         />
+        <div class="flex items-center gap-2">
+          <Checkbox v-model="ofertaHastaFinDia" input-id="oferta-fin-dia" binary />
+          <label for="oferta-fin-dia" class="text-sm text-ink">Mantener hasta el fin del día</label>
+        </div>
         <p class="text-xs text-muted">Durante este tiempo los técnicos podrán enviarte sus propuestas.</p>
       </div>
 
@@ -105,10 +160,13 @@ async function submit() {
         <Select
           id="hora"
           v-model="horaBusqueda"
-          :options="horas"
+          :options="horasValidas"
           placeholder="Selecciona una hora"
           class="w-full"
         />
+        <p v-if="horasValidas.length === 0" class="text-xs text-amber-600">
+          No quedan horarios disponibles hoy. Selecciona otro día.
+        </p>
       </div>
 
       <div class="flex flex-col gap-1.5">

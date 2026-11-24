@@ -86,6 +86,12 @@ export class Solicitud {
   @Column({ type: 'text', nullable: true })
   motivo_rechazo: string | null;
 
+  @Column({ type: 'text', array: true, nullable: true })
+  tipos_servicio: string[] | null;
+
+  @Column({ type: 'boolean', default: false })
+  oferta_hasta_fin_dia: boolean;
+
   @Column({ type: 'varchar', length: 100, nullable: true })
   idempotency_key: string | null;
 

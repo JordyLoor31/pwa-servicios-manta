@@ -512,6 +512,15 @@ function onPostulacionEnviada() {
                   severity="info"
                 />
               </div>
+              <div v-if="solicitud.tipos_servicio?.length" class="mt-3 flex flex-wrap items-center gap-1.5">
+                <span class="text-xs font-medium text-muted">Servicios solicitados:</span>
+                <Tag
+                  v-for="tipo in solicitud.tipos_servicio"
+                  :key="tipo"
+                  :value="tipo"
+                  severity="secondary"
+                />
+              </div>
 
               <p class="mt-4 text-sm text-ink whitespace-pre-line">{{ solicitud.descripcion }}</p>
 

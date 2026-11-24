@@ -75,6 +75,20 @@ export class SolicitudesService {
         throw new BadRequestException('El tǸcnico aǧn no ha completado su perfil');
       }
     }
+    const ahora = new Date();
+    if (dto.fecha_propuesta && dto.hora_propuesta) {
+      const propuesta = new Date(`${dto.fecha_propuesta}T${dto.hora_propuesta}:00`);
+      if (Number.isNaN(propuesta.getTime()) || propuesta <= ahora) {
+        throw new BadRequestException('La hora propuesta debe ser posterior a la hora actual');
+      }
+    }
+    const hastaFinDia = dto.oferta_hasta_fin_dia === true;
+    const expiracionOferta = hastaFinDia
+      ? new Date(new Date(ahora).setHours(23, 59, 59, 999))
+      : new Date(ahora.getTime() + (dto.duracion_oferta_minutos ?? 30) * 60_000);
+    const duracionOfertaMinutos = hastaFinDia
+      ? Math.max(1, Math.ceil((expiracionOferta.getTime() - ahora.getTime()) / 60_000))
+      : (dto.duracion_oferta_minutos ?? 30);
     let solicitud: Solicitud;
     try {
       solicitud = await this.solicitudesRepository.save({
@@ -84,14 +98,14 @@ export class SolicitudesService {
         direccion: dto.direccion?.trim() || null,
         direccion_latitud: dto.direccion_latitud ?? null,
         direccion_longitud: dto.direccion_longitud ?? null,
+        tipos_servicio: dto.tipos_servicio.map((tipo) => tipo.trim()).filter(Boolean),
+        oferta_hasta_fin_dia: hastaFinDia,
         idempotency_key: clave,
         fecha_propuesta: dto.fecha_propuesta || null,
         hora_propuesta: dto.hora_propuesta || null,
         estado: EstadoSolicitud.PENDIENTE,
-        duracion_oferta_minutos: dto.tecnico_id ? null : (dto.duracion_oferta_minutos ?? 30),
-        fecha_expiracion_oferta: dto.tecnico_id
-          ? null
-          : new Date(Date.now() + (dto.duracion_oferta_minutos ?? 30) * 60_000),
+        duracion_oferta_minutos: dto.tecnico_id ? null : duracionOfertaMinutos,
+        fecha_expiracion_oferta: dto.tecnico_id ? null : expiracionOferta,
       });
     } catch (error) {
       if ((error as { code?: string }).code !== '23505' || !clave) throw error;

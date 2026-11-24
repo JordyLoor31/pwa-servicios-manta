@@ -39,7 +39,9 @@ export interface Solicitud {
   cliente: UsuarioResumen
   tecnico: UsuarioResumen | null
   unidad_cobro?: 'por_hora' | 'por_servicio' | 'por_visita' | null
-  duracion_oferta_minutos?: 30 | 60 | null
+  duracion_oferta_minutos?: 30 | 180 | 360 | 540 | null
+  oferta_hasta_fin_dia?: boolean
+  tipos_servicio?: string[]
   fecha_expiracion_oferta?: string | null
   postulado_por_mi?: boolean
   estado_mi_postulacion?: EstadoPostulacion | null
@@ -91,7 +93,9 @@ export interface CrearSolicitudPayload {
   direccion_longitud?: number
   fecha_propuesta?: string
   hora_propuesta?: string
-  duracion_oferta_minutos?: 30 | 60
+  duracion_oferta_minutos?: 30 | 180 | 360 | 540
+  oferta_hasta_fin_dia?: boolean
+  tipos_servicio: string[]
   categoria_ids: string[]
 }
 

@@ -62,6 +62,7 @@ export function useSolicitudes() {
       descripcion,
       direccion: form.value.direccion.trim() || undefined,
       categoria_ids: [],
+      tipos_servicio: [],
       fecha_propuesta: new Date().toISOString().slice(0, 10),
       hora_propuesta: horaActualAproximada(),
     }

@@ -2,6 +2,7 @@ import {
   IsDateString,
   IsIn,
   IsArray,
+  IsBoolean,
   IsNumber,
   IsOptional,
   IsString,
@@ -48,6 +49,15 @@ export class CrearSolicitudDto {
 
   @IsNumber()
   @IsOptional()
-  @IsIn([30, 60])
-  duracion_oferta_minutos?: 30 | 60;
+  @IsIn([30, 180, 360, 540])
+  duracion_oferta_minutos?: 30 | 180 | 360 | 540;
+
+  @IsBoolean()
+  @IsOptional()
+  oferta_hasta_fin_dia?: boolean;
+
+  @IsArray()
+  @IsString({ each: true })
+  @MaxLength(150, { each: true })
+  tipos_servicio: string[];
 }

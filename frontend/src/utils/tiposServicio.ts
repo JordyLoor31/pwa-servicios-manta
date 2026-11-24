@@ -3,39 +3,39 @@ const opcionesGenerales = ['Instalación', 'Reparación', 'Mantenimiento', 'Diag
 const grupos: Array<{ palabras: string[]; opciones: string[] }> = [
   {
     palabras: ['aire', 'climatización', 'climatizacion'],
-    opciones: ['Instalación', 'Mantenimiento preventivo', 'Reparación', 'Recarga de gas', 'Limpieza'],
+    opciones: ['Instalación', 'Mantenimiento preventivo', 'Reparación', 'Recarga de gas', 'Limpieza', 'Otro'],
   },
   {
     palabras: ['plomer', 'fontaner'],
-    opciones: ['Reparación de fugas', 'Destape de tuberías', 'Instalación', 'Mantenimiento'],
+    opciones: ['Reparación de fugas', 'Destape de tuberías', 'Instalación', 'Mantenimiento', 'Otro'],
   },
   {
     palabras: ['electric'],
-    opciones: ['Instalación', 'Reparación', 'Mantenimiento', 'Diagnóstico'],
+    opciones: ['Instalación', 'Reparación', 'Mantenimiento', 'Diagnóstico', 'Otro'],
   },
   {
     palabras: ['limpieza', 'aseo'],
-    opciones: ['Limpieza regular', 'Limpieza profunda', 'Limpieza post obra', 'Desinfección'],
+    opciones: ['Limpieza regular', 'Limpieza profunda', 'Limpieza post obra', 'Desinfección', 'Otro'],
   },
   {
     palabras: ['pintura'],
-    opciones: ['Pintura interior', 'Pintura exterior', 'Reparación de paredes', 'Mantenimiento'],
+    opciones: ['Pintura interior', 'Pintura exterior', 'Reparación de paredes', 'Mantenimiento', 'Otro'],
   },
   {
     palabras: ['jardiner', 'jardín', 'jardin'],
-    opciones: ['Mantenimiento', 'Poda', 'Diseño de jardín', 'Instalación de riego'],
+    opciones: ['Mantenimiento', 'Poda', 'Diseño de jardín', 'Instalación de riego', 'Otro'],
   },
   {
     palabras: ['carpinter'],
-    opciones: ['Fabricación', 'Reparación', 'Instalación', 'Restauración'],
+    opciones: ['Fabricación', 'Reparación', 'Instalación', 'Restauración', 'Otro'],
   },
   {
     palabras: ['cerrajer'],
-    opciones: ['Apertura de puerta', 'Cambio de cerradura', 'Instalación', 'Reparación'],
+    opciones: ['Apertura de puerta', 'Cambio de cerradura', 'Instalación', 'Reparación', 'Otro'],
   },
   {
     palabras: ['electrodomést', 'electrodomest'],
-    opciones: ['Diagnóstico', 'Reparación', 'Mantenimiento', 'Instalación'],
+    opciones: ['Diagnóstico', 'Reparación', 'Mantenimiento', 'Instalación', 'Otro'],
   },
 ]
 

@@ -14,6 +14,8 @@ export interface SolicitudFila {
   direccion_latitud: unknown;
   direccion_longitud: unknown;
   motivo_rechazo: unknown;
+  tipos_servicio: unknown;
+  oferta_hasta_fin_dia: unknown;
   fecha_propuesta: unknown;
   hora_propuesta: unknown;
   hora_fin_estimada: unknown;
@@ -39,6 +41,8 @@ export function columnasBase() {
     's.direccion_latitud AS direccion_latitud',
     's.direccion_longitud AS direccion_longitud',
     's.motivo_rechazo AS motivo_rechazo',
+    's.tipos_servicio AS tipos_servicio',
+    's.oferta_hasta_fin_dia AS oferta_hasta_fin_dia',
     's.fecha_propuesta AS fecha_propuesta',
     's.hora_propuesta AS hora_propuesta',
     's.hora_fin_estimada AS hora_fin_estimada',
@@ -69,6 +73,8 @@ export function toSolicitudView(
     direccion_latitud: fila.direccion_latitud != null ? Number(fila.direccion_latitud) : null,
     direccion_longitud: fila.direccion_longitud != null ? Number(fila.direccion_longitud) : null,
     motivo_rechazo: fila.motivo_rechazo,
+    tipos_servicio: fila.tipos_servicio ?? [],
+    oferta_hasta_fin_dia: fila.oferta_hasta_fin_dia ?? false,
     fecha_propuesta: fila.fecha_propuesta,
     hora_propuesta: fila.hora_propuesta,
     hora_fin_estimada: fila.hora_fin_estimada,
