@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { tieneToken, leerUsuario, type RolUsuario } from '../composables/auth/useAuthz'
+import { necesitaOnboarding } from '../composables/auth/useOnboarding'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -55,6 +56,12 @@ const router = createRouter({
     },
     { path: '/login', name: 'login', component: () => import('../views/auth/LoginView.vue'), meta: { publica: true } },
     { path: '/registro', name: 'registro', component: () => import('../views/auth/RegisterView.vue'), meta: { publica: true } },
+    {
+      path: '/configuracion-inicial',
+      name: 'configuracion-inicial',
+      component: () => import('../views/auth/OnboardingView.vue'),
+      meta: { roles: ['cliente', 'tecnico'], etiqueta: 'Configuración inicial' },
+    },
     { path: '/recuperar', name: 'recuperar', component: () => import('../views/auth/RecuperarPasswordView.vue'), meta: { publica: true } },
     { path: '/resetear', name: 'resetear', component: () => import('../views/auth/ResetPasswordView.vue'), meta: { publica: true } },
     {
@@ -75,7 +82,7 @@ function tieneSesion() {
   return Boolean(tieneToken() && leerUsuario())
 }
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const esPublica = to.meta.publica === true
 
   if (tieneSesion() && esPublica && to.name !== 'home') {
@@ -85,9 +92,18 @@ router.beforeEach((to) => {
     return { name: 'login' }
   }
 
+  const usuario = leerUsuario()
+  if (
+    usuario &&
+    (usuario.rol === 'cliente' || usuario.rol === 'tecnico') &&
+    to.name !== 'configuracion-inicial' &&
+    await necesitaOnboarding(usuario)
+  ) {
+    return { name: 'configuracion-inicial' }
+  }
+
   const roles = to.meta.roles
   if (roles?.length) {
-    const usuario = leerUsuario()
     if (!usuario || !roles.includes(usuario.rol)) {
       return { name: 'home' }
     }
