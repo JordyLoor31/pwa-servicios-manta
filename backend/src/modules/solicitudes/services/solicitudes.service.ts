@@ -43,7 +43,21 @@ export class SolicitudesService {
     private readonly calificacionesService: SolicitudesCalificacionesService,
   ) {}
 
-  async crear(clienteId: string, dto: CrearSolicitudDto) {
+  async crear(clienteId: string, dto: CrearSolicitudDto, idempotencyKey?: string) {
+    const clave = idempotencyKey?.trim() || null;
+    if (clave) {
+      const solicitudExistente = await this.solicitudesRepository.findOneBy({
+        cliente_id: clienteId,
+        idempotency_key: clave,
+      });
+      if (solicitudExistente) {
+        return this.detalle(solicitudExistente.id, {
+          id: clienteId,
+          rol: RolUsuario.CLIENTE,
+        } as AuthenticatedUser);
+      }
+    }
+
     if (dto.tecnico_id) {
       if (clienteId === dto.tecnico_id) {
         throw new BadRequestException('No puedes solicitar un servicio a tu propio perfil');
@@ -60,21 +74,36 @@ export class SolicitudesService {
         throw new BadRequestException('El tǸcnico aǧn no ha completado su perfil');
       }
     }
-    const solicitud = await this.solicitudesRepository.save({
-      cliente_id: clienteId,
-      tecnico_id: dto.tecnico_id ?? null,
-      descripcion: dto.descripcion.trim(),
-      direccion: dto.direccion?.trim() || null,
-      direccion_latitud: dto.direccion_latitud ?? null,
-      direccion_longitud: dto.direccion_longitud ?? null,
-      fecha_propuesta: dto.fecha_propuesta || null,
-      hora_propuesta: dto.hora_propuesta || null,
-      estado: EstadoSolicitud.PENDIENTE,
-      duracion_oferta_minutos: dto.tecnico_id ? null : (dto.duracion_oferta_minutos ?? 30),
-      fecha_expiracion_oferta: dto.tecnico_id
-        ? null
-        : new Date(Date.now() + (dto.duracion_oferta_minutos ?? 30) * 60_000),
-    });
+    let solicitud: Solicitud;
+    try {
+      solicitud = await this.solicitudesRepository.save({
+        cliente_id: clienteId,
+        tecnico_id: dto.tecnico_id ?? null,
+        descripcion: dto.descripcion.trim(),
+        direccion: dto.direccion?.trim() || null,
+        direccion_latitud: dto.direccion_latitud ?? null,
+        direccion_longitud: dto.direccion_longitud ?? null,
+        idempotency_key: clave,
+        fecha_propuesta: dto.fecha_propuesta || null,
+        hora_propuesta: dto.hora_propuesta || null,
+        estado: EstadoSolicitud.PENDIENTE,
+        duracion_oferta_minutos: dto.tecnico_id ? null : (dto.duracion_oferta_minutos ?? 30),
+        fecha_expiracion_oferta: dto.tecnico_id
+          ? null
+          : new Date(Date.now() + (dto.duracion_oferta_minutos ?? 30) * 60_000),
+      });
+    } catch (error) {
+      if ((error as { code?: string }).code !== '23505' || !clave) throw error;
+      const solicitudExistente = await this.solicitudesRepository.findOneBy({
+        cliente_id: clienteId,
+        idempotency_key: clave,
+      });
+      if (!solicitudExistente) throw error;
+      return this.detalle(solicitudExistente.id, {
+        id: clienteId,
+        rol: RolUsuario.CLIENTE,
+      } as AuthenticatedUser);
+    }
     if (dto.categoria_ids.length > 0) {
       await this.solicitudCategoriasRepository.insert(
         dto.categoria_ids.map((categoria_id) => ({ solicitud_id: solicitud.id, categoria_id })),

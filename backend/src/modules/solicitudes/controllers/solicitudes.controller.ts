@@ -3,6 +3,7 @@ import {
   Controller,
   DefaultValuePipe,
   Get,
+  Headers,
   Param,
   ParseIntPipe,
   ParseUUIDPipe,
@@ -29,8 +30,12 @@ export class SolicitudesController {
 
   @Roles(RolUsuario.CLIENTE)
   @Post()
-  crear(@CurrentUser() user: AuthenticatedUser, @Body() dto: CrearSolicitudDto) {
-    return this.solicitudesService.crear(user.id, dto);
+  crear(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: CrearSolicitudDto,
+    @Headers('idempotency-key') idempotencyKey?: string,
+  ) {
+    return this.solicitudesService.crear(user.id, dto, idempotencyKey);
   }
 
   @Roles(RolUsuario.CLIENTE)

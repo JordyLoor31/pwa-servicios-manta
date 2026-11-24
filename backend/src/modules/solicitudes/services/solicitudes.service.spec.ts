@@ -41,6 +41,7 @@ function solicitudConCodigo(overrides: Partial<Solicitud> = {}): Solicitud {
 function createSolicitudesService() {
   const solicitudesRepository = repository<Solicitud>({
     findOneBy: jest.fn(),
+    save: jest.fn(),
     update: jest.fn().mockResolvedValue(undefined),
   });
   const perfilesRepository = repository<PerfilTecnico>({
@@ -126,6 +127,34 @@ describe('SolicitudesService confirmation code', () => {
       }),
     );
     expect(perfilesRepository.increment).toHaveBeenCalled();
+  });
+});
+
+describe('SolicitudesService idempotency', () => {
+  it('returns the existing request when the same key is retried', async () => {
+    const { service, solicitudesRepository } = createSolicitudesService();
+    const solicitud = solicitudConCodigo({
+      id: 'solicitud-existente',
+      cliente_id: cliente.id,
+      idempotency_key: 'clave-reutilizada',
+    });
+    (solicitudesRepository.findOneBy as jest.Mock).mockResolvedValue(solicitud);
+
+    const result = await service.crear(
+      cliente.id,
+      {
+        descripcion: 'Solicitud repetida',
+        categoria_ids: [],
+      } as never,
+      ' clave-reutilizada ',
+    );
+
+    expect(result).toEqual({});
+    expect(solicitudesRepository.save).not.toHaveBeenCalled();
+    expect(solicitudesRepository.findOneBy).toHaveBeenCalledWith({
+      cliente_id: cliente.id,
+      idempotency_key: 'clave-reutilizada',
+    });
   });
 });
 

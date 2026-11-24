@@ -18,8 +18,12 @@ export const solicitudesApi = {
     return api.get<Solicitud>(`/solicitudes/${id}`)
   },
 
-  crear(payload: CrearSolicitudPayload) {
-    return api.post<Solicitud>('/solicitudes', payload)
+  crear(payload: CrearSolicitudPayload, idempotencyKey?: string) {
+    return api.post<Solicitud>(
+      '/solicitudes',
+      payload,
+      idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
+    )
   },
 
   cancelar(id: string) {

@@ -20,6 +20,7 @@ export enum EstadoSolicitud {
 }
 
 @Entity('solicitudes')
+@Index('uq_solicitudes_cliente_idempotencia', ['cliente_id', 'idempotency_key'], { unique: true })
 export class Solicitud {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -84,6 +85,9 @@ export class Solicitud {
 
   @Column({ type: 'text', nullable: true })
   motivo_rechazo: string | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  idempotency_key: string | null;
 
   @Column({ type: 'timestamptz', nullable: true })
   fecha_aceptacion: Date | null;

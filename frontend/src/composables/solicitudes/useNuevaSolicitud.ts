@@ -22,6 +22,7 @@ export function useNuevaSolicitud() {
   const horaBusqueda = ref(horasBase[0])
   const enviando = ref(false)
   const duracionOferta = ref<30 | 60>(30)
+  const idempotencyKey = ref('')
 
   const form = ref({ tecnico_id: '', descripcion: '', direccion: '' })
   const { direcciones, cargar: cargarDirecciones } = useDirecciones()
@@ -114,6 +115,9 @@ export function useNuevaSolicitud() {
     duracionOferta.value = 30
     direccionLatitud.value = undefined
     direccionLongitud.value = undefined
+    idempotencyKey.value =
+      globalThis.crypto?.randomUUID?.() ??
+      `${Date.now()}-${Math.random().toString(36).slice(2)}`
     void cargarCategorias()
     void cargarTecnicos()
     void cargarDirecciones()
@@ -169,7 +173,7 @@ export function useNuevaSolicitud() {
         categoria_ids: categoriasSeleccionadas.value,
       }
       if (form.value.tecnico_id) payload.tecnico_id = form.value.tecnico_id
-      const creada = await solicitudesApi.crear(payload)
+      const creada = await solicitudesApi.crear(payload, idempotencyKey.value)
       toast.add({ severity: 'success', summary: 'Solicitud enviada', life: 3000 })
       return creada
     } catch (error) {
