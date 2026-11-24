@@ -257,10 +257,13 @@ export class SolicitudesConsultaService {
     fila: { cliente_id: string; tecnico_id: string | null },
     user: AuthenticatedUser,
   ) {
+    const esTecnicoDisponible =
+      user.rol === RolUsuario.TECNICO && fila.tecnico_id === null;
     if (
       user.rol !== RolUsuario.ADMIN &&
       user.id !== fila.cliente_id &&
-      user.id !== fila.tecnico_id
+      user.id !== fila.tecnico_id &&
+      !esTecnicoDisponible
     ) {
       throw new ForbiddenException('No tienes acceso a esta solicitud');
     }
