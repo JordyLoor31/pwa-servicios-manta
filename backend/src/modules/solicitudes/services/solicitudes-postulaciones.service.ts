@@ -56,7 +56,9 @@ export class SolicitudesPostulacionesService {
       solicitud_id: id,
       tecnico_id: user.id,
       unidad_cobro: tarifa.unidad_cobro,
-      precio: tarifa.precio_min,
+      precio: tarifa.precio,
+      tipo_servicio: tarifa.tipo_servicio,
+      negociable: tarifa.negociable,
       mensaje: dto.mensaje?.trim() || null,
       estado: EstadoPostulacion.PENDIENTE,
     });

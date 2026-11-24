@@ -7,20 +7,22 @@ export interface PerfilTecnico {
 
 export type { CategoriaServicio } from './categorias'
 
-export type UnidadCobro = 'por_hora' | 'por_servicio'
+export type UnidadCobro = 'por_visita'
 
 export interface RangoPrecio {
-  min: string
-  max: string
+  precio: string
+  tipoServicio: string
+  negociable: boolean
   unidad: UnidadCobro
 }
 
 export interface TarifaTecnico {
   tecnico_id: string
   categoria_id: string
-  precio_min: number
-  precio_max: number
+  precio: number
   unidad_cobro: UnidadCobro
+  tipo_servicio: string
+  negociable: boolean
 }
 
 export interface CalificacionPublica {
@@ -53,9 +55,10 @@ export interface PerfilPublico {
   tarifas: Array<{
     categoria_id: string
     categoria_nombre: string | null
-    precio_min: number
-    precio_max: number
+    precio: number
     unidad_cobro: UnidadCobro
+    tipo_servicio: string
+    negociable: boolean
   }>
   certificaciones: Array<{
     tipo_documento: string

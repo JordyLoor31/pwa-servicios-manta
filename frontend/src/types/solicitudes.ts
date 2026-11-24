@@ -38,7 +38,7 @@ export interface Solicitud {
   fecha_completada: string | null
   cliente: UsuarioResumen
   tecnico: UsuarioResumen | null
-  unidad_cobro?: 'por_hora' | 'por_servicio' | null
+  unidad_cobro?: 'por_hora' | 'por_servicio' | 'por_visita' | null
   duracion_oferta_minutos?: 30 | 60 | null
   fecha_expiracion_oferta?: string | null
   postulado_por_mi?: boolean
@@ -56,8 +56,10 @@ export interface PostulacionSolicitud {
   id: string
   solicitud_id: string
   tecnico_id: string
-  unidad_cobro: 'por_hora' | 'por_servicio'
+  unidad_cobro: 'por_hora' | 'por_servicio' | 'por_visita'
   precio: number
+  tipo_servicio: string
+  negociable: boolean
   mensaje: string | null
   estado: EstadoPostulacion
   fecha_postulacion: string

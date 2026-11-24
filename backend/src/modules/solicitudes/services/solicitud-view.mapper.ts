@@ -1,4 +1,4 @@
-export type UnidadCobro = 'por_hora' | 'por_servicio';
+export type UnidadCobro = 'por_hora' | 'por_servicio' | 'por_visita';
 
 export interface CategoriaSolicitudView {
   id: string;

@@ -168,9 +168,10 @@ export class PerfilesTecnicoConsultaService {
       tarifas: tarifas.map((tarifa) => ({
         categoria_id: tarifa.categoria_id,
         categoria_nombre: nombrePorCategoria.get(tarifa.categoria_id) ?? null,
-        precio_min: tarifa.precio_min,
-        precio_max: tarifa.precio_max,
+        precio: tarifa.precio,
         unidad_cobro: tarifa.unidad_cobro,
+        tipo_servicio: tarifa.tipo_servicio,
+        negociable: tarifa.negociable,
       })),
       certificaciones: certificaciones
         .filter((certificacion) => certificacion.estado === EstadoCertificacion.APROBADA)

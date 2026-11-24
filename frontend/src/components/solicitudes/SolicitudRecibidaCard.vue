@@ -102,7 +102,13 @@ const emit = defineEmits<{
     </span>
     <span v-if="solicitud.unidad_cobro" class="font-medium text-pacific">
       <i class="pi pi-tag mr-1" />
-      {{ solicitud.unidad_cobro === 'por_hora' ? 'Cobro por hora' : 'Cobro por servicio' }}
+      {{
+        solicitud.unidad_cobro === 'por_hora'
+          ? 'Cobro por hora'
+          : solicitud.unidad_cobro === 'por_servicio'
+            ? 'Cobro por servicio'
+            : 'Cobro por visita'
+      }}
     </span>
     <span v-if="solicitud.tecnico_distancia_km != null">
       <i class="pi pi-map-marker mr-1" />

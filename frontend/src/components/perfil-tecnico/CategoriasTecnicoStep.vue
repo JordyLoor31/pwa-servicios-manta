@@ -5,7 +5,8 @@ import Checkbox from 'primevue/checkbox'
 import InputText from 'primevue/inputtext'
 import Label from 'primevue/label'
 import Select from 'primevue/select'
-import type { CategoriaServicio, RangoPrecio, UnidadCobro } from '../../types/perfil-tecnico'
+import type { CategoriaServicio, RangoPrecio } from '../../types/perfil-tecnico'
+import { tiposServicioParaCategoria } from '../../utils/tiposServicio'
 import AppProgressSpinner from '../layout/AppProgressSpinner.vue'
 
 const props = defineProps<{
@@ -19,35 +20,32 @@ const tarifas = defineModel<Record<string, RangoPrecio>>('tarifas', { default: (
 
 defineEmits<{ volver: []; continuar: [] }>()
 
-const unidades = [
-  { label: 'Por hora', value: 'por_hora' },
-  { label: 'Por servicio', value: 'por_servicio' },
-]
-
 watch(
   seleccion,
   (ids) => {
     for (const id of ids) {
       if (!tarifas.value[id]) {
-        tarifas.value[id] = { min: '', max: '', unidad: 'por_servicio' }
+        tarifas.value[id] = {
+          precio: '',
+          tipoServicio: tiposServicioParaCategoria(
+            props.categorias.find((categoria) => categoria.id === id)?.nombre ?? '',
+          )[0],
+          negociable: true,
+          unidad: 'por_visita',
+        }
       }
     }
   },
   { deep: true },
 )
 
-function unidadLabel(unidad: UnidadCobro): string {
-  return unidad === 'por_hora' ? 'por hora' : 'por servicio'
-}
-
-function rangoTexto(id: string): string | null {
+function tarifaTexto(id: string): string | null {
   const rango = tarifas.value[id]
   if (!rango) return null
-  const min = Number(rango.min)
-  const max = Number(rango.max)
-  if (rango.min.trim() === '' || rango.max.trim() === '') return null
-  if (isNaN(min) || isNaN(max)) return 'Rango inválido'
-  return `${min.toFixed(2)} – ${max.toFixed(2)} $ / ${unidadLabel(rango.unidad || 'por_servicio')}`
+  const precio = Number(rango.precio)
+  if (rango.precio.trim() === '') return null
+  if (isNaN(precio)) return 'Precio inválido'
+  return `$ ${precio.toFixed(2)} / visita`
 }
 </script>
 
@@ -55,7 +53,7 @@ function rangoTexto(id: string): string | null {
   <div class="mx-auto flex min-h-64 max-w-lg flex-col gap-4">
     <div class="mb-2 text-center text-lg font-semibold text-ink">Categorías y servicios</div>
     <p class="text-center text-sm text-muted">
-      Selecciona las categorías que ofreces y define tu rango de precio (mínimo–máximo) y la unidad de cobro.
+      Selecciona las categorías que ofreces, el tipo de servicio y tu precio por visita.
     </p>
 
     <div v-if="cargando" class="flex justify-center py-8 text-2xl text-pacific">
@@ -99,7 +97,7 @@ function rangoTexto(id: string): string | null {
             v-if="seleccion.includes(categoria.id)"
             class="shrink-0 self-center text-xs font-semibold text-turquoise-600"
           >
-            {{ rangoTexto(categoria.id) }}
+            {{ tarifaTexto(categoria.id) }}
           </span>
         </div>
 
@@ -108,18 +106,25 @@ function rangoTexto(id: string): string | null {
           class="mt-3 grid gap-3 border-t border-pacific/20 pt-3 sm:grid-cols-3"
         >
           <label class="flex flex-col gap-1">
-            <span class="text-xs font-medium text-ink">Precio mín.</span>
-            <InputText v-model="tarifas[categoria.id].min" inputmode="decimal" placeholder="$ 0.00" />
-          </label>
-          <label class="flex flex-col gap-1">
-            <span class="text-xs font-medium text-ink">Precio máx.</span>
-            <InputText v-model="tarifas[categoria.id].max" inputmode="decimal" placeholder="$ 0.00" />
-          </label>
-          <label class="flex flex-col gap-1">
-            <span class="text-xs font-medium text-ink">Unidad</span>
+            <span class="text-xs font-medium text-ink">Tipo de servicio</span>
             <Select
-              v-model="tarifas[categoria.id].unidad"
-              :options="unidades"
+              v-model="tarifas[categoria.id].tipoServicio"
+              :options="tiposServicioParaCategoria(categoria.nombre)"
+              placeholder="Selecciona un tipo"
+            />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-xs font-medium text-ink">Precio por visita</span>
+            <InputText v-model="tarifas[categoria.id].precio" inputmode="decimal" placeholder="$ 0.00" />
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-xs font-medium text-ink">Condición del precio</span>
+            <Select
+              v-model="tarifas[categoria.id].negociable"
+              :options="[
+                { label: 'Negociable', value: true },
+                { label: 'No negociable', value: false },
+              ]"
               option-label="label"
               option-value="value"
             />

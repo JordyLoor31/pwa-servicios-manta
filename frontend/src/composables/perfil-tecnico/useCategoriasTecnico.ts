@@ -4,6 +4,7 @@ import { useAuthz } from '../auth/useAuthz'
 import { categoriasApi } from '../../services/categorias'
 import { perfilTecnicoApi } from '../../services/perfil-tecnico'
 import type { CategoriaServicio, RangoPrecio, TarifaTecnico, UnidadCobro } from '../../types/perfil-tecnico'
+import { tiposServicioParaCategoria } from '../../utils/tiposServicio'
 
 export function useCategoriasTecnico() {
   const toast = useToast()
@@ -32,9 +33,10 @@ export function useCategoriasTecnico() {
       const tarifas = await perfilTecnicoApi.obtenerTarifas(id)
       for (const tarifa of tarifas) {
         tarifasPorCategoria[tarifa.categoria_id] = {
-          min: String(tarifa.precio_min),
-          max: String(tarifa.precio_max),
-          unidad: tarifa.unidad_cobro ?? 'por_servicio',
+          precio: String(tarifa.precio),
+          tipoServicio: tarifa.tipo_servicio,
+          negociable: tarifa.negociable,
+          unidad: tarifa.unidad_cobro ?? 'por_visita',
         }
       }
     } catch {
@@ -57,20 +59,27 @@ export function useCategoriasTecnico() {
 
   function asegurarEntrada(id: string) {
     if (!tarifasPorCategoria[id]) {
-      tarifasPorCategoria[id] = { min: '', max: '', unidad: 'por_servicio' }
+      const categoria = categorias.value.find((actual) => actual.id === id)
+      tarifasPorCategoria[id] = {
+        precio: '',
+        tipoServicio: categoria ? tiposServicioParaCategoria(categoria.nombre)[0] : 'Servicio general',
+        negociable: true,
+        unidad: 'por_visita',
+      }
     }
   }
 
   function rangoValido(categoriaId: string): boolean {
     const rango = tarifasPorCategoria[categoriaId]
     if (!rango) return false
-    const min = Number(rango.min)
-    const max = Number(rango.max)
-    if (rango.min.trim() === '' || rango.max.trim() === '') return false
-    if (isNaN(min) || isNaN(max)) return false
-    if (min < 0 || max < 0 || min > 999999.99 || max > 999999.99) return false
-    if (max < min) return false
-    return true
+    const precio = Number(rango.precio)
+    return (
+      rango.precio.trim() !== '' &&
+      rango.tipoServicio.trim() !== '' &&
+      !isNaN(precio) &&
+      precio >= 0 &&
+      precio <= 999999.99
+    )
   }
 
   async function guardarCategorias(): Promise<boolean> {
@@ -85,7 +94,7 @@ export function useCategoriasTecnico() {
       toast.add({
         severity: 'warn',
         summary: 'Faltan precios',
-        detail: `Define un rango mínimo–máximo válido en: ${nombres}.`,
+        detail: `Define un precio válido en: ${nombres}.`,
         life: 4000,
       })
       return false
@@ -99,9 +108,10 @@ export function useCategoriasTecnico() {
         return {
           tecnico_id: id,
           categoria_id: categoriaId,
-          precio_min: Number(rango.min),
-          precio_max: Number(rango.max),
-          unidad_cobro: (rango.unidad || 'por_servicio') as UnidadCobro,
+          precio: Number(rango.precio),
+          unidad_cobro: (rango.unidad || 'por_visita') as UnidadCobro,
+          tipo_servicio: rango.tipoServicio.trim(),
+          negociable: rango.negociable,
         }
       })
       await perfilTecnicoApi.actualizarTarifas(id, tarifas)

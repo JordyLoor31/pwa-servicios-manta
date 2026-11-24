@@ -73,6 +73,8 @@ export class SolicitudesConsultaService {
         'postulacion.tecnico_id AS tecnico_id',
         'postulacion.unidad_cobro AS unidad_cobro',
         'postulacion.precio AS precio',
+        'postulacion.tipo_servicio AS tipo_servicio',
+        'postulacion.negociable AS negociable',
         'postulacion.mensaje AS mensaje',
         'postulacion.estado AS estado',
         'postulacion.fecha_postulacion AS fecha_postulacion',
@@ -301,11 +303,7 @@ export class SolicitudesConsultaService {
     });
     const unidades = new Map<string, UnidadCobro>();
     for (const tarifa of tarifas) {
-      if (tarifa.unidad_cobro === 'por_hora') {
-        unidades.set(tarifa.tecnico_id, 'por_hora');
-      } else if (!unidades.has(tarifa.tecnico_id)) {
-        unidades.set(tarifa.tecnico_id, 'por_servicio');
-      }
+      unidades.set(tarifa.tecnico_id, 'por_visita');
     }
     return unidades;
   }

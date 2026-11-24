@@ -40,8 +40,14 @@ export class PostulacionSolicitud {
   @JoinColumn({ name: 'tecnico_id' })
   tecnico: Usuario;
 
-  @Column({ type: 'enum', enum: ['por_hora', 'por_servicio'] })
-  unidad_cobro: 'por_hora' | 'por_servicio';
+  @Column({ type: 'enum', enum: ['por_hora', 'por_servicio', 'por_visita'] })
+  unidad_cobro: 'por_hora' | 'por_servicio' | 'por_visita';
+
+  @Column({ type: 'varchar', length: 80, default: 'Servicio general' })
+  tipo_servicio: string;
+
+  @Column({ type: 'boolean', default: true })
+  negociable: boolean;
 
   @Column({
     type: 'numeric',

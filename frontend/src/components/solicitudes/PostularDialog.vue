@@ -9,7 +9,7 @@ import { useAuthz } from '../../composables/auth/useAuthz'
 import { solicitudesApi } from '../../services/solicitudes'
 import { perfilTecnicoApi } from '../../services/perfil-tecnico'
 import type { Solicitud } from '../../types/solicitudes'
-import type { TarifaTecnico, UnidadCobro } from '../../types/perfil-tecnico'
+import type { TarifaTecnico } from '../../types/perfil-tecnico'
 
 const visible = defineModel<boolean>('visible', { required: true })
 
@@ -86,10 +86,6 @@ function moneda(valor: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(valor)
 }
 
-function unidadTexto(unidad: UnidadCobro) {
-  return unidad === 'por_hora' ? '/ hora' : '/ servicio'
-}
-
 async function enviar() {
   if (!oferta.value) return
   if (!tarifaAplicable.value) {
@@ -140,14 +136,12 @@ async function enviar() {
           Tarifa de tu perfil · {{ tarifaAplicable.categoriaNombre }}
         </p>
         <p class="mt-1 text-lg font-semibold text-ink">
-          {{ moneda(tarifaAplicable.tarifa.precio_min) }} - {{ moneda(tarifaAplicable.tarifa.precio_max) }}
-          <span class="text-xs font-normal text-muted">
-            {{ unidadTexto(tarifaAplicable.tarifa.unidad_cobro) }}
-          </span>
+          {{ moneda(tarifaAplicable.tarifa.precio) }}
+          <span class="text-xs font-normal text-muted">/ visita</span>
         </p>
         <p class="mt-1 text-xs text-muted">
-          Se enviará tu precio base de {{ moneda(tarifaAplicable.tarifa.precio_min) }}
-          {{ unidadTexto(tarifaAplicable.tarifa.unidad_cobro) }}.
+          {{ tarifaAplicable.tarifa.tipo_servicio }} ·
+          {{ tarifaAplicable.tarifa.negociable ? 'Precio negociable' : 'Precio no negociable' }}.
         </p>
       </div>
       <div v-else class="rounded-lg bg-amber-50 p-3 text-sm text-amber-700">

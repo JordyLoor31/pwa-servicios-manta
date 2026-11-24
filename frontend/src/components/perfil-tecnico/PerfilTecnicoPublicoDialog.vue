@@ -156,9 +156,9 @@ function moneda(valor: number) {
           >
             <span class="text-ink">{{ tarifa.categoria_nombre ?? 'Categoría' }}</span>
             <span class="font-medium text-pacific">
-              {{ moneda(tarifa.precio_min) }} - {{ moneda(tarifa.precio_max) }}
+              {{ tarifa.tipo_servicio }} · {{ moneda(tarifa.precio) }}
               <span class="text-xs font-normal text-muted">
-                {{ tarifa.unidad_cobro === 'por_hora' ? '/ hora' : '/ servicio' }}
+                / visita · {{ tarifa.negociable ? 'Negociable' : 'No negociable' }}
               </span>
             </span>
           </div>

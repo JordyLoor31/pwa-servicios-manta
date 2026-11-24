@@ -7,7 +7,7 @@ import { UpdatePerfilTecnicoDto } from '../dtos/update-perfil-tecnico.dto';
 import { SlotDisponibilidadDto } from '../dtos/reemplazar-disponibilidad.dto';
 import { CrearCertificacionDto } from '../dtos/crear-certificacion.dto';
 import { RevisarCertificacionDto } from '../dtos/revisar-certificacion.dto';
-import { RangoPrecioDto } from '../dtos/reemplazar-tarifas.dto';
+import { TarifaTecnicoDto } from '../dtos/reemplazar-tarifas.dto';
 import { PerfilesTecnicoConsultaService } from './perfiles-tecnico-consulta.service';
 import { PerfilesTecnicoDisponibilidadService } from './perfiles-tecnico-disponibilidad.service';
 import { PerfilesTecnicoCategoriasService } from './perfiles-tecnico-categorias.service';
@@ -144,7 +144,7 @@ export class PerfilesTecnicoService {
     return this.tarifasService.obtenerTarifas(usuarioId);
   }
 
-  async reemplazarTarifas(usuarioId: string, tarifas: RangoPrecioDto[]) {
+  async reemplazarTarifas(usuarioId: string, tarifas: TarifaTecnicoDto[]) {
     return this.tarifasService.reemplazarTarifas(usuarioId, tarifas);
   }
 

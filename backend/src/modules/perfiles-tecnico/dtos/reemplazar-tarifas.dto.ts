@@ -1,27 +1,40 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsIn, IsNumber, IsUUID, Max, Min, ValidateNested } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsIn,
+  IsNumber,
+  IsString,
+  IsUUID,
+  Max,
+  MaxLength,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 
-export class RangoPrecioDto {
+export class TarifaTecnicoDto {
   @IsUUID()
   categoria_id: string;
 
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   @Max(999999.99)
-  precio_min: number;
+  precio: number;
 
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Min(0)
-  @Max(999999.99)
-  precio_max: number;
+  @IsIn(['por_visita'])
+  unidad_cobro = 'por_visita' as const;
 
-  @IsIn(['por_hora', 'por_servicio'])
-  unidad_cobro: 'por_hora' | 'por_servicio' = 'por_servicio';
+  @IsString()
+  @MaxLength(80)
+  tipo_servicio: string;
+
+  @IsBoolean()
+  negociable: boolean;
 }
 
 export class ReemplazarTarifasDto {
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => RangoPrecioDto)
-  tarifas: RangoPrecioDto[];
+  @Type(() => TarifaTecnicoDto)
+  tarifas: TarifaTecnicoDto[];
 }

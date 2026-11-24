@@ -669,10 +669,20 @@ function onPostulacionEnviada() {
                     <p class="font-bold text-pacific">
                       {{ moneda(postulacion.precio) }}
                       <span class="text-xs font-normal text-muted">
-                        {{ postulacion.unidad_cobro === 'por_hora' ? '/ hora' : '/ servicio' }}
+                        {{
+                          postulacion.unidad_cobro === 'por_hora'
+                            ? '/ hora'
+                            : postulacion.unidad_cobro === 'por_servicio'
+                              ? '/ servicio'
+                              : '/ visita'
+                        }}
                       </span>
                     </p>
                   </div>
+                  <p class="mt-1 text-xs text-muted">
+                    {{ postulacion.tipo_servicio }} ·
+                    {{ postulacion.negociable ? 'Precio negociable' : 'Precio no negociable' }}
+                  </p>
                   <p v-if="postulacion.mensaje" class="mt-3 rounded-lg bg-card p-2 text-xs text-muted">
                     {{ postulacion.mensaje }}
                   </p>

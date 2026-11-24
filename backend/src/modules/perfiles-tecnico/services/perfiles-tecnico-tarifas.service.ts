@@ -4,7 +4,7 @@ import { DataSource, In, Repository } from 'typeorm';
 import { PerfilTecnico } from '../entities/perfil-tecnico.entity';
 import { TarifaTecnico } from '../entities/tarifa-tecnico.entity';
 import { CategoriaServicio } from '../../categorias/entities/categoria-servicio.entity';
-import { RangoPrecioDto } from '../dtos/reemplazar-tarifas.dto';
+import { TarifaTecnicoDto } from '../dtos/reemplazar-tarifas.dto';
 import { asegurarPerfil } from './perfiles-tecnico.helpers';
 
 @Injectable()
@@ -27,15 +27,13 @@ export class PerfilesTecnicoTarifasService {
     });
   }
 
-  async reemplazarTarifas(usuarioId: string, tarifas: RangoPrecioDto[]) {
+  async reemplazarTarifas(usuarioId: string, tarifas: TarifaTecnicoDto[]) {
     await asegurarPerfil(this.perfilesRepository, usuarioId);
-    const unicas: RangoPrecioDto[] = [];
+    const unicas: TarifaTecnicoDto[] = [];
     const vistas = new Set<string>();
     for (const tarifa of tarifas) {
-      if (tarifa.precio_max < tarifa.precio_min) {
-        throw new BadRequestException(
-          'precio_max debe ser mayor o igual a precio_min en cada categoría',
-        );
+      if (!tarifa.tipo_servicio.trim()) {
+        throw new BadRequestException('El tipo de servicio es obligatorio en cada categoría');
       }
       if (!vistas.has(tarifa.categoria_id)) {
         vistas.add(tarifa.categoria_id);
@@ -58,9 +56,10 @@ export class PerfilesTecnicoTarifasService {
           unicas.map((tarifa) => ({
             tecnico_id: usuarioId,
             categoria_id: tarifa.categoria_id,
-            precio_min: tarifa.precio_min,
-            precio_max: tarifa.precio_max,
-            unidad_cobro: tarifa.unidad_cobro ?? 'por_servicio',
+            precio: tarifa.precio,
+            unidad_cobro: 'por_visita',
+            tipo_servicio: tarifa.tipo_servicio.trim(),
+            negociable: tarifa.negociable,
           })),
         );
       }
