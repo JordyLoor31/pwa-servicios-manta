@@ -62,7 +62,18 @@ export class SolicitudesService {
       }
     }
     const categoriaIds = [...new Set(dto.categoria_ids)];
-    for (const nombre of new Set((dto.categorias_personalizadas ?? []).map((valor) => valor.trim()).filter(Boolean))) {
+    const categoriasPersonalizadas = [
+      ...new Set((dto.categorias_personalizadas ?? []).map((valor) => valor.trim()).filter(Boolean)),
+    ];
+    if (categoriaIds.length + categoriasPersonalizadas.length > 1) {
+      throw new BadRequestException(
+        'Solo puedes incluir una categoría por solicitud. Crea otra solicitud para servicios de otra categoría.',
+      );
+    }
+    if (categoriaIds.length + categoriasPersonalizadas.length === 0) {
+      throw new BadRequestException('Debes seleccionar una categoría para la solicitud');
+    }
+    for (const nombre of categoriasPersonalizadas) {
       if (!this.categoriasRepository) continue;
       let categoria = await this.categoriasRepository.findOne({
         where: { nombre },

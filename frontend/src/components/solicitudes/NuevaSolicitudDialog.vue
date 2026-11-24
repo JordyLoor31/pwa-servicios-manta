@@ -133,7 +133,8 @@ async function submit() {
           />
         </div>
         <p class="text-xs text-muted">
-          Elige una o varias categorías. Solo podrás escribir una categoría al seleccionar “Otro”.
+          Una categoría por solicitud. Para otra categoría, crea una solicitud aparte.
+          Solo podrás escribir una categoría personalizada al seleccionar “Otro”.
         </p>
         <p v-if="categorias.length === 0" class="text-xs text-muted">Cargando categorías…</p>
       </div>

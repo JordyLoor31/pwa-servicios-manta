@@ -199,6 +199,20 @@ export function useNuevaSolicitud() {
 
   async function crear(): Promise<Solicitud | null> {
     const descripcion = form.value.descripcion.trim()
+    const cantidadCategorias = new Set([
+      ...categoriasSeleccionadas.value,
+      ...categoriasPersonalizadas.value.map((nombre) => nombre.trim().toLocaleLowerCase('es')),
+    ]).size
+    if (cantidadCategorias > 1) {
+      toast.add({
+        severity: 'warn',
+        summary: 'Una categoría por solicitud',
+        detail: 'Para solicitar servicios de otra categoría, crea una solicitud nueva por separado.',
+        life: 4500,
+      })
+      return null
+    }
+
     const tiposServicio = Object.values(serviciosPorCategoria.value)
       .flat()
       .map((tipo) => tipo.trim())
