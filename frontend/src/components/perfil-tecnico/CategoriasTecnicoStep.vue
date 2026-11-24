@@ -111,21 +111,27 @@ function tarifaValida(rango: RangoPrecio): boolean {
           <div
             v-for="(tarifa, indice) in tarifas[categoria.id]"
             :key="tarifa.id ?? `${categoria.id}-${indice}`"
-            class="grid gap-3 rounded-lg bg-cloud/70 p-3 sm:grid-cols-[1fr_0.7fr_0.8fr_auto]"
+            class="grid min-w-0 grid-cols-1 gap-3 rounded-lg bg-cloud/70 p-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.7fr)_minmax(0,0.8fr)_auto]"
           >
-            <label class="flex flex-col gap-1">
+            <label class="flex min-w-0 flex-col gap-1">
               <span class="text-xs font-medium text-ink">Tipo de servicio</span>
               <Select
                 v-model="tarifa.tipoServicio"
                 :options="tiposServicioParaCategoria(categoria.nombre)"
                 placeholder="Selecciona un tipo"
+                class="w-full min-w-0"
               />
             </label>
-            <label class="flex flex-col gap-1">
+            <label class="flex min-w-0 flex-col gap-1">
               <span class="text-xs font-medium text-ink">Precio por visita</span>
-              <InputText v-model="tarifa.precio" inputmode="decimal" placeholder="$ 0.00" />
+              <InputText
+                v-model="tarifa.precio"
+                inputmode="decimal"
+                placeholder="$ 0.00"
+                class="w-full min-w-0"
+              />
             </label>
-            <label class="flex flex-col gap-1">
+            <label class="flex min-w-0 flex-col gap-1">
               <span class="text-xs font-medium text-ink">Condición</span>
               <Select
                 v-model="tarifa.negociable"
@@ -135,6 +141,7 @@ function tarifaValida(rango: RangoPrecio): boolean {
                 ]"
                 option-label="label"
                 option-value="value"
+                class="w-full min-w-0"
               />
             </label>
             <Button
@@ -143,9 +150,13 @@ function tarifaValida(rango: RangoPrecio): boolean {
               variant="text"
               :disabled="tarifas[categoria.id].length <= 1"
               :aria-label="`Eliminar ${tarifa.tipoServicio}`"
+              class="justify-self-end self-end"
               @click="tarifas[categoria.id].splice(indice, 1)"
             />
-            <p v-if="!tarifaValida(tarifa)" class="text-xs text-red-500 sm:col-span-4">
+            <p
+              v-if="!tarifaValida(tarifa)"
+              class="text-xs text-red-500 sm:col-span-2 lg:col-span-4"
+            >
               Completa el tipo de servicio y un precio válido.
             </p>
           </div>
