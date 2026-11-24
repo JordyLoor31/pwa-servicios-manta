@@ -1,6 +1,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useAuthz } from '../auth/useAuthz'
+import { ApiError } from '../../services/api'
 import { perfilTecnicoApi } from '../../services/perfil-tecnico'
 import { useCategoriasTecnico } from './useCategoriasTecnico'
 
@@ -20,6 +21,8 @@ export function usePerfilTecnicoForm() {
 
   const activeStep = ref(1)
   const cargandoDatos = ref(false)
+  const cargandoPerfil = ref(true)
+  const errorCargandoPerfil = ref(false)
 
   const aniosExperiencia = ref<number | null>(null)
   const radioCobertura = ref<number | null>(null)
@@ -40,20 +43,31 @@ export function usePerfilTecnicoForm() {
   }
 
   async function cargarPerfil() {
-    if (!usuarioId.value) return
+    const id = usuarioId.value
+    if (!id) {
+      cargandoPerfil.value = false
+      return
+    }
     try {
-      const perfil = await perfilTecnicoApi.obtener(usuarioId.value)
+      const perfil = await perfilTecnicoApi.obtener(id)
       aniosExperiencia.value = perfil.anios_experiencia
       radioCobertura.value = perfil.radio_cobertura_km
       biografia.value = perfil.biografia ?? ''
       perfilExistente.value = true
-    } catch {
-      perfilExistente.value = false
+    } catch (error) {
+      if (error instanceof ApiError && error.statusCode === 404) {
+        perfilExistente.value = false
+        return
+      }
+      errorCargandoPerfil.value = true
+      notificarError(error, 'No se pudo verificar tu perfil técnico')
+    } finally {
+      cargandoPerfil.value = false
     }
   }
 
-  onMounted(async () => {
-    await Promise.allSettled([cargarPerfil()])
+  onMounted(() => {
+    void cargarPerfil()
   })
 
   function irAPaso(paso: number) {
@@ -62,7 +76,7 @@ export function usePerfilTecnicoForm() {
 
   async function guardarDatos(): Promise<boolean> {
     const id = usuarioId.value
-    if (!id) return false
+    if (!id || cargandoPerfil.value || errorCargandoPerfil.value) return false
     cargandoDatos.value = true
     try {
       const datos = {
@@ -96,6 +110,8 @@ export function usePerfilTecnicoForm() {
   return {
     activeStep,
     cargandoDatos,
+    cargandoPerfil,
+    errorCargandoPerfil,
     cargandoCatalogo,
     guardandoCategorias,
     aniosExperiencia,

@@ -37,6 +37,16 @@ export function useNuevaSolicitud() {
   const direccionLatitud = ref<number | undefined>()
   const direccionLongitud = ref<number | undefined>()
 
+  function avisarUnaCategoria() {
+    toast.add({
+      group: 'nueva-solicitud',
+      severity: 'warn',
+      summary: 'Una categoría por solicitud',
+      detail: 'Para otra categoría, crea una solicitud nueva por separado.',
+      life: 4500,
+    })
+  }
+
   function actualizarServicios(categoriaId: string, valores: string[]) {
     serviciosPorCategoria.value[categoriaId] = [...new Set(
       valores.map((valor) => valor.trim().slice(0, 150)).filter(Boolean),
@@ -46,10 +56,29 @@ export function useNuevaSolicitud() {
   function actualizarCategoriasTags(valores: string[]) {
     const nombresPermitidos = new Set(categorias.value.map((categoria) => categoria.nombre))
     const etiquetas = [...new Set(valores.map((valor) => valor.trim()).filter(Boolean))]
+      .filter((etiqueta) => nombresPermitidos.has(etiqueta) || etiqueta === 'Otro')
+
+    if (etiquetas.length > 1) {
+      avisarUnaCategoria()
+      const categoriaActual = categoriasTags.value.find((etiqueta) => etiquetas.includes(etiqueta))
+      if (categoriaActual) {
+        categoriasTags.value = [categoriaActual]
+        categoriasSeleccionadas.value = categorias.value
+          .filter((categoria) => categoria.nombre === categoriaActual)
+          .map((categoria) => categoria.id)
+        categoriaOtro.value = categoriaActual === 'Otro'
+        return
+      }
+      etiquetas.splice(1)
+    }
+
+    if (categoriasPersonalizadas.value.length > 0 && etiquetas.length > 0) {
+      avisarUnaCategoria()
+      return
+    }
+
     categoriaOtro.value = etiquetas.includes('Otro')
-    categoriasTags.value = etiquetas.filter((etiqueta) =>
-      nombresPermitidos.has(etiqueta) || etiqueta === 'Otro',
-    )
+    categoriasTags.value = etiquetas
     categoriasSeleccionadas.value = categorias.value
       .filter((categoria) => categoriasTags.value.includes(categoria.nombre))
       .map((categoria) => categoria.id)
@@ -58,6 +87,10 @@ export function useNuevaSolicitud() {
   function agregarCategoriaPersonalizada() {
     const nombre = categoriaPersonalizadaTexto.value.trim().slice(0, 80)
     if (!nombre) return
+    if (categoriasSeleccionadas.value.length > 0 || categoriasPersonalizadas.value.length > 0) {
+      avisarUnaCategoria()
+      return
+    }
     categoriasPersonalizadas.value = [...new Set([...categoriasPersonalizadas.value, nombre])]
     categoriaPersonalizadaTexto.value = ''
   }
@@ -204,12 +237,7 @@ export function useNuevaSolicitud() {
       ...categoriasPersonalizadas.value.map((nombre) => nombre.trim().toLocaleLowerCase('es')),
     ]).size
     if (cantidadCategorias > 1) {
-      toast.add({
-        severity: 'warn',
-        summary: 'Una categoría por solicitud',
-        detail: 'Para solicitar servicios de otra categoría, crea una solicitud nueva por separado.',
-        life: 4500,
-      })
+      avisarUnaCategoria()
       return null
     }
 

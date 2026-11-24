@@ -52,6 +52,8 @@ onMounted(async () => {
 const {
   activeStep,
   cargandoDatos,
+  cargandoPerfil,
+  errorCargandoPerfil,
   cargandoCatalogo,
   guardandoCategorias,
   aniosExperiencia,
@@ -127,6 +129,8 @@ const {
                 v-model:radio="radioCobertura"
                 v-model:biografia="biografia"
                 :cargando="cargandoDatos"
+                :cargando-perfil="cargandoPerfil"
+                :error-cargando-perfil="errorCargandoPerfil"
                 @continuar="guardarDatos"
               />
             </StepPanel>

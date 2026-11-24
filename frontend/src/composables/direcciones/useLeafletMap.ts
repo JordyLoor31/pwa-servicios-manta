@@ -3,8 +3,10 @@ export interface LatLng {
   lng: number
 }
 
+type LatLngExpression = LatLng | [number, number]
+
 export interface LeafletMarker {
-  setLatLng: (latlng: LatLng) => void
+  setLatLng: (latlng: LatLngExpression) => void
   getLatLng: () => LatLng
   remove: () => void
   addTo: (mapa: LeafletMap) => LeafletMarker
@@ -12,16 +14,29 @@ export interface LeafletMarker {
 }
 
 export interface LeafletMap {
-  setView: (lat: number, lng: number, zoom?: number) => LeafletMap
+  setView: (centro: [number, number], zoom?: number) => LeafletMap
   on: (evento: string, callback: (event?: { latlng?: LatLng }) => void) => void
   remove: () => void
   invalidateSize: () => void
+}
+
+export interface LeafletCircle {
+  setLatLng: (latlng: LatLngExpression) => void
+  setRadius: (radioMetros: number) => void
+  addTo: (mapa: LeafletMap) => LeafletCircle
+}
+
+export interface LeafletCoverageMap {
+  mapa: LeafletMap
+  circulo: LeafletCircle
+  marcador: LeafletMarker
 }
 
 interface LeafletApi {
   map: (contenedor: HTMLElement, opciones: Record<string, unknown>) => LeafletMap
   tileLayer: (url: string, opciones: Record<string, unknown>) => { addTo: (mapa: LeafletMap) => void }
   marker: (latlng: [number, number], opciones?: Record<string, unknown>) => LeafletMarker
+  circle: (latlng: [number, number], opciones: Record<string, unknown>) => LeafletCircle
 }
 
 interface WindowLeaflet {
@@ -64,6 +79,16 @@ function cargarLeaflet(): Promise<void> {
   return cargandoLeaflet
 }
 
+function agregarCapaOpenStreetMap(L: LeafletApi, mapa: LeafletMap) {
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+  }).addTo(mapa)
+}
+
+function zoomParaRadio(radioKm: number) {
+  return Math.max(3, Math.min(16, Math.floor(13 - Math.log2(Math.max(radioKm, 0.5)))))
+}
+
 export function useLeafletMap() {
   async function crearMapa(
     contenedor: HTMLElement,
@@ -75,9 +100,7 @@ export function useLeafletMap() {
     const L = ventana.L
     if (!L) throw new Error('Leaflet no está disponible')
     const mapa = L.map(contenedor, { center: [centro.lat, centro.lng], zoom: 15 })
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors',
-    }).addTo(mapa)
+    agregarCapaOpenStreetMap(L, mapa)
     const marcador = L.marker([centro.lat, centro.lng], { draggable: true })
     marcador.setLatLng(centro)
     marcador.addTo(mapa)
@@ -95,5 +118,30 @@ export function useLeafletMap() {
     return { mapa, marcador }
   }
 
-  return { crearMapa }
+  async function crearMapaCobertura(
+    contenedor: HTMLElement,
+    centro: LatLng,
+    radioKm: number,
+  ): Promise<LeafletCoverageMap> {
+    await cargarLeaflet()
+    const ventana = window as unknown as WindowLeaflet
+    const L = ventana.L
+    if (!L) throw new Error('Leaflet no está disponible')
+    const mapa = L.map(contenedor, {
+      center: [centro.lat, centro.lng],
+      zoom: zoomParaRadio(radioKm),
+    })
+    agregarCapaOpenStreetMap(L, mapa)
+    const marcador = L.marker([centro.lat, centro.lng]).addTo(mapa)
+    const circulo = L.circle([centro.lat, centro.lng], {
+      radius: radioKm * 1000,
+      color: '#0099a8',
+      fillColor: '#16b6bf',
+      fillOpacity: 0.18,
+      weight: 2,
+    }).addTo(mapa)
+    return { mapa, circulo, marcador }
+  }
+
+  return { crearMapa, crearMapaCobertura }
 }

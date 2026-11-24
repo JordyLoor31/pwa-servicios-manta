@@ -55,7 +55,6 @@ export function tieneToken(): boolean {
 }
 
 export function iniciarSesion(token: string, usuario: UsuarioSesion) {
-  sessionStorage.removeItem('onboarding_completado')
   localStorage.setItem(TOKEN_KEY, token)
   localStorage.setItem(USER_KEY, JSON.stringify(usuario))
   localStorage.setItem(SESION_KEY, String(Date.now()))
@@ -70,7 +69,6 @@ export function cerrarSesion() {
   localStorage.removeItem(TOKEN_KEY)
   localStorage.removeItem(USER_KEY)
   localStorage.removeItem(SESION_KEY)
-  sessionStorage.removeItem('onboarding_completado')
   desconectarNotificaciones()
 }
 

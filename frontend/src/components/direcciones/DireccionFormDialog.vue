@@ -133,7 +133,7 @@ watch(() => props.visible, async (abierto) => {
 
 function actualizarMapa(latitud: number, longitud: number) {
   if (!instanciaMapa.value) return
-  instanciaMapa.value.mapa.setView(latitud, longitud, 15)
+  instanciaMapa.value.mapa.setView([latitud, longitud], 15)
   instanciaMapa.value.marcador.setLatLng({ lat: latitud, lng: longitud })
 }
 

@@ -10,7 +10,7 @@ import DireccionFormDialog from '../../components/direcciones/DireccionFormDialo
 import DatosStep from '../../components/perfil-tecnico/DatosStep.vue'
 import CategoriasTecnicoStep from '../../components/perfil-tecnico/CategoriasTecnicoStep.vue'
 import { useAuthz } from '../../composables/auth/useAuthz'
-import { marcarOnboardingCompletado } from '../../composables/auth/useOnboarding'
+import { necesitaOnboarding } from '../../composables/auth/useOnboarding'
 import { useDirecciones } from '../../composables/direcciones/useDirecciones'
 import { useDisponibilidad } from '../../composables/disponibilidad/useDisponibilidad'
 import { usePerfilTecnicoForm } from '../../composables/perfil-tecnico/usePerfilTecnicoForm'
@@ -21,6 +21,7 @@ const { usuario } = useAuthz()
 const esTecnico = computed(() => usuario.value?.rol === 'tecnico')
 const paso = ref(1)
 const cargando = ref(false)
+const verificandoConfiguracion = ref(true)
 
 const {
   direcciones,
@@ -35,6 +36,8 @@ const {
 
 const {
   cargandoDatos,
+  cargandoPerfil,
+  errorCargandoPerfil,
   cargandoCatalogo,
   guardandoCategorias,
   aniosExperiencia,
@@ -134,20 +137,39 @@ async function finalizar() {
 }
 
 function completar() {
-  marcarOnboardingCompletado()
   router.replace(esTecnico.value ? '/solicitudes/recibidas' : '/solicitudes')
 }
 
 onMounted(async () => {
-  await cargarDirecciones()
-  if (esTecnico.value) await cargarDisponibilidad()
+  try {
+    const usuarioActual = usuario.value
+    if (usuarioActual && !(await necesitaOnboarding(usuarioActual))) {
+      await router.replace(esTecnico.value ? '/solicitudes/recibidas' : '/solicitudes')
+      return
+    }
+    await cargarDirecciones()
+    if (esTecnico.value) await cargarDisponibilidad()
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: 'No se pudo verificar la configuración',
+      detail: error instanceof Error ? error.message : 'Recarga la página para volver a intentar.',
+      life: 5000,
+    })
+    await router.replace('/')
+  } finally {
+    verificandoConfiguracion.value = false
+  }
 })
 </script>
 
 <template>
   <div class="flex min-h-screen items-center justify-center bg-cloud p-4">
     <Toast />
-    <div v-if="cargando" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40">
+    <div
+      v-if="cargando || verificandoConfiguracion"
+      class="fixed inset-0 z-[60] flex items-center justify-center bg-black/40"
+    >
       <AppProgressSpinner />
     </div>
     <Card class="w-full max-w-3xl">
@@ -187,6 +209,8 @@ onMounted(async () => {
           v-model:radio="radioCobertura"
           v-model:biografia="biografia"
           :cargando="cargandoDatos"
+          :cargando-perfil="cargandoPerfil"
+          :error-cargando-perfil="errorCargandoPerfil"
           @continuar="siguientePerfil"
         />
         <CategoriasTecnicoStep

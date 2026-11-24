@@ -20,12 +20,20 @@ const router = useRouter()
 const nuevaSolicitudVisible = ref(false)
 const configuracionPendiente = ref(false)
 const avisoSolicitudVisible = ref(false)
+const errorVerificacion = ref('')
 
 const esCliente = () => usuario.value?.rol === 'cliente'
 
 async function revisarConfiguracion() {
   if (!usuario.value || usuario.value.rol === 'admin') return
-  configuracionPendiente.value = await necesitaOnboarding(usuario.value)
+  try {
+    configuracionPendiente.value = await necesitaOnboarding(usuario.value)
+    errorVerificacion.value = ''
+  } catch (error) {
+    configuracionPendiente.value = false
+    errorVerificacion.value =
+      error instanceof Error ? error.message : 'No se pudo verificar tu configuración.'
+  }
 }
 
 function abrirSolicitud() {
@@ -59,6 +67,15 @@ onMounted(() => {
     <AppHeader />
 
     <main class="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-8 px-4 py-6 sm:gap-12 sm:px-6 sm:py-10 lg:px-8">
+      <Message
+        v-if="errorVerificacion"
+        severity="error"
+        :closable="false"
+        class="mx-auto w-full max-w-4xl"
+      >
+        <p>No se pudo verificar tu configuración guardada. No te pediremos completarla como si fuera una cuenta nueva.</p>
+        <p class="mt-1 text-sm">{{ errorVerificacion }} Recarga la página para volver a intentar.</p>
+      </Message>
       <Message
         v-if="configuracionPendiente"
         severity="warn"

@@ -8,6 +8,7 @@ import InputTags from 'primevue/inputtags'
 import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import Select from 'primevue/select'
+import Toast from 'primevue/toast'
 import Textarea from 'primevue/textarea'
 import { useNuevaSolicitud } from '../../composables/solicitudes/useNuevaSolicitud'
 import type { Solicitud } from '../../types/solicitudes'
@@ -69,6 +70,7 @@ async function submit() {
     class="w-full max-w-lg"
     @update:visible="cerrar"
   >
+    <Toast group="nueva-solicitud" position="top-center" />
     <div class="mt-2 flex flex-col gap-4">
       <Message severity="info" :closable="false">
         Elige el servicio, cuándo lo necesitas, explica el trabajo y selecciona la dirección donde será atendido.
