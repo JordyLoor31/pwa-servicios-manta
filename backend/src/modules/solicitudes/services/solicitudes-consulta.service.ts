@@ -74,6 +74,7 @@ export class SolicitudesConsultaService {
         'postulacion.unidad_cobro AS unidad_cobro',
         'postulacion.precio AS precio',
         'postulacion.tipo_servicio AS tipo_servicio',
+        'postulacion.categoria_id AS categoria_id',
         'postulacion.negociable AS negociable',
         'postulacion.mensaje AS mensaje',
         'postulacion.estado AS estado',

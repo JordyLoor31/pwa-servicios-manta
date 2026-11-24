@@ -13,6 +13,7 @@ import { DisponibilidadTecnico } from '../../perfiles-tecnico/entities/disponibi
 import { Usuario, RolUsuario, EstadoUsuario } from '../../usuarios/entities/usuario.entity';
 import { PerfilTecnico } from '../../perfiles-tecnico/entities/perfil-tecnico.entity';
 import { TecnicoCategoria } from '../../perfiles-tecnico/entities/tecnico-categoria.entity';
+import { CategoriaServicio } from '../../categorias/entities/categoria-servicio.entity';
 import { CrearSolicitudDto } from '../dtos/crear-solicitud.dto';
 import { RechazarSolicitudDto } from '../dtos/rechazar-solicitud.dto';
 import { CrearPostulacionDto } from '../dtos/crear-postulacion.dto';
@@ -42,6 +43,8 @@ export class SolicitudesService {
     private readonly consultasService: SolicitudesConsultaService,
     private readonly postulacionesService: SolicitudesPostulacionesService,
     private readonly calificacionesService: SolicitudesCalificacionesService,
+    @InjectRepository(CategoriaServicio)
+    private readonly categoriasRepository: Repository<CategoriaServicio>,
   ) {}
 
   async crear(clienteId: string, dto: CrearSolicitudDto, idempotencyKey?: string) {
@@ -57,6 +60,23 @@ export class SolicitudesService {
           rol: RolUsuario.CLIENTE,
         } as AuthenticatedUser);
       }
+    }
+    const categoriaIds = [...new Set(dto.categoria_ids)];
+    for (const nombre of new Set((dto.categorias_personalizadas ?? []).map((valor) => valor.trim()).filter(Boolean))) {
+      let categoria = await this.categoriasRepository.findOne({
+        where: { nombre },
+      });
+      if (!categoria) {
+        categoria = await this.categoriasRepository.save(
+          this.categoriasRepository.create({
+            nombre,
+            descripcion: 'Categoría creada por una solicitud',
+            icono: 'pi pi-tag',
+            activa: true,
+          }),
+        );
+      }
+      categoriaIds.push(categoria.id);
     }
 
     if (dto.tecnico_id) {
@@ -119,9 +139,9 @@ export class SolicitudesService {
         rol: RolUsuario.CLIENTE,
       } as AuthenticatedUser);
     }
-    if (dto.categoria_ids.length > 0) {
+    if (categoriaIds.length > 0) {
       await this.solicitudCategoriasRepository.insert(
-        dto.categoria_ids.map((categoria_id) => ({ solicitud_id: solicitud.id, categoria_id })),
+        categoriaIds.map((categoria_id) => ({ solicitud_id: solicitud.id, categoria_id })),
       );
     }
     const vista = await this.detalle(solicitud.id, {
@@ -145,7 +165,6 @@ export class SolicitudesService {
       .select('u.id AS id')
       .distinct(true);
 
-    const categoriaIds = [...new Set(dto.categoria_ids)];
     if (categoriaIds.length > 0) {
       consultaTecnicos
         .innerJoin(TecnicoCategoria, 'tc', 'tc.tecnico_id = u.id')

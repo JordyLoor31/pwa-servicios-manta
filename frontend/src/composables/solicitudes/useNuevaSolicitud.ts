@@ -15,6 +15,10 @@ export function useNuevaSolicitud() {
 
   const categorias = ref<CategoriaServicio[]>([])
   const categoriasSeleccionadas = ref<string[]>([])
+  const categoriasTags = ref<string[]>([])
+  const categoriasPersonalizadas = ref<string[]>([])
+  const categoriaOtro = ref(false)
+  const categoriaPersonalizadaTexto = ref('')
   const fechaServicio = ref<Date>(new Date())
   const tecnicos = ref<TecnicoDirectorio[]>([])
   const cargandoTecnicos = ref(false)
@@ -37,6 +41,29 @@ export function useNuevaSolicitud() {
     serviciosPorCategoria.value[categoriaId] = [...new Set(
       valores.map((valor) => valor.trim().slice(0, 150)).filter(Boolean),
     )]
+  }
+
+  function actualizarCategoriasTags(valores: string[]) {
+    const nombresPermitidos = new Set(categorias.value.map((categoria) => categoria.nombre))
+    const etiquetas = [...new Set(valores.map((valor) => valor.trim()).filter(Boolean))]
+    categoriaOtro.value = etiquetas.includes('Otro')
+    categoriasTags.value = etiquetas.filter((etiqueta) =>
+      nombresPermitidos.has(etiqueta) || etiqueta === 'Otro',
+    )
+    categoriasSeleccionadas.value = categorias.value
+      .filter((categoria) => categoriasTags.value.includes(categoria.nombre))
+      .map((categoria) => categoria.id)
+  }
+
+  function agregarCategoriaPersonalizada() {
+    const nombre = categoriaPersonalizadaTexto.value.trim().slice(0, 80)
+    if (!nombre) return
+    categoriasPersonalizadas.value = [...new Set([...categoriasPersonalizadas.value, nombre])]
+    categoriaPersonalizadaTexto.value = ''
+  }
+
+  function eliminarCategoriaPersonalizada(nombre: string) {
+    categoriasPersonalizadas.value = categoriasPersonalizadas.value.filter((actual) => actual !== nombre)
   }
 
   function horaEsFutura(hora: string): boolean {
@@ -142,6 +169,10 @@ export function useNuevaSolicitud() {
   function iniciar() {
     form.value = { tecnico_id: '', descripcion: '', direccion: '' }
     categoriasSeleccionadas.value = []
+    categoriasTags.value = []
+    categoriasPersonalizadas.value = []
+    categoriaOtro.value = false
+    categoriaPersonalizadaTexto.value = ''
     fechaServicio.value = new Date()
     horas.value = [...horasBase]
     horaBusqueda.value = horasBase[0]
@@ -175,7 +206,7 @@ export function useNuevaSolicitud() {
     if (
       descripcion.length < 10 ||
       !horaBusqueda.value ||
-      categoriasSeleccionadas.value.length === 0 ||
+      (categoriasSeleccionadas.value.length === 0 && categoriasPersonalizadas.value.length === 0) ||
       tiposServicio.length === 0
     ) {
       toast.add({
@@ -217,6 +248,7 @@ export function useNuevaSolicitud() {
         duracion_oferta_minutos: 30 | 180 | 360 | 540
         oferta_hasta_fin_dia: boolean
         categoria_ids: string[]
+        categorias_personalizadas?: string[]
         tipos_servicio: string[]
       } = {
         descripcion,
@@ -228,6 +260,7 @@ export function useNuevaSolicitud() {
         duracion_oferta_minutos: duracionOferta.value,
         oferta_hasta_fin_dia: ofertaHastaFinDia.value,
         categoria_ids: categoriasSeleccionadas.value,
+        categorias_personalizadas: categoriasPersonalizadas.value,
         tipos_servicio: tiposServicio,
       }
       if (form.value.tecnico_id) payload.tecnico_id = form.value.tecnico_id
@@ -250,6 +283,10 @@ export function useNuevaSolicitud() {
   return {
     categorias,
     categoriasSeleccionadas,
+    categoriasTags,
+    categoriasPersonalizadas,
+    categoriaOtro,
+    categoriaPersonalizadaTexto,
     fechaServicio,
     tecnicos,
     cargandoTecnicos,
@@ -270,5 +307,8 @@ export function useNuevaSolicitud() {
     actualizarHorasValidas,
     horaEsFutura,
     actualizarServicios,
+    actualizarCategoriasTags,
+    agregarCategoriaPersonalizada,
+    eliminarCategoriaPersonalizada,
   }
 }

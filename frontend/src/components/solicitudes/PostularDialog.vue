@@ -177,7 +177,7 @@ async function enviar() {
       </div>
       <div v-else class="rounded-lg bg-amber-50 p-3 text-sm text-amber-700">
         <i class="pi pi-exclamation-triangle mr-1" />
-        No tienes una tarifa configurada para las categorías de esta oferta.
+        No puedes postularte a esta oferta porque no tienes vinculada ninguna de sus categorías ni una tarifa correspondiente.
         <RouterLink to="/perfil" class="font-medium underline">Actualizar mi perfil</RouterLink>
       </div>
       <div class="flex flex-col gap-1.5">

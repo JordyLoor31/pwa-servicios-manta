@@ -58,6 +58,7 @@ export class SolicitudesPostulacionesService {
       unidad_cobro: tarifa.unidad_cobro,
       precio: tarifa.precio,
       tipo_servicio: tarifa.tipo_servicio,
+      categoria_id: tarifa.categoria_id,
       negociable: tarifa.negociable,
       mensaje: dto.mensaje?.trim() || null,
       estado: EstadoPostulacion.PENDIENTE,

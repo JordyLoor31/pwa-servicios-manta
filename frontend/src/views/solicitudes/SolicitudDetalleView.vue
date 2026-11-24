@@ -937,6 +937,19 @@ function onPostulacionEnviada() {
               class="rounded-2xl border border-pacific/10 bg-card p-5 text-sm shadow-sm"
             >
               <h2 class="text-sm font-semibold text-ink">Calificación del servicio</h2>
+              <p
+                v-if="solicitud.calificacion.tipo_servicio"
+                class="mt-1 text-xs text-muted"
+              >
+                {{
+                  solicitud?.categorias?.find((categoria) =>
+                    categoria.id === solicitud?.calificacion?.categoria_id
+                  )?.nombre
+                }}
+                <span v-if="solicitud.calificacion.tipo_servicio">
+                  · {{ solicitud.calificacion.tipo_servicio }}
+                </span>
+              </p>
               <Rating
                 :modelValue="solicitud.calificacion.calificacion"
                 readonly

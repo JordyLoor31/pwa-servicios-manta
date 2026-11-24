@@ -10,6 +10,7 @@ import { Usuario } from '../usuarios/entities/usuario.entity';
 import { PerfilTecnico } from '../perfiles-tecnico/entities/perfil-tecnico.entity';
 import { DisponibilidadTecnico } from '../perfiles-tecnico/entities/disponibilidad-tecnico.entity';
 import { Direccion } from '../direcciones/entities/direccion.entity';
+import { CategoriaServicio } from '../categorias/entities/categoria-servicio.entity';
 import { SolicitudesController } from './controllers/solicitudes.controller';
 import { SolicitudesService } from './services/solicitudes.service';
 import { SolicitudesDisponibilidadService } from './services/solicitudes-disponibilidad.service';
@@ -33,6 +34,7 @@ import { NotificacionesPushModule } from '../notificaciones-push/notificaciones-
       PerfilTecnico,
       DisponibilidadTecnico,
       Direccion,
+      CategoriaServicio,
     ]),
     NotificacionesModule,
     NotificacionesPushModule,

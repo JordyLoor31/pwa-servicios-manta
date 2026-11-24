@@ -47,6 +47,12 @@ export class CrearSolicitudDto {
   @IsUUID('4', { each: true })
   categoria_ids: string[];
 
+  @IsArray()
+  @IsString({ each: true })
+  @MaxLength(80, { each: true })
+  @IsOptional()
+  categorias_personalizadas?: string[];
+
   @IsNumber()
   @IsOptional()
   @IsIn([30, 180, 360, 540])

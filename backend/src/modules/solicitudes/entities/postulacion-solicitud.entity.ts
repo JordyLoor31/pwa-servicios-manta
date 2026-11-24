@@ -43,6 +43,10 @@ export class PostulacionSolicitud {
   @Column({ type: 'enum', enum: ['por_hora', 'por_servicio', 'por_visita'] })
   unidad_cobro: 'por_hora' | 'por_servicio' | 'por_visita';
 
+  @Index('idx_postulaciones_categoria')
+  @Column({ type: 'uuid', nullable: true })
+  categoria_id: string | null;
+
   @Column({ type: 'varchar', length: 80, default: 'Servicio general' })
   tipo_servicio: string;
 

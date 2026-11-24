@@ -47,6 +47,13 @@ export class CalificacionTecnico {
   @JoinColumn({ name: 'tecnico_id' })
   tecnico: Usuario;
 
+  @Index('idx_calificaciones_categoria')
+  @Column({ type: 'uuid', nullable: true })
+  categoria_id: string | null;
+
+  @Column({ type: 'varchar', length: 150, nullable: true })
+  tipo_servicio: string | null;
+
   @Column({ type: 'smallint' })
   calificacion: number;
 

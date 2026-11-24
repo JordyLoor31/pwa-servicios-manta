@@ -19,6 +19,8 @@ export interface CalificacionSolicitud {
   tecnico_id: string
   calificacion: number
   comentario: string | null
+  categoria_id?: string | null
+  tipo_servicio?: string | null
   fecha_creacion: string
 }
 
@@ -61,6 +63,7 @@ export interface PostulacionSolicitud {
   unidad_cobro: 'por_hora' | 'por_servicio' | 'por_visita'
   precio: number
   tipo_servicio: string
+  categoria_id?: string | null
   negociable: boolean
   mensaje: string | null
   estado: EstadoPostulacion
@@ -97,6 +100,7 @@ export interface CrearSolicitudPayload {
   oferta_hasta_fin_dia?: boolean
   tipos_servicio: string[]
   categoria_ids: string[]
+  categorias_personalizadas?: string[]
 }
 
 export interface TecnicoDirectorio {

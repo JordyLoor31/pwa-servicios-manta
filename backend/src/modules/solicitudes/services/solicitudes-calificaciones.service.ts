@@ -11,6 +11,7 @@ import { EstadoSolicitud, Solicitud } from '../entities/solicitud.entity';
 import { CalificacionTecnico } from '../entities/calificacion-tecnico.entity';
 import { PerfilTecnico } from '../../perfiles-tecnico/entities/perfil-tecnico.entity';
 import { CalificarSolicitudDto } from '../dtos/calificar-solicitud.dto';
+import { EstadoPostulacion, PostulacionSolicitud } from '../entities/postulacion-solicitud.entity';
 import type { AuthenticatedUser } from '../../auth/decorators/current-user.decorator';
 
 @Injectable()
@@ -22,6 +23,8 @@ export class SolicitudesCalificacionesService {
     private readonly calificacionesRepository: Repository<CalificacionTecnico>,
     @InjectRepository(PerfilTecnico)
     private readonly perfilesRepository: Repository<PerfilTecnico>,
+    @InjectRepository(PostulacionSolicitud)
+    private readonly postulacionesRepository: Repository<PostulacionSolicitud>,
   ) {}
 
   async calificar(id: string, dto: CalificarSolicitudDto, user: AuthenticatedUser) {
@@ -43,6 +46,13 @@ export class SolicitudesCalificacionesService {
     if (existente) {
       throw new ConflictException('Ya calificaste este servicio');
     }
+    const postulacionAceptada = await this.postulacionesRepository.findOne({
+      where: {
+        solicitud_id: id,
+        tecnico_id: solicitud.tecnico_id,
+        estado: EstadoPostulacion.ACEPTADA,
+      },
+    });
 
     let calificacion: CalificacionTecnico;
     try {
@@ -50,6 +60,8 @@ export class SolicitudesCalificacionesService {
         solicitud_id: id,
         cliente_id: user.id,
         tecnico_id: solicitud.tecnico_id,
+        categoria_id: postulacionAceptada?.categoria_id ?? null,
+        tipo_servicio: postulacionAceptada?.tipo_servicio ?? null,
         calificacion: dto.calificacion,
         comentario: dto.comentario?.trim() || null,
       });

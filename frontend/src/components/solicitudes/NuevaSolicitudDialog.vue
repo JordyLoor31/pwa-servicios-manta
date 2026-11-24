@@ -5,7 +5,7 @@ import Checkbox from 'primevue/checkbox'
 import DatePicker from 'primevue/datepicker'
 import Dialog from 'primevue/dialog'
 import InputTags from 'primevue/inputtags'
-import Listbox from 'primevue/listbox'
+import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import Select from 'primevue/select'
 import Textarea from 'primevue/textarea'
@@ -26,6 +26,10 @@ function cerrar() {
 const {
   categorias,
   categoriasSeleccionadas,
+  categoriasTags,
+  categoriasPersonalizadas,
+  categoriaOtro,
+  categoriaPersonalizadaTexto,
   serviciosPorCategoria,
   fechaServicio,
   duracionOferta,
@@ -39,6 +43,9 @@ const {
   iniciar,
   crear: crearSolicitud,
   actualizarServicios,
+  actualizarCategoriasTags,
+  agregarCategoriaPersonalizada,
+  eliminarCategoriaPersonalizada,
 } = useNuevaSolicitud()
 
 watch(() => props.visible, (abierto) => {
@@ -68,16 +75,66 @@ async function submit() {
       </Message>
       <div class="flex flex-col gap-1.5">
         <label for="categorias" class="text-sm font-medium text-ink">Categoría del servicio *</label>
-        <Listbox
+        <InputTags
           id="categorias"
-          v-model="categoriasSeleccionadas"
-          :options="categorias"
-          multiple
-          checkbox
-          option-label="nombre"
-          option-value="id"
+          :model-value="categoriasTags"
+          :maxlength="80"
+          separator=","
+          placeholder="Elige una categoría"
           class="w-full"
+          @update:model-value="actualizarCategoriasTags"
         />
+        <div class="flex flex-wrap gap-1.5">
+          <Button
+            v-for="categoria in categorias"
+            :key="categoria.id"
+            :label="categoria.nombre"
+            size="small"
+            severity="secondary"
+            variant="outlined"
+            :disabled="categoriasTags.includes(categoria.nombre)"
+            @click="actualizarCategoriasTags([...categoriasTags, categoria.nombre])"
+          />
+          <Button
+            label="Otro"
+            size="small"
+            severity="secondary"
+            variant="outlined"
+            :disabled="categoriaOtro"
+            @click="actualizarCategoriasTags([...categoriasTags, 'Otro'])"
+          />
+        </div>
+        <div v-if="categoriaOtro" class="flex gap-2">
+          <InputText
+            v-model="categoriaPersonalizadaTexto"
+            maxlength="80"
+            placeholder="Escribe la categoría personalizada"
+            class="min-w-0 flex-1"
+            @keydown.enter.prevent="agregarCategoriaPersonalizada"
+          />
+          <Button
+            label="Agregar"
+            severity="secondary"
+            :disabled="!categoriaPersonalizadaTexto.trim()"
+            @click="agregarCategoriaPersonalizada"
+          />
+        </div>
+        <div v-if="categoriasPersonalizadas.length" class="flex flex-wrap gap-1.5">
+          <Button
+            v-for="categoria in categoriasPersonalizadas"
+            :key="categoria"
+            :label="categoria"
+            icon="pi pi-times"
+            icon-pos="right"
+            size="small"
+            severity="warn"
+            variant="outlined"
+            @click="eliminarCategoriaPersonalizada(categoria)"
+          />
+        </div>
+        <p class="text-xs text-muted">
+          Elige una o varias categorías. Solo podrás escribir una categoría al seleccionar “Otro”.
+        </p>
         <p v-if="categorias.length === 0" class="text-xs text-muted">Cargando categorías…</p>
       </div>
 
