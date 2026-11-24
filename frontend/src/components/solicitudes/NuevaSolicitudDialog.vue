@@ -10,8 +10,15 @@ import Textarea from 'primevue/textarea'
 import { useNuevaSolicitud } from '../../composables/solicitudes/useNuevaSolicitud'
 import type { Solicitud } from '../../types/solicitudes'
 
-const visible = defineModel<boolean>('visible', { required: true })
-const emit = defineEmits<{ creada: [solicitud: Solicitud] }>()
+const props = defineProps<{ visible: boolean }>()
+const emit = defineEmits<{
+  'update:visible': [visible: boolean]
+  creada: [solicitud: Solicitud]
+}>()
+
+function cerrar() {
+  emit('update:visible', false)
+}
 
 const {
   categorias,
@@ -28,21 +35,27 @@ const {
   crear: crearSolicitud,
 } = useNuevaSolicitud()
 
-watch(visible, (abierto) => {
+watch(() => props.visible, (abierto) => {
   if (abierto) iniciar()
 })
 
 async function submit() {
   const creada = await crearSolicitud()
   if (creada) {
-    visible.value = false
+    cerrar()
     emit('creada', creada)
   }
 }
 </script>
 
 <template>
-  <Dialog v-model:visible="visible" header="Nueva solicitud de servicio" modal class="w-full max-w-lg">
+  <Dialog
+    :visible="visible"
+    header="Nueva solicitud de servicio"
+    modal
+    class="w-full max-w-lg"
+    @update:visible="cerrar"
+  >
     <div class="mt-2 flex flex-col gap-4">
       <Message severity="info" :closable="false">
         Elige el servicio, cuándo lo necesitas, explica el trabajo y selecciona la dirección donde será atendido.
@@ -138,7 +151,7 @@ async function submit() {
     </div>
     <template #footer>
       <div class="flex justify-end gap-2">
-        <Button label="Cancelar" severity="secondary" @click="visible = false" />
+        <Button label="Cancelar" severity="secondary" @click="cerrar" />
         <Button label="Enviar solicitud" icon="pi pi-send" :loading="enviando" @click="submit" />
       </div>
     </template>
