@@ -14,22 +14,6 @@ const emit = defineEmits<{
   verDetalle: []
 }>()
 
-function tiposUnicos(categoriaId: string): string[] {
-  const categorias = props.solicitud.categorias ?? []
-  const asignados = new Set<string>()
-  for (const categoria of categorias) {
-    const tipos = props.solicitud.tipos_servicio_por_categoria?.[categoria.id] ?? []
-    if (categoria.id === categoriaId) {
-      return tipos.filter((tipo) => {
-        if (asignados.has(tipo)) return false
-        asignados.add(tipo)
-        return true
-      })
-    }
-    tipos.forEach((tipo) => asignados.add(tipo))
-  }
-  return []
-}
 </script>
 
 <template>
@@ -94,7 +78,7 @@ function tiposUnicos(categoriaId: string): string[] {
     >
       <Tag :value="categoria.nombre" severity="info" />
       <Tag
-        v-for="tipo in tiposUnicos(categoria.id)"
+        v-for="tipo in solicitud.tipos_servicio_por_categoria?.[categoria.id] ?? []"
         :key="tipo"
         :value="tipo"
         severity="secondary"

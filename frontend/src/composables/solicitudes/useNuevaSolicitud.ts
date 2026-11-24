@@ -205,22 +205,19 @@ export function useNuevaSolicitud() {
       .filter(Boolean)
     const tiposServicioUnicos = [...new Set(tiposServicio)]
     const tiposPorCategoria: Record<string, string[]> = {}
-    const asignados = new Set<string>()
     for (const [categoriaId, tipos] of Object.entries(serviciosPorCategoria.value)) {
-      const propios = tipos
+      tiposPorCategoria[categoriaId] = [...new Set(
+        tipos
         .map((tipo) => tipo.trim())
-        .filter(Boolean)
-        .filter((tipo) => !asignados.has(tipo))
-      propios.forEach((tipo) => asignados.add(tipo))
-      tiposPorCategoria[categoriaId] = [...new Set(propios)]
+        .filter(Boolean),
+      )]
     }
     for (const nombreCategoria of categoriasPersonalizadas.value) {
-      const propios = (serviciosPorCategoria.value[nombreCategoria] ?? [])
-        .map((tipo) => tipo.trim())
-        .filter(Boolean)
-        .filter((tipo) => !asignados.has(tipo))
-      propios.forEach((tipo) => asignados.add(tipo))
-      tiposPorCategoria[nombreCategoria] = [...new Set(propios)]
+      tiposPorCategoria[nombreCategoria] = [...new Set(
+        (serviciosPorCategoria.value[nombreCategoria] ?? [])
+          .map((tipo) => tipo.trim())
+          .filter(Boolean),
+      )]
     }
     if (
       descripcion.length < 10 ||

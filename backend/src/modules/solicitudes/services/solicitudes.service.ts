@@ -86,7 +86,6 @@ export class SolicitudesService {
           })
         : [];
     const tiposPorCategoria: Record<string, string[]> = {};
-    const tiposAsignados = new Set<string>();
     for (const [clave, tipos] of Object.entries(dto.tipos_servicio_por_categoria ?? {})) {
       const categoriaId = categoriaIds.includes(clave)
         ? clave
@@ -95,10 +94,28 @@ export class SolicitudesService {
       const propios = [...new Set(
         (tipos ?? [])
           .map((tipo) => tipo.trim().slice(0, 150))
-          .filter((tipo) => Boolean(tipo) && !tiposAsignados.has(tipo)),
+          .filter(Boolean),
       )];
-      propios.forEach((tipo) => tiposAsignados.add(tipo));
       tiposPorCategoria[categoriaId] = propios;
+    }
+
+    if (Object.keys(tiposPorCategoria).length === 0) {
+      const tiposGlobales = [...new Set(
+        dto.tipos_servicio.map((tipo) => tipo.trim()).filter(Boolean),
+      )];
+      for (const categoria of categoriasPorNombre) {
+        const nombre = categoria.nombre.toLocaleLowerCase('es');
+        const opciones =
+          nombre.includes('aire') || nombre.includes('climat')
+            ? ['Instalación', 'Mantenimiento preventivo', 'Reparación', 'Recarga de gas', 'Limpieza']
+            : nombre.includes('carpinter')
+              ? ['Fabricación', 'Reparación', 'Instalación', 'Restauración']
+              : null;
+        if (!opciones) continue;
+        tiposPorCategoria[categoria.id] = tiposGlobales.filter((tipo) =>
+          opciones.some((opcion) => opcion.toLocaleLowerCase('es') === tipo.toLocaleLowerCase('es')),
+        );
+      }
     }
 
     if (dto.tecnico_id) {

@@ -33,6 +33,51 @@ export interface SolicitudFila {
   tecnico_apellidos: unknown;
 }
 
+function inferirTiposPorCategoria(
+  categorias: CategoriaSolicitudView[],
+  tiposServicio: string[],
+): Record<string, string[]> {
+  const resultado: Record<string, string[]> = {};
+  const globales = [...new Set(
+    (Array.isArray(tiposServicio) ? tiposServicio : [])
+      .map((tipo) => String(tipo).trim())
+      .filter(Boolean),
+  )];
+
+  for (const categoria of categorias) {
+    const nombre = categoria.nombre.toLocaleLowerCase('es');
+    const opciones =
+      nombre.includes('aire') || nombre.includes('climat')
+        ? ['Instalación', 'Mantenimiento preventivo', 'Reparación', 'Recarga de gas', 'Limpieza']
+        : nombre.includes('carpinter')
+          ? ['Fabricación', 'Reparación', 'Instalación', 'Restauración']
+          : nombre.includes('electric')
+            ? ['Instalación', 'Reparación', 'Mantenimiento', 'Diagnóstico']
+            : nombre.includes('plomer') || nombre.includes('fontaner')
+              ? ['Reparación de fugas', 'Destape de tuberías', 'Instalación', 'Mantenimiento']
+              : null;
+    if (!opciones) continue;
+    resultado[categoria.id] = globales.filter((tipo) =>
+      opciones.some((opcion) => opcion.toLocaleLowerCase('es') === tipo.toLocaleLowerCase('es')),
+    );
+  }
+
+  if (globales.some((tipo) => tipo.toLocaleLowerCase('es') === 'reparación')) {
+    const carpinteria = categorias.find((categoria) =>
+      categoria.nombre.toLocaleLowerCase('es').includes('carpinter'),
+    );
+    if (carpinteria) {
+      for (const categoria of categorias) {
+        if (categoria.id === carpinteria.id) continue;
+        resultado[categoria.id] = (resultado[categoria.id] ?? []).filter(
+          (tipo) => tipo.toLocaleLowerCase('es') !== 'reparación',
+        );
+      }
+    }
+  }
+  return resultado;
+}
+
 export function columnasBase() {
   return [
     's.id AS id',
@@ -67,6 +112,26 @@ export function toSolicitudView(
   unidadesCobro: Map<string, UnidadCobro>,
   categoriasPorSolicitud: Map<string, CategoriaSolicitudView[]>,
 ) {
+  const categorias = categoriasPorSolicitud.get(fila.id) ?? [];
+  const tiposGlobales = Array.isArray(fila.tipos_servicio)
+    ? fila.tipos_servicio.map((tipo) => String(tipo).trim()).filter(Boolean)
+    : [];
+  const tiposMapeados =
+    fila.tipos_servicio_por_categoria &&
+    typeof fila.tipos_servicio_por_categoria === 'object'
+      ? fila.tipos_servicio_por_categoria as Record<string, string[]>
+      : inferirTiposPorCategoria(categorias, tiposGlobales);
+  const carpinteria = categorias.find((categoria) =>
+    categoria.nombre.toLocaleLowerCase('es').includes('carpinter'),
+  );
+  if (carpinteria) {
+    for (const categoria of categorias) {
+      if (categoria.id === carpinteria.id) continue;
+      tiposMapeados[categoria.id] = (tiposMapeados[categoria.id] ?? []).filter(
+        (tipo) => tipo.toLocaleLowerCase('es') !== 'reparación',
+      );
+    }
+  }
   return {
     id: fila.id,
     estado: fila.estado,
@@ -75,12 +140,8 @@ export function toSolicitudView(
     direccion_latitud: fila.direccion_latitud != null ? Number(fila.direccion_latitud) : null,
     direccion_longitud: fila.direccion_longitud != null ? Number(fila.direccion_longitud) : null,
     motivo_rechazo: fila.motivo_rechazo,
-    tipos_servicio: fila.tipos_servicio ?? [],
-    tipos_servicio_por_categoria:
-      fila.tipos_servicio_por_categoria &&
-      typeof fila.tipos_servicio_por_categoria === 'object'
-        ? fila.tipos_servicio_por_categoria
-        : {},
+    tipos_servicio: tiposGlobales,
+    tipos_servicio_por_categoria: tiposMapeados,
     oferta_hasta_fin_dia: fila.oferta_hasta_fin_dia ?? false,
     fecha_propuesta: fila.fecha_propuesta,
     hora_propuesta: fila.hora_propuesta,
