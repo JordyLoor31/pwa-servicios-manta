@@ -16,7 +16,7 @@ const props = defineProps<{
 }>()
 
 const seleccion = defineModel<string[]>('seleccion', { default: () => [] })
-const tarifas = defineModel<Record<string, RangoPrecio>>('tarifas', { default: () => ({}) })
+const tarifas = defineModel<Record<string, RangoPrecio[]>>('tarifas', { default: () => ({}) })
 
 defineEmits<{ volver: []; continuar: [] }>()
 
@@ -25,27 +25,30 @@ watch(
   (ids) => {
     for (const id of ids) {
       if (!tarifas.value[id]) {
-        tarifas.value[id] = {
-          precio: '',
-          tipoServicio: tiposServicioParaCategoria(
-            props.categorias.find((categoria) => categoria.id === id)?.nombre ?? '',
-          )[0],
-          negociable: true,
-          unidad: 'por_visita',
-        }
+        tarifas.value[id] = [
+          {
+            precio: '',
+            tipoServicio: tiposServicioParaCategoria(
+              props.categorias.find((categoria) => categoria.id === id)?.nombre ?? '',
+            )[0],
+            negociable: true,
+            unidad: 'por_visita',
+          },
+        ]
       }
     }
   },
   { deep: true },
 )
 
-function tarifaTexto(id: string): string | null {
-  const rango = tarifas.value[id]
-  if (!rango) return null
+function tarifaTexto(id: string): string {
+  const cantidad = tarifas.value[id]?.length ?? 0
+  return `${cantidad} ${cantidad === 1 ? 'servicio configurado' : 'servicios configurados'}`
+}
+
+function tarifaValida(rango: RangoPrecio): boolean {
   const precio = Number(rango.precio)
-  if (rango.precio.trim() === '') return null
-  if (isNaN(precio)) return 'Precio inválido'
-  return `$ ${precio.toFixed(2)} / visita`
+  return rango.precio.trim() !== '' && rango.tipoServicio.trim() !== '' && !isNaN(precio)
 }
 </script>
 
@@ -103,32 +106,65 @@ function tarifaTexto(id: string): string | null {
 
         <div
           v-if="seleccion.includes(categoria.id)"
-          class="mt-3 grid gap-3 border-t border-pacific/20 pt-3 sm:grid-cols-3"
+          class="mt-3 flex flex-col gap-3 border-t border-pacific/20 pt-3"
         >
-          <label class="flex flex-col gap-1">
-            <span class="text-xs font-medium text-ink">Tipo de servicio</span>
-            <Select
-              v-model="tarifas[categoria.id].tipoServicio"
-              :options="tiposServicioParaCategoria(categoria.nombre)"
-              placeholder="Selecciona un tipo"
+          <div
+            v-for="(tarifa, indice) in tarifas[categoria.id]"
+            :key="tarifa.id ?? `${categoria.id}-${indice}`"
+            class="grid gap-3 rounded-lg bg-cloud/70 p-3 sm:grid-cols-[1fr_0.7fr_0.8fr_auto]"
+          >
+            <label class="flex flex-col gap-1">
+              <span class="text-xs font-medium text-ink">Tipo de servicio</span>
+              <Select
+                v-model="tarifa.tipoServicio"
+                :options="tiposServicioParaCategoria(categoria.nombre)"
+                placeholder="Selecciona un tipo"
+              />
+            </label>
+            <label class="flex flex-col gap-1">
+              <span class="text-xs font-medium text-ink">Precio por visita</span>
+              <InputText v-model="tarifa.precio" inputmode="decimal" placeholder="$ 0.00" />
+            </label>
+            <label class="flex flex-col gap-1">
+              <span class="text-xs font-medium text-ink">Condición</span>
+              <Select
+                v-model="tarifa.negociable"
+                :options="[
+                  { label: 'Negociable', value: true },
+                  { label: 'No negociable', value: false },
+                ]"
+                option-label="label"
+                option-value="value"
+              />
+            </label>
+            <Button
+              icon="pi pi-trash"
+              severity="danger"
+              variant="text"
+              :disabled="tarifas[categoria.id].length <= 1"
+              :aria-label="`Eliminar ${tarifa.tipoServicio}`"
+              @click="tarifas[categoria.id].splice(indice, 1)"
             />
-          </label>
-          <label class="flex flex-col gap-1">
-            <span class="text-xs font-medium text-ink">Precio por visita</span>
-            <InputText v-model="tarifas[categoria.id].precio" inputmode="decimal" placeholder="$ 0.00" />
-          </label>
-          <label class="flex flex-col gap-1">
-            <span class="text-xs font-medium text-ink">Condición del precio</span>
-            <Select
-              v-model="tarifas[categoria.id].negociable"
-              :options="[
-                { label: 'Negociable', value: true },
-                { label: 'No negociable', value: false },
-              ]"
-              option-label="label"
-              option-value="value"
-            />
-          </label>
+            <p v-if="!tarifaValida(tarifa)" class="text-xs text-red-500 sm:col-span-4">
+              Completa el tipo de servicio y un precio válido.
+            </p>
+          </div>
+          <Button
+            label="Agregar otro tipo de servicio"
+            icon="pi pi-plus"
+            severity="secondary"
+            variant="outlined"
+            size="small"
+            class="self-start"
+            @click="
+              tarifas[categoria.id].push({
+                precio: '',
+                tipoServicio: tiposServicioParaCategoria(categoria.nombre)[0],
+                negociable: true,
+                unidad: 'por_visita',
+              })
+            "
+          />
         </div>
       </div>
     </div>

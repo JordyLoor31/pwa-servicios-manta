@@ -10,6 +10,7 @@ export type { CategoriaServicio } from './categorias'
 export type UnidadCobro = 'por_visita'
 
 export interface RangoPrecio {
+  id?: string
   precio: string
   tipoServicio: string
   negociable: boolean
@@ -17,6 +18,7 @@ export interface RangoPrecio {
 }
 
 export interface TarifaTecnico {
+  id?: string
   tecnico_id: string
   categoria_id: string
   precio: number
@@ -53,6 +55,7 @@ export interface PerfilPublico {
   }
   categorias: Array<{ id: string; nombre: string; icono: string | null }>
   tarifas: Array<{
+    id: string
     categoria_id: string
     categoria_nombre: string | null
     precio: number

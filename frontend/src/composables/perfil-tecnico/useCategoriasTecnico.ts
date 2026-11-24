@@ -13,7 +13,7 @@ export function useCategoriasTecnico() {
 
   const categorias = ref<CategoriaServicio[]>([])
   const categoriasSeleccionadas = ref<string[]>([])
-  const tarifasPorCategoria = reactive<Record<string, RangoPrecio>>({})
+  const tarifasPorCategoria = reactive<Record<string, RangoPrecio[]>>({})
   const cargandoCatalogo = ref(true)
   const guardandoCategorias = ref(false)
 
@@ -31,13 +31,20 @@ export function useCategoriasTecnico() {
     if (!id) return
     try {
       const tarifas = await perfilTecnicoApi.obtenerTarifas(id)
+      const agrupadas = new Map<string, RangoPrecio[]>()
       for (const tarifa of tarifas) {
-        tarifasPorCategoria[tarifa.categoria_id] = {
+        const lista = agrupadas.get(tarifa.categoria_id) ?? []
+        lista.push({
+          id: tarifa.id,
           precio: String(tarifa.precio),
           tipoServicio: tarifa.tipo_servicio,
           negociable: tarifa.negociable,
           unidad: tarifa.unidad_cobro ?? 'por_visita',
-        }
+        })
+        agrupadas.set(tarifa.categoria_id, lista)
+      }
+      for (const [categoriaId, lista] of agrupadas) {
+        tarifasPorCategoria[categoriaId] = lista
       }
     } catch {
       // sin tarifas aún
@@ -58,28 +65,41 @@ export function useCategoriasTecnico() {
   }
 
   function asegurarEntrada(id: string) {
-    if (!tarifasPorCategoria[id]) {
-      const categoria = categorias.value.find((actual) => actual.id === id)
-      tarifasPorCategoria[id] = {
-        precio: '',
-        tipoServicio: categoria ? tiposServicioParaCategoria(categoria.nombre)[0] : 'Servicio general',
-        negociable: true,
-        unidad: 'por_visita',
-      }
+    if (!tarifasPorCategoria[id] || tarifasPorCategoria[id].length === 0) {
+      tarifasPorCategoria[id] = [crearTarifaInicial(id)]
     }
   }
 
+  function crearTarifaInicial(id: string): RangoPrecio {
+    const categoria = categorias.value.find((actual) => actual.id === id)
+    return {
+      precio: '',
+      tipoServicio: categoria ? tiposServicioParaCategoria(categoria.nombre)[0] : 'Servicio general',
+      negociable: true,
+      unidad: 'por_visita',
+    }
+  }
+
+  function agregarTarifa(categoriaId: string) {
+    const lista = tarifasPorCategoria[categoriaId] ?? []
+    lista.push(crearTarifaInicial(categoriaId))
+    tarifasPorCategoria[categoriaId] = lista
+  }
+
+  function eliminarTarifa(categoriaId: string, indice: number) {
+    const lista = tarifasPorCategoria[categoriaId]
+    if (!lista || lista.length <= 1) return
+    lista.splice(indice, 1)
+  }
+
   function rangoValido(categoriaId: string): boolean {
-    const rango = tarifasPorCategoria[categoriaId]
-    if (!rango) return false
-    const precio = Number(rango.precio)
-    return (
-      rango.precio.trim() !== '' &&
-      rango.tipoServicio.trim() !== '' &&
-      !isNaN(precio) &&
-      precio >= 0 &&
-      precio <= 999999.99
-    )
+    const rangos = tarifasPorCategoria[categoriaId]
+    if (!rangos || rangos.length === 0) return false
+    return rangos.every((rango) => {
+      const precio = Number(rango.precio)
+      return rango.precio.trim() !== '' && rango.tipoServicio.trim() !== '' &&
+        !isNaN(precio) && precio >= 0 && precio <= 999999.99
+    })
   }
 
   async function guardarCategorias(): Promise<boolean> {
@@ -103,17 +123,19 @@ export function useCategoriasTecnico() {
     guardandoCategorias.value = true
     try {
       await perfilTecnicoApi.actualizarCategorias(id, categoriasSeleccionadas.value)
-      const tarifas = categoriasSeleccionadas.value.map((categoriaId): TarifaTecnico => {
-        const rango = tarifasPorCategoria[categoriaId]
-        return {
-          tecnico_id: id,
-          categoria_id: categoriaId,
-          precio: Number(rango.precio),
-          unidad_cobro: (rango.unidad || 'por_visita') as UnidadCobro,
-          tipo_servicio: rango.tipoServicio.trim(),
-          negociable: rango.negociable,
-        }
-      })
+      const tarifas = categoriasSeleccionadas.value.flatMap((categoriaId) =>
+        tarifasPorCategoria[categoriaId].map(
+          (rango): TarifaTecnico => ({
+            id: rango.id,
+            tecnico_id: id,
+            categoria_id: categoriaId,
+            precio: Number(rango.precio),
+            unidad_cobro: (rango.unidad || 'por_visita') as UnidadCobro,
+            tipo_servicio: rango.tipoServicio.trim(),
+            negociable: rango.negociable,
+          }),
+        ),
+      )
       await perfilTecnicoApi.actualizarTarifas(id, tarifas)
       toast.add({
         severity: 'success',
@@ -144,6 +166,8 @@ export function useCategoriasTecnico() {
     categorias,
     categoriasSeleccionadas,
     tarifasPorCategoria,
+    agregarTarifa,
+    eliminarTarifa,
     cargandoCatalogo,
     guardandoCategorias,
     guardarCategorias,

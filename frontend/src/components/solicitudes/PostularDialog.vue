@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
+import Select from 'primevue/select'
 import Skeleton from 'primevue/skeleton'
 import Textarea from 'primevue/textarea'
 import { useToast } from 'primevue/usetoast'
@@ -27,17 +28,28 @@ const oferta = ref<Solicitud | null>(null)
 const mensaje = ref('')
 const enviando = ref(false)
 const cargandoTarifas = ref(true)
-const tarifasPorCategoria = ref(new Map<string, TarifaTecnico>())
+const tarifasPorCategoria = ref(new Map<string, TarifaTecnico[]>())
+const tarifaSeleccionadaId = ref('')
+
+const tarifasAplicables = computed(() => {
+  const solicitud = oferta.value
+  if (!solicitud?.categorias?.length) return []
+  const categorias = [...solicitud.categorias].sort((a, b) => a.nombre.localeCompare(b.nombre))
+  return categorias.flatMap((categoria) =>
+    (tarifasPorCategoria.value.get(categoria.id) ?? []).map((tarifa) => ({
+      tarifa,
+      categoriaNombre: categoria.nombre,
+      etiqueta: `${categoria.nombre} · ${tarifa.tipo_servicio} · ${moneda(tarifa.precio)}`,
+    })),
+  )
+})
 
 const tarifaAplicable = computed(() => {
-  const solicitud = oferta.value
-  if (!solicitud?.categorias?.length) return null
-  const categorias = [...solicitud.categorias].sort((a, b) => a.nombre.localeCompare(b.nombre))
-  for (const categoria of categorias) {
-    const tarifa = tarifasPorCategoria.value.get(categoria.id)
-    if (tarifa) return { tarifa, categoriaNombre: categoria.nombre }
-  }
-  return null
+  return (
+    tarifasAplicables.value.find(({ tarifa }) => tarifa.id === tarifaSeleccionadaId.value) ??
+    tarifasAplicables.value[0] ??
+    null
+  )
 })
 
 watch(
@@ -46,6 +58,7 @@ watch(
     if (!abierto || !solicitud) return
     oferta.value = solicitud
     mensaje.value = ''
+    tarifaSeleccionadaId.value = ''
     void preparar(solicitud)
   },
 )
@@ -67,7 +80,14 @@ async function cargarTarifas() {
   }
   try {
     const tarifas = await perfilTecnicoApi.obtenerTarifas(usuarioId)
-    tarifasPorCategoria.value = new Map(tarifas.map((tarifa) => [tarifa.categoria_id, tarifa]))
+    const agrupadas = new Map<string, TarifaTecnico[]>()
+    for (const tarifa of tarifas) {
+      const lista = agrupadas.get(tarifa.categoria_id) ?? []
+      lista.push(tarifa)
+      agrupadas.set(tarifa.categoria_id, lista)
+    }
+    tarifasPorCategoria.value = agrupadas
+    tarifaSeleccionadaId.value = tarifas[0]?.id ?? ''
   } catch {
     tarifasPorCategoria.value = new Map()
   }
@@ -100,6 +120,7 @@ async function enviar() {
   enviando.value = true
   try {
     await solicitudesApi.postular(oferta.value.id, {
+      tarifa_id: tarifaAplicable.value.tarifa.id ?? '',
       mensaje: mensaje.value.trim() || undefined,
     })
     visible.value = false
@@ -132,6 +153,16 @@ async function enviar() {
         <Skeleton width="12rem" height="1.4rem" class="mt-2" />
       </div>
       <div v-else-if="tarifaAplicable" class="rounded-lg border border-pacific/10 bg-pacific/5 p-3">
+        <label v-if="tarifasAplicables.length > 1" class="flex flex-col gap-1">
+          <span class="text-xs text-muted">Elige el tipo de servicio para esta propuesta</span>
+          <Select
+            v-model="tarifaSeleccionadaId"
+            :options="tarifasAplicables"
+            option-label="etiqueta"
+            option-value="tarifa.id"
+            class="w-full"
+          />
+        </label>
         <p class="text-xs text-muted">
           Tarifa de tu perfil · {{ tarifaAplicable.categoriaNombre }}
         </p>

@@ -166,6 +166,7 @@ export class PerfilesTecnicoConsultaService {
         icono: categoria.icono,
       })),
       tarifas: tarifas.map((tarifa) => ({
+        id: tarifa.id,
         categoria_id: tarifa.categoria_id,
         categoria_nombre: nombrePorCategoria.get(tarifa.categoria_id) ?? null,
         precio: tarifa.precio,

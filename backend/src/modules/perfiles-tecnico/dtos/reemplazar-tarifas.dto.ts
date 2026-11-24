@@ -4,6 +4,7 @@ import {
   IsBoolean,
   IsIn,
   IsNumber,
+  IsOptional,
   IsString,
   IsUUID,
   Max,
@@ -15,6 +16,10 @@ import {
 export class TarifaTecnicoDto {
   @IsUUID()
   categoria_id: string;
+
+  @IsUUID()
+  @IsOptional()
+  id?: string;
 
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)

@@ -151,7 +151,7 @@ function moneda(valor: number) {
         <div class="mt-2 flex flex-col gap-1.5">
           <div
             v-for="tarifa in perfil.tarifas"
-            :key="tarifa.categoria_id"
+            :key="tarifa.id"
             class="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-pacific/10 bg-card px-3 py-2"
           >
             <span class="text-ink">{{ tarifa.categoria_nombre ?? 'Categoría' }}</span>

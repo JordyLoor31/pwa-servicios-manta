@@ -51,7 +51,7 @@ export class SolicitudesPostulacionesService {
       throw new BadRequestException('Ya enviaste una postulación para esta oferta');
     }
     await this.asegurarCobertura(solicitud, user.id);
-    const tarifa = await this.obtenerTarifaPerfil(id, user.id);
+    const tarifa = await this.obtenerTarifaPerfil(id, user.id, dto.tarifa_id);
     const postulacion = await this.postulacionesRepository.save({
       solicitud_id: id,
       tecnico_id: user.id,
@@ -145,7 +145,7 @@ export class SolicitudesPostulacionesService {
     );
   }
 
-  private async obtenerTarifaPerfil(solicitudId: string, tecnicoId: string) {
+  private async obtenerTarifaPerfil(solicitudId: string, tecnicoId: string, tarifaId?: string) {
     const categorias = await this.solicitudCategoriasRepository
       .createQueryBuilder('sc')
       .innerJoin('categorias_servicio', 'categoria', 'categoria.id = sc.categoria_id')
@@ -164,6 +164,15 @@ export class SolicitudesPostulacionesService {
         categoria_id: In(categorias.map((categoria) => categoria.categoria_id)),
       },
     });
+    if (tarifaId) {
+      const tarifa = tarifas.find((actual) => actual.id === tarifaId);
+      if (!tarifa) {
+        throw new BadRequestException(
+          'La tarifa seleccionada no corresponde a una categoría de esta oferta',
+        );
+      }
+      return tarifa;
+    }
     let tarifa: TarifaTecnico | undefined;
     for (const categoria of categorias) {
       tarifa = tarifas.find((actual) => actual.categoria_id === categoria.categoria_id);

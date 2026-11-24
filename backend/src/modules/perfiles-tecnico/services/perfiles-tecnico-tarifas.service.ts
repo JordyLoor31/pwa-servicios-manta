@@ -35,8 +35,9 @@ export class PerfilesTecnicoTarifasService {
       if (!tarifa.tipo_servicio.trim()) {
         throw new BadRequestException('El tipo de servicio es obligatorio en cada categoría');
       }
-      if (!vistas.has(tarifa.categoria_id)) {
-        vistas.add(tarifa.categoria_id);
+      const clave = `${tarifa.categoria_id}:${tarifa.tipo_servicio.trim().toLocaleLowerCase()}`;
+      if (!vistas.has(clave)) {
+        vistas.add(clave);
         unicas.push(tarifa);
       }
     }

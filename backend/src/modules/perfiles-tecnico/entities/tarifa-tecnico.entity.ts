@@ -1,13 +1,19 @@
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryColumn } from 'typeorm';
+import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { PerfilTecnico } from './perfil-tecnico.entity';
 import { CategoriaServicio } from '../../categorias/entities/categoria-servicio.entity';
 
 @Entity('tarifas_tecnico')
+@Index('uq_tarifas_tecnico_tipo', ['tecnico_id', 'categoria_id', 'tipo_servicio'], { unique: true })
 export class TarifaTecnico {
-  @PrimaryColumn({ type: 'uuid' })
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Index('idx_tarifas_tecnico_tecnico')
+  @Column({ type: 'uuid' })
   tecnico_id: string;
 
-  @PrimaryColumn({ type: 'uuid' })
+  @Index('idx_tarifas_tecnico_categoria')
+  @Column({ type: 'uuid' })
   categoria_id: string;
 
   @Column({

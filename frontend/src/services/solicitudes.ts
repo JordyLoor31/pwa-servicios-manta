@@ -38,7 +38,7 @@ export const solicitudesApi = {
     return api.get<PostulacionSolicitud[]>(`/solicitudes/${id}/postulaciones`)
   },
 
-  postular(id: string, payload: { mensaje?: string }) {
+  postular(id: string, payload: { tarifa_id: string; mensaje?: string }) {
     return api.post<PostulacionSolicitud>(`/solicitudes/${id}/postulaciones`, payload)
   },
 
