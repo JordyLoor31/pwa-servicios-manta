@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { tieneToken, leerUsuario, type RolUsuario } from '../composables/auth/useAuthz'
-import { necesitaOnboarding } from '../composables/auth/useOnboarding'
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -93,15 +92,6 @@ router.beforeEach(async (to) => {
   }
 
   const usuario = leerUsuario()
-  if (
-    usuario &&
-    (usuario.rol === 'cliente' || usuario.rol === 'tecnico') &&
-    to.name !== 'configuracion-inicial' &&
-    await necesitaOnboarding(usuario)
-  ) {
-    return { name: 'configuracion-inicial' }
-  }
-
   const roles = to.meta.roles
   if (roles?.length) {
     if (!usuario || !roles.includes(usuario.rol)) {

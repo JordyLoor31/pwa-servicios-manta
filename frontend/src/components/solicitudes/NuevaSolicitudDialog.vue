@@ -4,6 +4,7 @@ import Button from 'primevue/button'
 import DatePicker from 'primevue/datepicker'
 import Dialog from 'primevue/dialog'
 import Listbox from 'primevue/listbox'
+import Message from 'primevue/message'
 import Select from 'primevue/select'
 import Textarea from 'primevue/textarea'
 import { useNuevaSolicitud } from '../../composables/solicitudes/useNuevaSolicitud'
@@ -43,6 +44,9 @@ async function submit() {
 <template>
   <Dialog v-model:visible="visible" header="Nueva solicitud de servicio" modal class="w-full max-w-lg">
     <div class="mt-2 flex flex-col gap-4">
+      <Message severity="info" :closable="false">
+        Elige el servicio, cuándo lo necesitas, explica el trabajo y selecciona la dirección donde será atendido.
+      </Message>
       <div class="flex flex-col gap-1.5">
         <label for="categorias" class="text-sm font-medium text-ink">Categoría del servicio *</label>
         <Listbox
