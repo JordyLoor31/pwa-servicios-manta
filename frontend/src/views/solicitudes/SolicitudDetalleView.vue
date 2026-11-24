@@ -37,6 +37,23 @@ const router = useRouter()
 const toast = useToast()
 const { usuario } = useAuthz()
 
+function tiposUnicosCategoria(categoriaId: string): string[] {
+  const categorias = solicitud.value?.categorias ?? []
+  const asignados = new Set<string>()
+  for (const categoria of categorias) {
+    const tipos = solicitud.value?.tipos_servicio_por_categoria?.[categoria.id] ?? []
+    if (categoria.id === categoriaId) {
+      return tipos.filter((tipo) => {
+        if (asignados.has(tipo)) return false
+        asignados.add(tipo)
+        return true
+      })
+    }
+    tipos.forEach((tipo) => asignados.add(tipo))
+  }
+  return []
+}
+
 const solicitud = ref<Solicitud | null>(null)
 const cargando = ref(true)
 const error = ref('')
@@ -513,7 +530,7 @@ function onPostulacionEnviada() {
                   <Tag :value="categoria.nombre" severity="info" />
                   <template v-if="solicitud.tipos_servicio_por_categoria?.[categoria.id]?.length">
                     <Tag
-                      v-for="tipo in solicitud.tipos_servicio_por_categoria[categoria.id]"
+                      v-for="tipo in tiposUnicosCategoria(categoria.id)"
                       :key="tipo"
                       :value="tipo"
                       severity="secondary"

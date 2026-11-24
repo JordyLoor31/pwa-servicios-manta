@@ -203,22 +203,30 @@ export function useNuevaSolicitud() {
       .flat()
       .map((tipo) => tipo.trim())
       .filter(Boolean)
+    const tiposServicioUnicos = [...new Set(tiposServicio)]
     const tiposPorCategoria: Record<string, string[]> = {}
+    const asignados = new Set<string>()
     for (const [categoriaId, tipos] of Object.entries(serviciosPorCategoria.value)) {
-      tiposPorCategoria[categoriaId] = tipos
+      const propios = tipos
         .map((tipo) => tipo.trim())
         .filter(Boolean)
+        .filter((tipo) => !asignados.has(tipo))
+      propios.forEach((tipo) => asignados.add(tipo))
+      tiposPorCategoria[categoriaId] = [...new Set(propios)]
     }
     for (const nombreCategoria of categoriasPersonalizadas.value) {
-      tiposPorCategoria[nombreCategoria] = (serviciosPorCategoria.value[nombreCategoria] ?? [])
+      const propios = (serviciosPorCategoria.value[nombreCategoria] ?? [])
         .map((tipo) => tipo.trim())
         .filter(Boolean)
+        .filter((tipo) => !asignados.has(tipo))
+      propios.forEach((tipo) => asignados.add(tipo))
+      tiposPorCategoria[nombreCategoria] = [...new Set(propios)]
     }
     if (
       descripcion.length < 10 ||
       !horaBusqueda.value ||
       (categoriasSeleccionadas.value.length === 0 && categoriasPersonalizadas.value.length === 0) ||
-      tiposServicio.length === 0
+      tiposServicioUnicos.length === 0
     ) {
       toast.add({
         severity: 'warn',
@@ -273,7 +281,7 @@ export function useNuevaSolicitud() {
         oferta_hasta_fin_dia: ofertaHastaFinDia.value,
         categoria_ids: categoriasSeleccionadas.value,
         categorias_personalizadas: categoriasPersonalizadas.value,
-        tipos_servicio: tiposServicio,
+        tipos_servicio: tiposServicioUnicos,
         tipos_servicio_por_categoria: tiposPorCategoria,
       }
       if (form.value.tecnico_id) payload.tecnico_id = form.value.tecnico_id

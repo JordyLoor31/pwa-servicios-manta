@@ -86,14 +86,19 @@ export class SolicitudesService {
           })
         : [];
     const tiposPorCategoria: Record<string, string[]> = {};
+    const tiposAsignados = new Set<string>();
     for (const [clave, tipos] of Object.entries(dto.tipos_servicio_por_categoria ?? {})) {
       const categoriaId = categoriaIds.includes(clave)
         ? clave
         : categoriasPorNombre.find((categoria) => categoria.nombre === clave)?.id;
       if (!categoriaId) continue;
-      tiposPorCategoria[categoriaId] = [...new Set(
-        (tipos ?? []).map((tipo) => tipo.trim().slice(0, 150)).filter(Boolean),
+      const propios = [...new Set(
+        (tipos ?? [])
+          .map((tipo) => tipo.trim().slice(0, 150))
+          .filter((tipo) => Boolean(tipo) && !tiposAsignados.has(tipo)),
       )];
+      propios.forEach((tipo) => tiposAsignados.add(tipo));
+      tiposPorCategoria[categoriaId] = propios;
     }
 
     if (dto.tecnico_id) {
@@ -135,7 +140,7 @@ export class SolicitudesService {
         direccion: dto.direccion?.trim() || null,
         direccion_latitud: dto.direccion_latitud ?? null,
         direccion_longitud: dto.direccion_longitud ?? null,
-        tipos_servicio: dto.tipos_servicio.map((tipo) => tipo.trim()).filter(Boolean),
+        tipos_servicio: [...new Set(dto.tipos_servicio.map((tipo) => tipo.trim()).filter(Boolean))],
         tipos_servicio_por_categoria: tiposPorCategoria,
         oferta_hasta_fin_dia: hastaFinDia,
         idempotency_key: clave,
