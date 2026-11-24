@@ -46,11 +46,12 @@ const items = computed<BreadcrumbItem[]>(() => {
 })
 
 const home = { icon: 'pi pi-home', label: 'Inicio', ruta: '/' }
+const tituloActual = computed(() => items.value[items.value.length - 1]?.label ?? 'Inicio')
 </script>
 
 <template>
-  <div class="flex items-center justify-between px-3 py-1.5 sm:px-6">
-    <Breadcrumb :model="items" :home="home" class="flex-1">
+  <div class="flex min-w-0 flex-1 items-center px-0 py-1.5 sm:px-3">
+    <Breadcrumb :model="items" :home="home" class="hidden min-w-0 flex-1 sm:flex">
       <template #item="{ item, icon }">
         <a
           class="p-breadcrumb-item-link flex items-center gap-1 cursor-pointer"
@@ -61,5 +62,8 @@ const home = { icon: 'pi pi-home', label: 'Inicio', ruta: '/' }
         </a>
       </template>
     </Breadcrumb>
+    <span class="min-w-0 flex-1 truncate text-sm text-muted sm:hidden">
+      {{ tituloActual }}
+    </span>
   </div>
 </template>

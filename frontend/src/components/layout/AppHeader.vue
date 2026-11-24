@@ -107,7 +107,7 @@ function logout() {
       <AppProgressSpinner />
     </div>
     <header
-      class="sticky top-0 z-40 flex h-15 items-center gap-3 border-b border-pacific/10 bg-card/95 px-3 py-3 backdrop-blur sm:h-16 sm:px-6"
+      class="app-header sticky top-0 z-40 flex items-center gap-2 border-b border-pacific/10 bg-card/95 px-2 py-3 backdrop-blur sm:gap-3 sm:px-6"
     >
       <Button icon="pi pi-bars" text rounded aria-label="Abrir menú" @click="visible = true" />
 
