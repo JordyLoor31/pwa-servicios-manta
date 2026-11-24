@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { randomInt } from 'node:crypto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Solicitud, EstadoSolicitud } from '../entities/solicitud.entity';
 import { SolicitudCategoria } from '../entities/solicitud-categoria.entity';
 import { DisponibilidadTecnico } from '../../perfiles-tecnico/entities/disponibilidad-tecnico.entity';
@@ -63,6 +63,7 @@ export class SolicitudesService {
     }
     const categoriaIds = [...new Set(dto.categoria_ids)];
     for (const nombre of new Set((dto.categorias_personalizadas ?? []).map((valor) => valor.trim()).filter(Boolean))) {
+      if (!this.categoriasRepository) continue;
       let categoria = await this.categoriasRepository.findOne({
         where: { nombre },
       });
@@ -77,6 +78,22 @@ export class SolicitudesService {
         );
       }
       categoriaIds.push(categoria.id);
+    }
+    const categoriasPorNombre =
+      categoriaIds.length > 0 && this.categoriasRepository
+        ? await this.categoriasRepository.find({
+            where: { id: In(categoriaIds) },
+          })
+        : [];
+    const tiposPorCategoria: Record<string, string[]> = {};
+    for (const [clave, tipos] of Object.entries(dto.tipos_servicio_por_categoria ?? {})) {
+      const categoriaId = categoriaIds.includes(clave)
+        ? clave
+        : categoriasPorNombre.find((categoria) => categoria.nombre === clave)?.id;
+      if (!categoriaId) continue;
+      tiposPorCategoria[categoriaId] = [...new Set(
+        (tipos ?? []).map((tipo) => tipo.trim().slice(0, 150)).filter(Boolean),
+      )];
     }
 
     if (dto.tecnico_id) {
@@ -119,6 +136,7 @@ export class SolicitudesService {
         direccion_latitud: dto.direccion_latitud ?? null,
         direccion_longitud: dto.direccion_longitud ?? null,
         tipos_servicio: dto.tipos_servicio.map((tipo) => tipo.trim()).filter(Boolean),
+        tipos_servicio_por_categoria: tiposPorCategoria,
         oferta_hasta_fin_dia: hastaFinDia,
         idempotency_key: clave,
         fecha_propuesta: dto.fecha_propuesta || null,

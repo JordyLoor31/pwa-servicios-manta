@@ -89,6 +89,9 @@ export class Solicitud {
   @Column({ type: 'text', array: true, nullable: true })
   tipos_servicio: string[] | null;
 
+  @Column({ type: 'jsonb', nullable: true })
+  tipos_servicio_por_categoria: Record<string, string[]> | null;
+
   @Column({ type: 'boolean', default: false })
   oferta_hasta_fin_dia: boolean;
 

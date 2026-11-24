@@ -203,6 +203,17 @@ export function useNuevaSolicitud() {
       .flat()
       .map((tipo) => tipo.trim())
       .filter(Boolean)
+    const tiposPorCategoria: Record<string, string[]> = {}
+    for (const [categoriaId, tipos] of Object.entries(serviciosPorCategoria.value)) {
+      tiposPorCategoria[categoriaId] = tipos
+        .map((tipo) => tipo.trim())
+        .filter(Boolean)
+    }
+    for (const nombreCategoria of categoriasPersonalizadas.value) {
+      tiposPorCategoria[nombreCategoria] = (serviciosPorCategoria.value[nombreCategoria] ?? [])
+        .map((tipo) => tipo.trim())
+        .filter(Boolean)
+    }
     if (
       descripcion.length < 10 ||
       !horaBusqueda.value ||
@@ -250,6 +261,7 @@ export function useNuevaSolicitud() {
         categoria_ids: string[]
         categorias_personalizadas?: string[]
         tipos_servicio: string[]
+        tipos_servicio_por_categoria: Record<string, string[]>
       } = {
         descripcion,
         direccion: form.value.direccion.trim() || undefined,
@@ -262,6 +274,7 @@ export function useNuevaSolicitud() {
         categoria_ids: categoriasSeleccionadas.value,
         categorias_personalizadas: categoriasPersonalizadas.value,
         tipos_servicio: tiposServicio,
+        tipos_servicio_por_categoria: tiposPorCategoria,
       }
       if (form.value.tecnico_id) payload.tecnico_id = form.value.tecnico_id
       const creada = await solicitudesApi.crear(payload, idempotencyKey.value)

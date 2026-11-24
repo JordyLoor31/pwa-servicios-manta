@@ -15,6 +15,7 @@ export interface SolicitudFila {
   direccion_longitud: unknown;
   motivo_rechazo: unknown;
   tipos_servicio: unknown;
+  tipos_servicio_por_categoria: unknown;
   oferta_hasta_fin_dia: unknown;
   fecha_propuesta: unknown;
   hora_propuesta: unknown;
@@ -42,6 +43,7 @@ export function columnasBase() {
     's.direccion_longitud AS direccion_longitud',
     's.motivo_rechazo AS motivo_rechazo',
     's.tipos_servicio AS tipos_servicio',
+    's.tipos_servicio_por_categoria AS tipos_servicio_por_categoria',
     's.oferta_hasta_fin_dia AS oferta_hasta_fin_dia',
     's.fecha_propuesta AS fecha_propuesta',
     's.hora_propuesta AS hora_propuesta',
@@ -74,6 +76,11 @@ export function toSolicitudView(
     direccion_longitud: fila.direccion_longitud != null ? Number(fila.direccion_longitud) : null,
     motivo_rechazo: fila.motivo_rechazo,
     tipos_servicio: fila.tipos_servicio ?? [],
+    tipos_servicio_por_categoria:
+      fila.tipos_servicio_por_categoria &&
+      typeof fila.tipos_servicio_por_categoria === 'object'
+        ? fila.tipos_servicio_por_categoria
+        : {},
     oferta_hasta_fin_dia: fila.oferta_hasta_fin_dia ?? false,
     fecha_propuesta: fila.fecha_propuesta,
     hora_propuesta: fila.hora_propuesta,

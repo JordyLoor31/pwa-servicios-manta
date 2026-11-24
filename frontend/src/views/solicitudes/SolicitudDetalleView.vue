@@ -505,21 +505,29 @@ function onPostulacionEnviada() {
               </div>
 
               <div v-if="solicitud.categorias?.length" class="mt-4 flex flex-wrap gap-1.5">
-                <Tag
+                <div
                   v-for="categoria in solicitud.categorias"
                   :key="categoria.id"
-                  :value="categoria.nombre"
-                  severity="info"
-                />
-              </div>
-              <div v-if="solicitud.tipos_servicio?.length" class="mt-3 flex flex-wrap items-center gap-1.5">
-                <span class="text-xs font-medium text-muted">Servicios solicitados:</span>
-                <Tag
-                  v-for="tipo in solicitud.tipos_servicio"
-                  :key="tipo"
-                  :value="tipo"
-                  severity="secondary"
-                />
+                  class="flex w-full flex-wrap items-center gap-1.5"
+                >
+                  <Tag :value="categoria.nombre" severity="info" />
+                  <template v-if="solicitud.tipos_servicio_por_categoria?.[categoria.id]?.length">
+                    <Tag
+                      v-for="tipo in solicitud.tipos_servicio_por_categoria[categoria.id]"
+                      :key="tipo"
+                      :value="tipo"
+                      severity="secondary"
+                    />
+                  </template>
+                  <template v-else-if="solicitud.tipos_servicio?.length">
+                    <Tag
+                      v-for="tipo in solicitud.tipos_servicio"
+                      :key="`fallback-${tipo}`"
+                      :value="tipo"
+                      severity="secondary"
+                    />
+                  </template>
+                </div>
               </div>
 
               <p class="mt-4 text-sm text-ink whitespace-pre-line">{{ solicitud.descripcion }}</p>

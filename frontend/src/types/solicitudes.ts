@@ -44,6 +44,7 @@ export interface Solicitud {
   duracion_oferta_minutos?: 30 | 180 | 360 | 540 | null
   oferta_hasta_fin_dia?: boolean
   tipos_servicio?: string[]
+  tipos_servicio_por_categoria?: Record<string, string[]>
   fecha_expiracion_oferta?: string | null
   postulado_por_mi?: boolean
   estado_mi_postulacion?: EstadoPostulacion | null
@@ -101,6 +102,7 @@ export interface CrearSolicitudPayload {
   tipos_servicio: string[]
   categoria_ids: string[]
   categorias_personalizadas?: string[]
+  tipos_servicio_por_categoria?: Record<string, string[]>
 }
 
 export interface TecnicoDirectorio {

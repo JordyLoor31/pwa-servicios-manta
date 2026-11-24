@@ -5,6 +5,7 @@ import {
   IsBoolean,
   IsNumber,
   IsOptional,
+  IsObject,
   IsString,
   IsUUID,
   Matches,
@@ -66,4 +67,8 @@ export class CrearSolicitudDto {
   @IsString({ each: true })
   @MaxLength(150, { each: true })
   tipos_servicio: string[];
+
+  @IsObject()
+  @IsOptional()
+  tipos_servicio_por_categoria?: Record<string, string[]>;
 }

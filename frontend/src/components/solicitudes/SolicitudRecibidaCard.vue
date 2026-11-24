@@ -69,13 +69,21 @@ const emit = defineEmits<{
     </div>
   </div>
   <p class="mt-3 text-sm text-ink">{{ solicitud.descripcion }}</p>
-  <div v-if="solicitud.categorias?.length" class="mt-2 flex flex-wrap gap-1.5">
-    <Tag
+  <div v-if="solicitud.categorias?.length" class="mt-2 flex flex-col gap-1.5">
+    <div
       v-for="categoria in solicitud.categorias"
       :key="categoria.id"
-      :value="categoria.nombre"
-      severity="info"
-    />
+      class="flex flex-wrap items-center gap-1.5"
+    >
+      <Tag :value="categoria.nombre" severity="info" />
+      <Tag
+        v-for="tipo in solicitud.tipos_servicio_por_categoria?.[categoria.id] ?? []"
+        :key="tipo"
+        :value="tipo"
+        severity="secondary"
+        size="small"
+      />
+    </div>
   </div>
   <p class="mt-1 text-sm text-muted">
     <i class="pi pi-map-marker mr-1" />{{ solicitud.direccion || 'Dirección no indicada' }}

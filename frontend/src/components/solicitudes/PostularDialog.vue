@@ -4,6 +4,7 @@ import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import Select from 'primevue/select'
 import Skeleton from 'primevue/skeleton'
+import Tag from 'primevue/tag'
 import Textarea from 'primevue/textarea'
 import { useToast } from 'primevue/usetoast'
 import { useAuthz } from '../../composables/auth/useAuthz'
@@ -174,6 +175,19 @@ async function enviar() {
           {{ tarifaAplicable.tarifa.tipo_servicio }} ·
           {{ tarifaAplicable.tarifa.negociable ? 'Precio negociable' : 'Precio no negociable' }}.
         </p>
+        <div
+          v-if="oferta.tipos_servicio_por_categoria?.[tarifaAplicable.tarifa.categoria_id]?.length"
+          class="mt-2 flex flex-wrap gap-1"
+        >
+          <span class="w-full text-xs font-medium text-muted">Servicios solicitados en tu categoría:</span>
+          <Tag
+            v-for="tipo in oferta.tipos_servicio_por_categoria[tarifaAplicable.tarifa.categoria_id]"
+            :key="tipo"
+            :value="tipo"
+            severity="secondary"
+            size="small"
+          />
+        </div>
       </div>
       <div v-else class="rounded-lg bg-amber-50 p-3 text-sm text-amber-700">
         <i class="pi pi-exclamation-triangle mr-1" />
