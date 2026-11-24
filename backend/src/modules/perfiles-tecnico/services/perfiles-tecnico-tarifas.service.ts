@@ -42,10 +42,11 @@ export class PerfilesTecnicoTarifasService {
       }
     }
     if (unicas.length > 0) {
+      const categoriaIds = [...new Set(unicas.map((tarifa) => tarifa.categoria_id))];
       const encontradas = await this.categoriasRepository.count({
-        where: { id: In(unicas.map((t) => t.categoria_id)) },
+        where: { id: In(categoriaIds) },
       });
-      if (encontradas !== unicas.length) {
+      if (encontradas !== categoriaIds.length) {
         throw new BadRequestException('Una o más categorías no existen');
       }
     }
