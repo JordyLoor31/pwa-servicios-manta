@@ -140,7 +140,18 @@ export class SolicitudesConsultaService {
   async listarRecibidas(tecnicoId: string, filtros: FiltrosSolicitudes) {
     const resultado = await this.listarConJoin(
       filtros,
-      '(s.tecnico_id = :tecnico_id OR s.tecnico_id IS NULL)',
+      `(
+        s.tecnico_id = :tecnico_id
+        OR (
+          s.tecnico_id IS NULL
+          AND EXISTS (
+            SELECT 1
+            FROM solicitudes_categorias sc
+            INNER JOIN tecnico_categoria tc ON tc.categoria_id = sc.categoria_id
+            WHERE sc.solicitud_id = s.id AND tc.tecnico_id = :tecnico_id
+          )
+        )
+      )`,
       { tecnico_id: tecnicoId },
     );
     const ids = resultado.data.map((solicitud: Record<string, unknown>) => solicitud.id);

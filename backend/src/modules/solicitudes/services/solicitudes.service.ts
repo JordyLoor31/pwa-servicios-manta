@@ -12,6 +12,7 @@ import { SolicitudCategoria } from '../entities/solicitud-categoria.entity';
 import { DisponibilidadTecnico } from '../../perfiles-tecnico/entities/disponibilidad-tecnico.entity';
 import { Usuario, RolUsuario, EstadoUsuario } from '../../usuarios/entities/usuario.entity';
 import { PerfilTecnico } from '../../perfiles-tecnico/entities/perfil-tecnico.entity';
+import { TecnicoCategoria } from '../../perfiles-tecnico/entities/tecnico-categoria.entity';
 import { CrearSolicitudDto } from '../dtos/crear-solicitud.dto';
 import { RechazarSolicitudDto } from '../dtos/rechazar-solicitud.dto';
 import { CrearPostulacionDto } from '../dtos/crear-postulacion.dto';
@@ -116,7 +117,7 @@ export class SolicitudesService {
     const dia = dto.fecha_propuesta
       ? new Date(`${dto.fecha_propuesta}T12:00:00`).getDay()
       : new Date().getDay();
-    const tecnicosDisponibles = await this.usuariosRepository
+    const consultaTecnicos = this.usuariosRepository
       .createQueryBuilder('u')
       .innerJoin(PerfilTecnico, 'p', 'p.usuario_id = u.id')
       .innerJoin(
@@ -128,8 +129,16 @@ export class SolicitudesService {
       .where('u.rol = :rol', { rol: RolUsuario.TECNICO })
       .andWhere('u.estado = :estado', { estado: EstadoUsuario.ACTIVO })
       .select('u.id AS id')
-      .distinct(true)
-      .getRawMany<{ id: string }>();
+      .distinct(true);
+
+    const categoriaIds = [...new Set(dto.categoria_ids)];
+    if (categoriaIds.length > 0) {
+      consultaTecnicos
+        .innerJoin(TecnicoCategoria, 'tc', 'tc.tecnico_id = u.id')
+        .andWhere('tc.categoria_id IN (:...categoriaIds)', { categoriaIds });
+    }
+
+    const tecnicosDisponibles = await consultaTecnicos.getRawMany<{ id: string }>();
     await Promise.all(
       tecnicosDisponibles.map((tecnico) => this.notificacionesService.nueva(tecnico.id, vista)),
     );
