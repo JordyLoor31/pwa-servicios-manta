@@ -33,7 +33,7 @@ const {
   cambiarEstado,
 } = useUsuariosAdmin()
 
-const placeholders = ref(Array.from({ length: 6 }, (_, i) => ({ id: `skeleton-${i}` })))
+const placeholders = ref(Array.from({ length: 10 }, (_, i) => ({ id: `skeleton-${i}` })))
 
 const menuRef = ref<InstanceType<typeof Menu> | null>(null)
 
@@ -120,7 +120,7 @@ onMounted(cargar)
           </div>
         </div>
 
-      <div class="rounded-2xl border border-pacific/10 bg-card p-4 shadow-sm sm:p-5">
+      <div class="min-h-[40rem] rounded-2xl border border-pacific/10 bg-card p-4 shadow-sm sm:p-5">
         <DataTable
           :value="filas"
           lazy

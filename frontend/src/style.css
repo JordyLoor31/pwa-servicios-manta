@@ -43,7 +43,7 @@
   --color-sand: #e8d5b5;
   --color-cloud: #f7f9fa;
   --color-ink: #172a35;
-  --color-muted: #667781;
+  --color-muted: #4c5b66;
   --color-card: #ffffff;
 }
 
@@ -64,6 +64,10 @@ html.dark {
 html.dark body {
   background-color: var(--color-cloud);
   color: var(--color-ink);
+}
+
+html.dark .text-emerald-700 {
+  color: #6ee7b7;
 }
 
 /* --- Modo oscuro: overrides explícitos de PrimeVue --- */

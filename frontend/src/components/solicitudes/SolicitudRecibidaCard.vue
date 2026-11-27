@@ -127,7 +127,7 @@ const emit = defineEmits<{
       <i class="pi pi-exclamation-triangle mr-1" />
       Fuera de tu cobertura{{ solicitud.tecnico_radio_cobertura_km != null ? ` (${solicitud.tecnico_radio_cobertura_km} km)` : '' }}
     </span>
-    <span v-else-if="solicitud.tecnico_cubre_zona" class="text-emerald-600">
+    <span v-else-if="solicitud.tecnico_cubre_zona" class="text-emerald-700">
       <i class="pi pi-check-circle mr-1" />Dentro de tu cobertura
     </span>
     <span v-if="solicitud.motivo_rechazo" class="text-red-500">

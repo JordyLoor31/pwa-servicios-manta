@@ -71,12 +71,12 @@ const warnButton = {
 }
 
 const secondaryButton = {
-  background: '{teal.500}',
-  hoverBackground: '{teal.600}',
-  activeBackground: '{teal.700}',
-  borderColor: '{teal.500}',
-  hoverBorderColor: '{teal.600}',
-  activeBorderColor: '{teal.700}',
+  background: '{teal.700}',
+  hoverBackground: '{teal.800}',
+  activeBackground: '{teal.900}',
+  borderColor: '{teal.700}',
+  hoverBorderColor: '{teal.800}',
+  activeBorderColor: '{teal.900}',
   color: '#ffffff',
   hoverColor: '#ffffff',
   activeColor: '#ffffff',
@@ -86,7 +86,7 @@ const outlinedSecondaryButton = {
   hoverBackground: '{teal.50}',
   activeBackground: '{teal.100}',
   borderColor: '{teal.500}',
-  color: '{teal.600}',
+  color: 'light-dark({teal.700}, {teal.300})',
 }
 
 export const MantaPreset = definePreset(Aura, {
@@ -125,6 +125,21 @@ export const MantaPreset = definePreset(Aura, {
       },
       outlined: {
         secondary: outlinedSecondaryButton,
+      },
+    },
+    inputtext: {
+      root: {
+        placeholderColor: 'light-dark(#4c5b66, #a9b6bf)',
+      },
+    },
+    tag: {
+      secondary: {
+        background: 'light-dark(#e8f4f8, #07495f)',
+        color: 'light-dark(#07495f, #e8f4f8)',
+      },
+      warn: {
+        background: 'light-dark(#fef4ea, #743612)',
+        color: 'light-dark(#8f4012, #fef4ea)',
       },
     },
   },

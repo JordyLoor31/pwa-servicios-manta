@@ -4,6 +4,7 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
+import Skeleton from 'primevue/skeleton'
 import Menu from 'primevue/menu'
 import Dialog from 'primevue/dialog'
 import Toast from 'primevue/toast'
@@ -31,6 +32,8 @@ const {
 } = useCategoriasAdmin()
 
 const menuRef = ref<InstanceType<typeof Menu> | null>(null)
+const placeholders = Array.from({ length: 5 }, (_, i) => ({ id: `skeleton-${i}` }))
+const filas = computed(() => (cargando.value ? placeholders : categorias.value))
 
 const itemMenu = (label: string, icono: string, comando: () => void, clase?: string) => ({
   label,
@@ -68,10 +71,9 @@ function abrirMenu(event: Event, categoria: CategoriaServicio) {
         <Button label="Nueva categoría" icon="pi pi-plus" @click="abrirCrear" />
       </div>
 
-      <div class="rounded-2xl border border-pacific/10 bg-card p-4 shadow-sm sm:p-5">
+      <div class="min-h-[28rem] rounded-2xl border border-pacific/10 bg-card p-4 shadow-sm sm:p-5">
         <DataTable
-          :value="categorias"
-          :loading="cargando"
+          :value="filas"
           paginator
           :rows="5"
           :rows-per-page-options="[5, 10, 20]"
@@ -82,7 +84,14 @@ function abrirMenu(event: Event, categoria: CategoriaServicio) {
         >
           <Column field="nombre" header="Nombre" :sortable="true" body-class="w-1/2">
             <template #body="{ data }">
-              <div class="flex items-center gap-3">
+              <div v-if="cargando" class="flex items-center gap-3">
+                <Skeleton shape="circle" size="2.5rem" />
+                <div class="flex flex-col gap-2">
+                  <Skeleton width="8rem" height="0.8rem" />
+                  <Skeleton width="12rem" height="0.7rem" />
+                </div>
+              </div>
+              <div v-else class="flex items-center gap-3">
                 <div
                   class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-turquoise-50 text-turquoise-600"
                 >
@@ -97,13 +106,15 @@ function abrirMenu(event: Event, categoria: CategoriaServicio) {
           </Column>
           <Column field="activa" header="Estado" :sortable="true" style="width: 12rem">
             <template #body="{ data }">
-              <Tag v-if="data.activa" value="Activa" severity="success" />
+              <Skeleton v-if="cargando" width="5rem" height="1.5rem" />
+              <Tag v-else-if="data.activa" value="Activa" severity="success" />
               <Tag v-else value="Inactiva" severity="secondary" />
             </template>
           </Column>
           <Column header="Acciones" style="width: 6rem" body-class="text-center">
             <template #body="{ data }">
               <Button
+                v-if="!cargando"
                 icon="pi pi-ellipsis-v"
                 text
                 rounded

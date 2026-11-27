@@ -38,5 +38,7 @@ onUnmounted(() => {
   >
     Sin conexión. Algunas acciones pueden esperar hasta recuperar internet.
   </div>
-  <RouterView />
+  <main id="main-content">
+    <RouterView />
+  </main>
 </template>

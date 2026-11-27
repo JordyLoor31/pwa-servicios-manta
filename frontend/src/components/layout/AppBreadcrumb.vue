@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 import Breadcrumb from 'primevue/breadcrumb'
 
 const route = useRoute()
-const router = useRouter()
 
 interface BreadcrumbItem {
   label: string
@@ -53,13 +52,13 @@ const tituloActual = computed(() => items.value[items.value.length - 1]?.label ?
   <div class="flex min-w-0 flex-1 items-center px-0 py-1.5 sm:px-3">
     <Breadcrumb :model="items" :home="home" class="hidden min-w-0 flex-1 sm:flex">
       <template #item="{ item, icon }">
-        <a
+        <RouterLink
+          :to="item.ruta ?? '/'"
           class="p-breadcrumb-item-link flex items-center gap-1 cursor-pointer"
-          @click="item.ruta && router.push(item.ruta)"
         >
           <i :class="icon ?? item.icon" v-if="icon || item.icon" />
           <span v-if="item.label">{{ item.label }}</span>
-        </a>
+        </RouterLink>
       </template>
     </Breadcrumb>
     <span class="min-w-0 flex-1 truncate text-sm text-muted sm:hidden">
