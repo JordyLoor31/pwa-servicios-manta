@@ -12,10 +12,16 @@
           "module": "ESNext",
           "moduleResolution": "Bundler",
           "rootDir": ".",
-          "emitDecoratorMetadata": false
+          "emitDecoratorMetadata": true
         }
       }
     ]
+  },
+  "moduleNameMapper": {
+    "^@nestjs/throttler$": "<rootDir>/support/throttler.ts",
+    "^\\.\\./services/usuarios\\.service$": "<rootDir>/support/usuarios.service.ts",
+    "^\\.\\./\\.\\./usuarios/services/usuarios\\.service$": "<rootDir>/support/usuarios.service.ts",
+    "^\\.\\./services/solicitudes\\.service$": "<rootDir>/support/solicitudes.service.ts"
   },
   "extensionsToTreatAsEsm": [".ts"]
 }
